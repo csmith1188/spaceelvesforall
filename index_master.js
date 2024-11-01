@@ -12,6 +12,8 @@ const sqlite3 = require('sqlite3').verbose();
 require('dotenv').config();
 // import webtoken module
 const jwt = require('jsonwebtoken');
+// import child process handler
+const { spawn } = require('child_process');
 
 // Load the settings from the environment variables
 // To set your own, make a file called ".env",
@@ -59,6 +61,36 @@ app.get('/', (req, res) => {
 
 // game page
 app.get('/game', (req, res) => {
+    
+    // Start another Node.js script with the port argument
+    const child = spawn('node', [__dirname + '/game/index_game.js', '-p ' + gameServerCount]); // add { detached: true } to run in the background
+    child.PORT = gameServerCount;
+
+    // Listen for standard output (stdout) data from the child process
+    child.stdout.on('data', (data) => {
+        console.log(`Child Output: ${data}`);
+    });
+
+    // Listen for standard error (stderr) data from the child process
+    child.stderr.on('data', (data) => {
+        console.error(`Child Error: ${data}`);
+    });
+
+    // Listen for the child process to close (when it finishes or exits)
+    child.on('close', (code) => {
+        console.log(`Child process exited with code ${code}`);
+    });
+
+    // Optional: Listen for exit events in case the process is terminated unexpectedly
+    child.on('exit', (code, signal) => {
+        if (signal) {
+            console.log(`Child process was killed with signal: ${signal}`);
+        } else {
+            console.log(`Child process exited with code: ${code}`);
+        }
+    });
+    gameServers.push(child);
+    gameServerCount++;
 });
 
 // login page
@@ -119,4 +151,5 @@ let db = new sqlite3.Database('data/database.db', (err) => {
     }
 });
 
+var gameServerCount = 11100;
 var gameServers = [];
