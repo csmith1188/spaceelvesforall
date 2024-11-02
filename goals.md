@@ -1,6 +1,6 @@
 Master Server
-- Spawn a game server
-- redirect user to game server
+- ~~Spawn a game server~~
+- ~~redirect user to game server~~
 - Login
 - redirect user with credentials
 

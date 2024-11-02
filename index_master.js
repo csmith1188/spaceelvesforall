@@ -56,11 +56,18 @@ function isAuthenticated(req, res, next) {
 
 // Define a route handler for the default home page
 app.get('/', (req, res) => {
-
+    // make a list of game server ports
+    let gameList = [];
+    gameServers.forEach((server) => {
+        gameList.push(server.PORT);
+    });
+    console.log(gameList);
+    
+    res.render('index', { gameList: gameList });
 });
 
 // game page
-app.get('/game', (req, res) => {
+app.get('/newgame', (req, res) => {
     
     // Start another Node.js script with the port argument
     const child = spawn('node', [__dirname + '/game/index_game.js', '-p ' + gameServerCount]); // add { detached: true } to run in the background
@@ -68,27 +75,30 @@ app.get('/game', (req, res) => {
 
     // Listen for standard output (stdout) data from the child process
     child.stdout.on('data', (data) => {
-        console.log(`Child Output: ${data}`);
+        console.log(`Server Info ${child.PORT}: ${data}`);
     });
 
     // Listen for standard error (stderr) data from the child process
     child.stderr.on('data', (data) => {
-        console.error(`Child Error: ${data}`);
+        console.error(`Server Error ${child.PORT}: ${data}`);
     });
 
     // Listen for the child process to close (when it finishes or exits)
     child.on('close', (code) => {
-        console.log(`Child process exited with code ${code}`);
+        console.log(`Server ${child.PORT} exited with code ${code}`);
     });
 
     // Optional: Listen for exit events in case the process is terminated unexpectedly
     child.on('exit', (code, signal) => {
         if (signal) {
-            console.log(`Child process was killed with signal: ${signal}`);
+            console.log(`Server ${child.PORT} was killed with signal: ${signal}`);
         } else {
-            console.log(`Child process exited with code: ${code}`);
+            console.log(`Server ${child.PORT} exited with code: ${code}`);
         }
     });
+
+    res.redirect(`http://localhost:${child.PORT}/`);
+
     gameServers.push(child);
     gameServerCount++;
 });
@@ -139,7 +149,7 @@ app.ws('/chat', (ws, req) => {
 
 // Start the server on port 3000
 app.listen(PORT, () => {
-    log(`Server started on http://localhost:${PORT}`);
+    console.log(`Server started on http://localhost:${PORT}`);
 });
 
 // open the database file
