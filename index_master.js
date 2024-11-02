@@ -36,12 +36,13 @@ const THIS_URL = process.env.THIS_URL || 'http://localhost:3000/login';
 // The secret for the session data
 const SS_SECRET = process.env.SS_SECRET || 'secret';
 
-// The email and password for the email server
+// The host, email and password for the email server
+EMAIL_HOST = process.env.EMAIL_HOST;
 EMAIL_USER = process.env.EMAIL_USER;
 EMAIL_PASS = process.env.EMAIL_PASS;
 
 const transporter = nodemailer.createTransport({
-    host: 'smtp.dreamhost.com', // Replace with your SMTP host
+    host: EMAIL_HOST, // Replace with your SMTP host
     port: 465, // Use 465 for secure, or 587 for STARTTLS
     secure: true, // true for port 465, false for other ports
     auth: {
