@@ -19,10 +19,10 @@ var PORT = 11100;
 
 // Example: Log each argument
 args.forEach((arg, index) => {
-    console.log(`Argument ${index + 1}: ${arg}`);
+    console.info(`Argument ${index + 1}: ${arg}`);
     if (arg.split(" ")[0] === '-p') {
         PORT = parseInt(arg.split(" ")[1]);
-        console.log(`PORT: ${PORT}`);
+        console.info(`PORT: ${PORT}`);
     }
 });
 
@@ -64,19 +64,17 @@ function isAuthenticated(req, res, next) {
 
 // Define a route handler for the default home page
 app.get('/', (req, res) => {
-    console.log(req.session);
-    
     if (req.session.token) {
-        res.send('You are logged in' + req.session.token.username);
+        res.render('game', { token: req.session.token });
     } else {
-    res.redirect('http://localhost:3000');
+        res.redirect('http://localhost:3000');
     }
 });
 
 app.ws('/game', (ws, req) => {
     // send the client their id when they connect
     // ws.send(JSON.stringify({ id: ws.id }));
-    console.log(`Client connected, ${new Date()}`);
+    console.info(`Client connected, ${new Date()}`);
 
     ws.on('message', (message) => {
         message = JSON.parse(message);
@@ -103,5 +101,5 @@ app.ws('/game', (ws, req) => {
 
 // Start the server on port 3000
 app.listen(PORT, () => {
-    console.log(`Server started on http://localhost:${PORT}`);
+    console.info(`Server started on http://localhost:${PORT}`);
 });

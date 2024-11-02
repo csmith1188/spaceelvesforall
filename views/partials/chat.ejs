@@ -1,0 +1,84 @@
+<div id="chatBox">
+    <div id="listBox">
+        <div id="userList">
+        </div>
+        <div id="roomList">
+        </div>
+    </div>
+    <div id="chatMessages">
+        <div id="chatMessagesContent"></div>
+        <div id="chatInput">
+            <input type="text" id="chatInputField" placeholder="Type your message here..." />
+            <button id="chatSendButton" onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    
+    const chatMessagesContent = document.getElementById('chatMessagesContent');
+    const chatInputField = document.getElementById('chatInputField');
+    const chatSendButton = document.getElementById('chatSendButton');
+    const userList = document.getElementById('userList');
+    const roomList = document.getElementById('roomList');
+
+    const ws = new WebSocket('ws://localhost:3000/chat');
+    
+    ws.onopen = () => {
+        console.log('Connected to the chat server');
+    };
+
+    ws.onmessage = (message) => {
+        const data = JSON.parse(message.data);
+        console.log(data);
+        if (data.message) {
+                chatMessagesContent.innerHTML += `<p><b>[${data.room}] ${data.sender}: </b>${data.message}</p>`;
+                //scroll to bottom of chat
+                chatMessagesContent.scrollTop = chatMessagesContent.scrollHeight;
+        }
+        if (data.userList) {
+            userList.innerHTML = '';
+            let users = document.createElement('ul');
+            data.userList.forEach(user => {
+                let userItem = document.createElement('li');
+                let userLink = document.createElement('a');
+                userLink.href = '#';
+                userLink.innerText = user;
+                userItem.appendChild(userLink);
+                users.appendChild(userItem);
+            });
+            userList.appendChild(users);
+        }
+        if (data.rooms) {
+            console.log(data.rooms);
+            
+            roomList.innerHTML = '';
+            let rooms = document.createElement('ul');
+            data.rooms.forEach(room => {
+                let roomItem = document.createElement('li');
+                let roomLink = document.createElement('a');
+                roomLink.href = '#';
+                roomLink.innerText = room;
+                roomItem.appendChild(roomLink);
+                rooms.appendChild(roomItem);
+            });
+            roomList.appendChild(rooms);
+        }
+    };
+
+    function sendMessage() {
+        const message = chatInputField.value;
+        if (!message) {
+            return;
+        }
+        ws.send(JSON.stringify({ message: message }));
+        chatInputField.value = '';
+    }
+
+    chatInputField.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            sendMessage();
+        }
+    });
+
+</script>

@@ -1,0 +1,66 @@
+@font-face {
+    font-family: 'BankGothic';
+    src: url('fonts/BankGothic.ttf');
+}
+
+@font-face {
+    font-family: 'Jura';
+    src: url('../fonts/Jura-Bold.ttf');
+}
+
+body {
+    background-color: #f0f0f0;
+    font-family: Jura, Arial, sans-serif;
+    /* margin: 0;
+    padding: 0; */
+}
+
+/* all */
+#content {
+    background-color: #FFF;
+    border: 1px solid #000;
+    border-radius: 5px;
+}
+
+/* header */
+h1 {
+    text-align: center;
+
+}
+
+#userControls {
+    text-align: center;
+}
+
+
+/* chat */
+#chatBox {
+    border: 1px solid #000;
+    border-radius: 5px;
+}
+
+#listBox {
+}
+
+#userList {
+    list-style-type: none;
+    background-color: #FFF;
+    border: 1px solid #000;
+    border-radius: 5px;
+}
+
+#roomList {
+    list-style-type: none;
+    background-color: #FFF;
+    border: 1px solid #000;
+    border-radius: 5px;
+}
+
+#chatMessages {
+}
+
+#chatMessagesContent {
+    background-color: #FFF;
+    border: 1px solid #000;
+    border-radius: 5px;
+}

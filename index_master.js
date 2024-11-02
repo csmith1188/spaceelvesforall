@@ -57,8 +57,6 @@ function sendVerificationEmail(userEmail, username) {
     const url = `${THIS_URL}/verify?token=${token}`;
 
     ejs.renderFile(__dirname + '/views/email.ejs', { username: username, url: url }, (err, renderedTemplate) => {
-        console.log(renderedTemplate);
-
         if (err) {
             console.error('Error rendering template:', err);
         } else {
@@ -94,6 +92,9 @@ app.use(express.static(__dirname + '/public'));
 // read the body of the request
 app.use(express.urlencoded({ extended: true }));
 
+// make 'public' the static folder
+app.use(express.static(path.join(__dirname, 'public')));
+
 // create a session middleware with a secret key using in memory store
 const sessionMiddleware = session({
     store: new SQLiteStore(),
@@ -112,7 +113,7 @@ const sessionMiddleware = session({
 app.use(sessionMiddleware);
 
 // use the express-ws module to add websockets to express
-expressWs(app);
+const wss = expressWs(app);
 
 // This function is used to intercept page loads to check if the user is authenticated
 function isAuthenticated(req, res, next) {
@@ -141,7 +142,7 @@ app.get('/newgame', isAuthenticated, (req, res) => {
 
         // Listen for standard output (stdout) data from the child process
         child.stdout.on('data', (data) => {
-            console.log(`Server Info ${child.PORT}: ${data}`);
+            console.info(`Server Info ${child.PORT}: ${data}`);
         });
 
         // Listen for standard error (stderr) data from the child process
@@ -151,15 +152,15 @@ app.get('/newgame', isAuthenticated, (req, res) => {
 
         // Listen for the child process to close (when it finishes or exits)
         child.on('close', (code) => {
-            console.log(`Server ${child.PORT} exited with code ${code}`);
+            console.info(`Server ${child.PORT} exited with code ${code}`);
         });
 
         // Optional: Listen for exit events in case the process is terminated unexpectedly
         child.on('exit', (code, signal) => {
             if (signal) {
-                console.log(`Server ${child.PORT} was killed with signal: ${signal}`);
+                console.info(`Server ${child.PORT} was killed with signal: ${signal}`);
             } else {
-                console.log(`Server ${child.PORT} exited with code: ${code}`);
+                console.info(`Server ${child.PORT} exited with code: ${code}`);
             }
         });
 
@@ -191,7 +192,7 @@ app.get('/login', (req, res) => {
                         console.error(err);
                         res.render('error', { error: `Database error: ${err}` });
                     } else {
-                        console.log(`New user ${req.session.token.username} created`);
+                        console.info(`New user ${req.session.token.username} created`);
                         res.redirect('/');
                     }
                 });
@@ -249,7 +250,7 @@ app.post("/login", (req, res) => {
                             }
                             res.redirect("/");
                         } else {
-                            console.log("Incorrect password");
+                            console.info("Incorrect password");
                             res.render('error', { error: "Incorrect password" });
                         }
                     }
@@ -257,7 +258,7 @@ app.post("/login", (req, res) => {
             }
         });
     } else {
-        console.log("No username and password provided");
+        console.info("No username and password provided");
         res.render('error', { error: "No username and password provided" });
     }
 });
@@ -299,7 +300,7 @@ app.post('/signup', (req, res) => {
                                     username: req.body.username,
                                     verified: false
                                 }
-                                console.log(`New user ${req.body.username} created`);
+                                console.info(`New user ${req.body.username} created`);
                                 sendVerificationEmail(req.body.email, req.body.username);
                                 res.redirect('/');
                             }
@@ -335,23 +336,95 @@ app.get('/verify', (req, res) => {
         res.render('error', { error: "No token provided" });
     }
 });
+
+function broadcast(clients, sender, room, message) {
+    for (const client of clients) {
+        if (client.rooms.includes(room)) {
+            client.send(JSON.stringify({ sender: sender, room: room, message: message }));
+        }
+    }
+}
+
+function userList(clients, room) {
+    let users = [];
+    for (const client of clients) {
+        if (client.rooms.includes(room)) {
+            users.push(client.token.username);
+        }
+    }
+    return users;
+}
+
 app.ws('/chat', (ws, req) => {
-    // send the client their id when they connect
-    // ws.send(JSON.stringify({ id: ws.id }));
-    console.log(`Client connected, ${new Date()}`);
+    console.info(`Client connected, ${new Date()}`);
 
-    ws.on('message', (message) => {
-        message = JSON.parse(message);
-        if (message.press) {
+    ws.token = req.session.token;
+    ws.rooms = ['lfg'];
+    ws.currentRoom = 'lfg';
 
-        }
+    ws.send(JSON.stringify({ userList: userList(wss.getWss().clients, ws.currentRoom), rooms: ws.rooms }));
 
-        if (message.release) {
+    ws.on('message', (data) => {
+        try {
+            data = JSON.parse(data);
+            if (data.message) {
+                console.info(`Received data: ${data.message}`);
+                // the first word is the command if it starts with '/'
+                if (data.message.trim().startsWith('/')) {
+                    const command = data.message.split(' ')[0].substring(1);
+                    const args = data.message.split(' ').slice(1);
+                    console.log(`Command: ${command}, Args: ${args}`);
 
-        }
+                    switch (command) {
+                        case 'join':
+                            if (args[0]) {
+                                ws.currentRoom = args[0];
+                                ws.rooms.push(args[0]);
+                                ws.send(JSON.stringify({ sender: 'Server', room: args[0], message: 'You have joined the room', rooms: ws.rooms }));
+                            }
+                            break;
+                        case 'leave':
+                            if (args[0]) {
+                                ws.rooms = ws.rooms.filter(room => room !== args[0]);
+                                ws.send(JSON.stringify({ sender: 'Server', room: args[0], message: 'You have left the room', rooms: ws.rooms }));
+                            }
 
-        if (message.resize) {
+                            break;
+                        case 'list':
+                            ws.send(JSON.stringify({ rooms: ws.rooms }));
+                            break;
+                        case 'help':
+                            ws.send(JSON.stringify({ sender: 'Server', room: command, message: 'Available commands: /join xxx, /leave xxx, /list, /help. /xxx to start speaking in room xxx' }));
+                            break;
+                        default:
+                            ws.currentRoom = command;
+                            if (!ws.rooms.includes(command)) {
+                                ws.rooms.push(command);
+                                ws.send(JSON.stringify({ userList: userList(wss.getWss().clients, ws.currentRoom), rooms: ws.rooms, sender: 'Server', room: command, message: `You have joined room ${command}` }));
+                            }
+                            //remove command from message
+                            data.message = data.message.substring(command.length + 1);
+                            if (data.message.trim()) {
+                                broadcast(wss.getWss().clients, ws.token.username, ws.currentRoom, data.message);
+                            }
+                            // ws.send(JSON.stringify({ error: `Unknown command: ${command}` }));
+                            break;
+                    }
+                } else {
+                    broadcast(wss.getWss().clients, ws.token.username, ws.currentRoom, data.message);
+                }
+            }
 
+            if (data.release) {
+
+            }
+
+            if (data.resize) {
+
+            }
+        } catch (err) {
+            console.error(err);
+            ws.send(JSON.stringify({ error: `Error parsing message: ${err}` }));
         }
     });
 
@@ -363,7 +436,7 @@ app.ws('/chat', (ws, req) => {
 
 // Start the server on port 3000
 app.listen(PORT, () => {
-    console.log(`Server started on http://localhost:${PORT}`);
+    console.info(`Server started on http://localhost:${PORT}`);
 });
 
 // open the database file

@@ -1,0 +1,67 @@
+/* all */
+#content {
+    margin: auto;
+    width: 80%;
+    padding: 10px;
+}
+
+/* header */
+h1 {
+    font-size: 2em;
+    margin: 0px;
+    padding: 0px;
+}
+
+#userControls {
+}
+
+/* chat */
+#chatBox {
+    margin: 10px;
+    padding: 10px;
+    /* display: flex; */
+    overflow: auto;
+}
+
+#listBox {
+    width: 25%;
+    float: left;
+    padding: 0px;
+    margin: 0px;
+}
+
+#userList {
+    margin-bottom: 10px;
+}
+
+#roomList {
+}
+
+#chatMessages {
+    width: 70%;
+    float: right;
+}
+
+#chatMessagesContent {
+    height: 400px;
+    overflow: scroll;
+    padding: 10px;
+}
+#chatMessagesContent p {
+    padding: 1px;
+    margin: 0px;
+}
+
+#chatInput {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+}
+
+#chatInputField {
+    width: 70%;
+}
+
+#chatSendButton {
+    width: 20%;
+}
