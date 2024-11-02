@@ -4,7 +4,8 @@ Master Server
 - ~~Login~~
 - ~~redirect user with credentials~~
 - ~~Local Login~~
-- Email Validation
+- ~~Email Validation~~
+- Route Handling
 
 Game Server
 - Create and run a game
