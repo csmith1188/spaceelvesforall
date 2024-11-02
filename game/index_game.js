@@ -27,7 +27,7 @@ args.forEach((arg, index) => {
 });
 
 // The secret for the session data
-const FB_SECRET = process.env.FB_SECRET || 'secret';
+const SS_SECRET = process.env.SS_SECRET || 'secret';
 
 const app = express();
 
@@ -40,7 +40,7 @@ app.use(express.static(__dirname + '/public'));
 // create a session middleware with a secret key using in memory store
 const sessionMiddleware = session({
     store: new SQLiteStore(),
-    secret: FB_SECRET,
+    secret: SS_SECRET,
     resave: false,
     saveUninitialized: true,
     cookie: {
@@ -64,6 +64,8 @@ function isAuthenticated(req, res, next) {
 
 // Define a route handler for the default home page
 app.get('/', (req, res) => {
+    console.log(req.session);
+    
     if (req.session.token) {
         res.send('You are logged in' + req.session.token.username);
     } else {

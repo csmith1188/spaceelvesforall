@@ -181,7 +181,7 @@ app.get('/login', (req, res) => {
         // decode the token and set the session token and user
         let tokenData = jwt.decode(req.query.token);
         req.session.token = tokenData;
-        db.get("SELECT * FROM users WHERE username=?;", req.session.token.username, (err, row) => {
+        db.get("SELECT * FROM users WHERE fb_username=?;", req.session.token.username, (err, row) => {
             if (err) {
                 console.error(err);
                 res.render('error', { error: `Database error: ${err}` });
@@ -235,30 +235,25 @@ app.post("/login", (req, res) => {
                 console.error("User not found");
                 res.render('error', { error: "User not found. You must <a href='/signup'>make an account</a> first." });
             } else {
-                if (!row.hash) {
-                    console.error("User is a Formbar user. Log in with Formbar.");
-                    res.render('error', { error: `User is a Formbar user. <a href='${AUTH_URL}?redirectURL=${THIS_URL + '/login'}'>Log in with Formbar</a>` });
-                } else {
-                    // Compare stored password with provided password
-                    crypto.pbkdf2(req.body.password, row.salt, 1000, 64, "sha512", (err, derivedKey) => {
-                        if (err) {
-                            console.error(err);
-                            res.render('error', { error: `Error hashing password: ${err}` });
-                        } else {
-                            const hashedPassword = derivedKey.toString("hex");
-                            if (row.hash === hashedPassword) {
-                                req.session.token = {
-                                    username: row.username,
-                                    verified: row.validated
-                                }
-                                res.redirect("/");
-                            } else {
-                                console.log("Incorrect password");
-                                res.render('error', { error: "Incorrect password" });
+                // Compare stored password with provided password
+                crypto.pbkdf2(req.body.password, row.salt, 1000, 64, "sha512", (err, derivedKey) => {
+                    if (err) {
+                        console.error(err);
+                        res.render('error', { error: `Error hashing password: ${err}` });
+                    } else {
+                        const hashedPassword = derivedKey.toString("hex");
+                        if (row.hash === hashedPassword) {
+                            req.session.token = {
+                                username: row.username || row.fb_username,
+                                verified: row.validated
                             }
+                            res.redirect("/");
+                        } else {
+                            console.log("Incorrect password");
+                            res.render('error', { error: "Incorrect password" });
                         }
-                    });
-                }
+                    }
+                });
             }
         });
     } else {

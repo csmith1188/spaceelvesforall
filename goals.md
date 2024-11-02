@@ -5,6 +5,9 @@ Master Server
 - ~~redirect user with credentials~~
 - ~~Local Login~~
 - ~~Email Validation~~
+- Discriminators
+- Chat WS
+- Chat rooms
 - Route Handling
 
 Game Server
