@@ -3,7 +3,8 @@ Master Server
 - ~~redirect user to game server~~
 - ~~Login~~
 - ~~redirect user with credentials~~
-- Local Login
+- ~~Local Login~~
+- Email Validation
 
 Game Server
 - Create and run a game

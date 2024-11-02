@@ -17,6 +17,8 @@ const jwt = require('jsonwebtoken');
 const { spawn } = require('child_process');
 // sqlite3 session store
 const SQLiteStore = require('connect-sqlite3')(session);
+// module for hashing passwords
+const crypto = require("crypto");
 
 // Load the settings from the environment variables
 // To set your own, make a file called ".env",
@@ -28,7 +30,7 @@ const AUTH_URL = process.env.AUTH_URL || 'http://localhost:420/oauth';
 // The URL for this server for the oauth callback
 const THIS_URL = process.env.THIS_URL || 'http://localhost:3000/login';
 // The secret for the session data
-const FB_SECRET = process.env.FB_SECRET || 'secret';
+const SS_SECRET = process.env.SS_SECRET || 'secret';
 
 const app = express();
 
@@ -38,10 +40,13 @@ app.set('view engine', 'ejs');
 // set express to use public for static files
 app.use(express.static(__dirname + '/public'));
 
+// read the body of the request
+app.use(express.urlencoded({ extended: true }));
+
 // create a session middleware with a secret key using in memory store
 const sessionMiddleware = session({
     store: new SQLiteStore(),
-    secret: FB_SECRET,
+    secret: SS_SECRET,
     resave: false,
     saveUninitialized: true,
     cookie: {
@@ -77,7 +82,7 @@ app.get('/', (req, res) => {
 });
 
 // game page
-app.get('/newgame', (req, res) => {
+app.get('/newgame', isAuthenticated, (req, res) => {
 
     // Start another Node.js script with the port argument
     const child = spawn('node', [__dirname + '/game/index_game.js', '-p ' + gameServerCount]); // add { detached: true } to run in the background
@@ -120,16 +125,37 @@ app.get('/login', (req, res) => {
         // decode the token and set the session token and user
         let tokenData = jwt.decode(req.query.token);
         req.session.token = tokenData;
-        // redirect to the home page
-        res.redirect('/');
+        db.get("SELECT * FROM users WHERE username=?;", req.session.token.username, (err, row) => {
+            if (err) {
+                console.error(err);
+                res.render('error', { error: `Database error: ${err}` });
+            } else if (!row) {
+                db.run("INSERT INTO users (username, fb_id, fb_username) VALUES (?, ?, ?);", [req.session.token.username, req.session.token.id, req.session.token.username], (err) => {
+                    if (err) {
+                        console.error(err);
+                        res.render('error', { error: `Database error: ${err}` });
+                    } else {
+                        console.log(`New user ${req.session.token.username} created`);
+                        res.redirect('/');
+                    }
+                });
+            } else {
+                res.redirect("/");
+            }
+        });
     } else {
-        // send them to the Formbar login page
-        res.redirect(`${AUTH_URL}?redirectURL=${THIS_URL}`);
+        if (req.query.formbar == 'true') {
+            // send them to the Formbar login page
+            res.redirect(`${AUTH_URL}?redirectURL=${THIS_URL}`);
+        } else {
+            //redner local login page
+            res.render('login', { this_url: THIS_URL });
+        }
     };
 });
 
 // Define a route handler for logging out
-app.get('/logout', (req, res) => {
+app.get('/logout', isAuthenticated, (req, res) => {
     // Destroy the session
     req.session.destroy((err) => {
         if (err) {
@@ -141,6 +167,100 @@ app.get('/logout', (req, res) => {
         // Redirect the user to the home page or login page
         res.redirect('/');
     });
+});
+
+app.post("/login", (req, res) => {
+    if (req.body.username && req.body.password) {
+        db.get("SELECT * FROM users WHERE username=?;", req.body.username, (err, row) => {
+            if (err) {
+                console.error(err);
+                res.render('error', { error: `Database error: ${err}` });
+            } else if (!row) {
+                console.error("User not found");
+                res.render('error', { error: "User not found. You must <a href='/signup'>make an account</a> first." });
+            } else {
+                if (!row.hash) {
+                    console.error("User is a Formbar user. Log in with Formbar.");
+                    res.render('error', { error: `User is a Formbar user. <a href='${AUTH_URL}?redirectURL=${THIS_URL}'>Log in with Formbar</a>` });
+                } else {                // if there is no hash and salt in the database
+                    if (!row.hash) {
+                        // that means the user is authenticated with Formbar and not locally
+                        // send them to the Formbar login page
+                        res.redirect(`${AUTH_URL}?redirectURL=${THIS_URL}`);
+                    } else {
+                        // Compare stored password with provided password
+                        crypto.pbkdf2(req.body.password, row.salt, 1000, 64, "sha512", (err, derivedKey) => {
+                            if (err) {
+                                console.error(err);
+                                res.render('error', { error: `Error hashing password: ${err}` });
+                            } else {
+                                const hashedPassword = derivedKey.toString("hex");
+                                if (row.password === hashedPassword) {
+                                    req.session.token = jwt.sign({
+                                        username: row.username
+                                    }, SS_SECRET, { expiresIn: '1d' })
+                                    res.redirect("/");
+                                } else {
+                                    console.log("Incorrect password");
+                                    res.render('error', { error: "Incorrect password" });
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+        });
+    } else {
+        console.log("No username and password provided");
+        res.render('error', { error: "No username and password provided" });
+    }
+});
+
+app.get('/signup', (req, res) => {
+    res.render('signup', { this_url: THIS_URL });
+});
+
+app.post('/signup', (req, res) => {
+    if (!req.body.username || !req.body.password || !req.body.email) {
+        console.error("The username, password, or email is missing");
+        res.render('error', { error: "The username, password, or email is missing" });
+    } else {
+        // Check to see if a user with that username already exists
+        db.get("SELECT * FROM users WHERE username=? OR email=?;", req.body.username, req.body.email, (err, row) => {
+            if (err) {
+                console.error(err);
+                res.render('error', { error: `Database error: ${err}` });
+            } else if (row) {
+                console.error("A user with that username or email already exists");
+                res.render('error', { error: "A user with that username or email already exists" });
+            } else {
+                // Create a new salt for this user
+                const salt = crypto.randomBytes(16).toString("hex");
+
+                // Use this salt to "hash" the password
+                crypto.pbkdf2(req.body.password, salt, 1000, 64, "sha512", (err, derivedKey) => {
+                    if (err) {
+                        console.error(err);
+                        res.render('error', { error: `Error hashing password: ${err}` });
+                    } else {
+                        const hashedPassword = derivedKey.toString("hex");
+                        db.run("INSERT INTO users (username, email, hash, salt) VALUES (?, ?, ?, ?);", [req.body.username, req.body.email, hashedPassword, salt], (err) => {
+                            if (err) {
+                                console.error(err);
+                                res.render('error', { error: `Database error: ${err}` });
+                            } else {
+                                req.session.token = jwt.sign({
+                                    username: req.body.username
+                                }, SS_SECRET, { expiresIn: '1d' })
+                                console.log(`New user ${req.body.username} created`);
+                                res.redirect('/');
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    }
 });
 
 app.ws('/chat', (ws, req) => {
@@ -175,13 +295,13 @@ app.listen(PORT, () => {
 });
 
 // open the database file
-// let db = new sqlite3.Database('data/database.db', (err) => {
-//     if (err) {
-//         console.error(err.message);
-//     } else {
-//         console.log('Connected to the database.');
-//     }
-// });
+let db = new sqlite3.Database('data/database.db', (err) => {
+    if (err) {
+        console.error(err.message);
+    } else {
+        console.log('Connected to user database.');
+    }
+});
 
 var gameServerCount = 11100;
 var gameServers = [];

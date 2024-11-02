@@ -1,8 +1,8 @@
 <%- include('partials/header') %>
+<%- include('partials/user', { token: token, this_url: this_url }) %>
 <% if (token) { %>
-<%- include('partials/user', { token: token }) %>
 <%- include('partials/gameslist', { gamesList: gamesList }) %>
 <% } else { %>
-<a href="<%- this_url %>"><h2>Log In With Formbar</h2></a>
+<p>Space Elves roam the universe, fighthing the nihilistic Dark Elves. Only those who validate their identity are authorized to know of their whereabouts. Please log in.</p>
 <% } %>
 <%- include('partials/footer') %>

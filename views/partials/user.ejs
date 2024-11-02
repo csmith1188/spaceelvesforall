@@ -1,2 +1,12 @@
+<% if (token) { %>
 <p><%- token.username %></p>
 <p><a href="/logout">Log Out</a></p>
+<% } else { %>
+    <p>
+        <a href="<%- this_url %>">Log In </a>
+        or
+        <a href="/signup">Sign Up</a>
+        or
+        <a href="<%- this_url %>?formbar=true">Log In With Formbar</a>
+    </p>
+<% } %>
