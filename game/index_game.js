@@ -10,7 +10,8 @@ const expressWs = require('express-ws')
 require('dotenv').config();
 // import webtoken module
 const jwt = require('jsonwebtoken');
-
+// sqlite3 session store
+const SQLiteStore = require('connect-sqlite3')(session);
 // Retrieve all command-line arguments starting from the third element
 const args = process.argv.slice(2);
 
@@ -36,12 +37,18 @@ app.set('view engine', 'ejs');
 // set express to use public for static files
 app.use(express.static(__dirname + '/public'));
 
-// create a session middleware with a secret key
+// create a session middleware with a secret key using in memory store
 const sessionMiddleware = session({
+    store: new SQLiteStore(),
     secret: FB_SECRET,
     resave: false,
     saveUninitialized: true,
-    // Add a store if needed, like Redis for scalability
+    cookie: {
+        secure: false,
+        httpOnly: true,
+        sameSite: 'Lax',
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
 });
 // use the session middleware in express
 app.use(sessionMiddleware);
@@ -57,7 +64,11 @@ function isAuthenticated(req, res, next) {
 
 // Define a route handler for the default home page
 app.get('/', (req, res) => {
-    res.send('Hello World!');
+    if (req.session.token) {
+        res.send('You are logged in' + req.session.token.username);
+    } else {
+    res.redirect('http://localhost:3000');
+    }
 });
 
 app.ws('/game', (ws, req) => {

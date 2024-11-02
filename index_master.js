@@ -1,3 +1,4 @@
+const path = require('path');
 // Start an express server with websockets without socket.io
 const express = require('express');
 // import express session module
@@ -14,6 +15,8 @@ require('dotenv').config();
 const jwt = require('jsonwebtoken');
 // import child process handler
 const { spawn } = require('child_process');
+// sqlite3 session store
+const SQLiteStore = require('connect-sqlite3')(session);
 
 // Load the settings from the environment variables
 // To set your own, make a file called ".env",
@@ -35,13 +38,20 @@ app.set('view engine', 'ejs');
 // set express to use public for static files
 app.use(express.static(__dirname + '/public'));
 
-// create a session middleware with a secret key
+// create a session middleware with a secret key using in memory store
 const sessionMiddleware = session({
+    store: new SQLiteStore(),
     secret: FB_SECRET,
     resave: false,
     saveUninitialized: true,
-    // Add a store if needed, like Redis for scalability
+    cookie: {
+        secure: false,
+        httpOnly: true,
+        sameSite: 'Lax',
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
 });
+
 // use the session middleware in express
 app.use(sessionMiddleware);
 
@@ -50,25 +60,25 @@ expressWs(app);
 
 // This function is used to intercept page loads to check if the user is authenticated
 function isAuthenticated(req, res, next) {
-    if (req.session.user) next()
+    if (req.session.token) next()
     else res.redirect('/login')
 };
 
 // Define a route handler for the default home page
 app.get('/', (req, res) => {
     // make a list of game server ports
-    let gameList = [];
-    gameServers.forEach((server) => {
-        gameList.push(server.PORT);
-    });
-    console.log(gameList);
-    
-    res.render('index', { gameList: gameList });
+    let gamesList = [];
+    if (req.session.token) {
+        gameServers.forEach((server) => {
+            gamesList.push(server.PORT);
+        });
+    }
+    res.render('index', { this_url: THIS_URL, gamesList: gamesList, token: req.session.token });
 });
 
 // game page
 app.get('/newgame', (req, res) => {
-    
+
     // Start another Node.js script with the port argument
     const child = spawn('node', [__dirname + '/game/index_game.js', '-p ' + gameServerCount]); // add { detached: true } to run in the background
     child.PORT = gameServerCount;
@@ -110,13 +120,27 @@ app.get('/login', (req, res) => {
         // decode the token and set the session token and user
         let tokenData = jwt.decode(req.query.token);
         req.session.token = tokenData;
-        req.session.user = { name: tokenData.username, fbid: tokenData.id };
         // redirect to the home page
         res.redirect('/');
     } else {
         // send them to the Formbar login page
         res.redirect(`${AUTH_URL}?redirectURL=${THIS_URL}`);
     };
+});
+
+// Define a route handler for logging out
+app.get('/logout', (req, res) => {
+    // Destroy the session
+    req.session.destroy((err) => {
+        if (err) {
+            console.error('Session destruction error:', err);
+            return res.status(500).send('Could not log out.');
+        }
+        // Optionally, clear the session cookie
+        res.clearCookie('connect.sid'); // Adjust the cookie name if different
+        // Redirect the user to the home page or login page
+        res.redirect('/');
+    });
 });
 
 app.ws('/chat', (ws, req) => {
@@ -130,7 +154,6 @@ app.ws('/chat', (ws, req) => {
 
         }
 
-
         if (message.release) {
 
         }
@@ -138,7 +161,6 @@ app.ws('/chat', (ws, req) => {
         if (message.resize) {
 
         }
-
     });
 
     // listen for disconnects
@@ -153,13 +175,13 @@ app.listen(PORT, () => {
 });
 
 // open the database file
-let db = new sqlite3.Database('data/database.db', (err) => {
-    if (err) {
-        console.error(err.message);
-    } else {
-        console.log('Connected to the database.');
-    }
-});
+// let db = new sqlite3.Database('data/database.db', (err) => {
+//     if (err) {
+//         console.error(err.message);
+//     } else {
+//         console.log('Connected to the database.');
+//     }
+// });
 
 var gameServerCount = 11100;
 var gameServers = [];

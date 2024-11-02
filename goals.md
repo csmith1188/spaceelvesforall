@@ -1,13 +1,14 @@
 Master Server
 - ~~Spawn a game server~~
 - ~~redirect user to game server~~
-- Login
-- redirect user with credentials
+- ~~Login~~
+- ~~redirect user with credentials~~
+- Local Login
 
 Game Server
 - Create and run a game
-- Report stats back to Master
 - Basic WS
+- Report stats back to Master
 - Game State
 - Physics
 - Fast test

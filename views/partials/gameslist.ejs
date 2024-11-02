@@ -1,0 +1,10 @@
+<a href="/newgame">Start a new Game</a><br>
+<% if (gamesList.length > 0) { %>
+    <% console.log(gamesList); %>
+    <h2>Games</h2>
+    <ul>
+        <% gamesList.forEach(game => { %>
+            <li><a href="http://localhost:<%- game %>/">Game <%- game %></a></li>
+        <% }); %>
+    </ul>
+<% } %>

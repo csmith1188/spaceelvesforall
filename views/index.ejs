@@ -1,20 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    <a href="/newgame">Start a new Game</a><br>
-    <% if (gameList.length > 0) { %>
-        <% console.log(gameList); %>
-        <h2>Games</h2>
-        <ul>
-            <% gameList.forEach(game => { %>
-                <li><a href="http://localhost:<%- game %>/">Game <%- game %></a></li>
-            <% }); %>
-        </ul>
-    <% } %>
-</body>
-</html>
+<%- include('partials/header') %>
+<% if (token) { %>
+<%- include('partials/user', { token: token }) %>
+<%- include('partials/gameslist', { gamesList: gamesList }) %>
+<% } else { %>
+<a href="<%- this_url %>"><h2>Log In With Formbar</h2></a>
+<% } %>
+<%- include('partials/footer') %>
