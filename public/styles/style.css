@@ -93,3 +93,32 @@ h1 {
     color: white;
     cursor: pointer;
 }
+
+/* game list */
+
+#gameList {
+    background-color: #aaa;
+    border: 1px solid #000;
+    border-radius: 5px;
+}
+
+.headerRow {
+    padding: 5px;
+    background-color: #000;
+    border-bottom: 1px solid #000;
+}
+
+.listRow {
+    padding: 5px;
+}
+
+.colCell {
+    background-color: #FFF;
+    padding: 5px;
+    border-radius: 5px;
+    margin: 5px;
+}
+
+.colCellDouble {
+
+}
