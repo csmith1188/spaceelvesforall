@@ -8,6 +8,7 @@ Master Server
 - ~~Chat WS~~
 - ~~Chat rooms~~
 - ~~Route Handling~~
+- WS Broken
 - local and formbar username overlap
 
 Game Server
