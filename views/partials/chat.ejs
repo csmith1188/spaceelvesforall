@@ -30,7 +30,6 @@
 
     ws.onmessage = (message) => {
         const data = JSON.parse(message.data);
-        console.log(data);
         if (data.message) {
                 chatMessagesContent.innerHTML += `<p><b>[${data.room}] ${data.sender}: </b>${data.message}</p>`;
                 //scroll to bottom of chat
@@ -50,8 +49,6 @@
             userList.appendChild(users);
         }
         if (data.rooms) {
-            console.log(data.rooms);
-            
             roomList.innerHTML = '';
             let rooms = document.createElement('ul');
             data.rooms.forEach(room => {
