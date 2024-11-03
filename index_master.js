@@ -33,6 +33,12 @@ function isAuthenticated(req, res, next) {
     else res.redirect('/login')
 };
 
+// This function is used to intercept page loads to check if the user is authenticated
+function isVerified(req, res, next) {
+    if (req.session.token.verified) next();
+    else res.render('error', { error: "You must verify your email first." });
+};
+
 // Define a route handler for the default home page
 app.get('/', (req, res) => {
     // make a list of game server ports
@@ -54,7 +60,7 @@ app.get('/logout', auth.logoutGET);
 app.get('/verify', auth.verifyGET);
 
 // game page
-app.get('/newgame', isAuthenticated, game.spawnGameServer);
+app.get('/newgame', isAuthenticated, isVerified, game.spawnGameServer);
 
 // Start the server on port 3000
 app.listen(config.PORT, () => {

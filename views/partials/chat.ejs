@@ -1,15 +1,16 @@
 <div id="chatBox">
-    <div id="listBox">
+    <div id="roomList" class="tabs">
+    </div>
+    <div id="chatContainer">
         <div id="userList">
         </div>
-        <div id="roomList">
-        </div>
-    </div>
-    <div id="chatMessages">
-        <div id="chatMessagesContent"></div>
-        <div id="chatInput">
-            <input type="text" id="chatInputField" placeholder="Type your message here..." />
-            <button id="chatSendButton" onclick="sendMessage()">Send</button>
+        <div id="chatMessages">
+            <div id="chatMessagesContent">
+            </div>
+            <div id="chatInput">
+                <input type="text" id="chatInputField" placeholder="Type a message...">
+                <button id="chatSendButton" onclick="sendMessage()">Send</button>
+            </div>
         </div>
     </div>
 </div>
@@ -31,35 +32,42 @@
     ws.onmessage = (message) => {
         const data = JSON.parse(message.data);
         if (data.message) {
-                chatMessagesContent.innerHTML += `<p><b>[${data.room}] ${data.sender}: </b>${data.message}</p>`;
+                let message = document.createElement('div');
+                message.classList.add('message');
+                message.innerHTML = `<b>[${data.room}] ${data.sender}: </b>${data.message}`;
+                chatMessagesContent.appendChild(message);
                 //scroll to bottom of chat
                 chatMessagesContent.scrollTop = chatMessagesContent.scrollHeight;
         }
         if (data.userList) {
             userList.innerHTML = '';
-            let users = document.createElement('ul');
             data.userList.forEach(user => {
-                let userItem = document.createElement('li');
+                let userItem = document.createElement('div');
                 let userLink = document.createElement('a');
                 userLink.href = '#';
                 userLink.innerText = user;
                 userItem.appendChild(userLink);
-                users.appendChild(userItem);
+                userList.appendChild(userItem);
             });
-            userList.appendChild(users);
         }
         if (data.rooms) {
             roomList.innerHTML = '';
-            let rooms = document.createElement('ul');
             data.rooms.forEach(room => {
-                let roomItem = document.createElement('li');
+                let roomItem = document.createElement('div');
+                roomItem.classList.add('tab');
                 let roomLink = document.createElement('a');
                 roomLink.href = '#';
                 roomLink.innerText = room;
                 roomItem.appendChild(roomLink);
-                rooms.appendChild(roomItem);
+                roomItem.addEventListener('click', () => {
+                    ws.send(JSON.stringify({ message: "/" + room }));
+                });
+                roomList.appendChild(roomItem);
             });
-            roomList.appendChild(rooms);
+        }
+        if (data.currentRoom) {
+            // Change the placeholder text of the chat input field to the current room
+            chatInputField.placeholder = `Message #${data.currentRoom}...`;
         }
     };
 

@@ -24,7 +24,7 @@ module.exports = (app, wss) => {
         ws.rooms = ['lfg'];
         ws.currentRoom = 'lfg';
 
-        ws.send(JSON.stringify({ userList: userList(wss.getWss().clients, ws.currentRoom), rooms: ws.rooms }));
+        ws.send(JSON.stringify({ sender: 'Server', room: 'All', message: 'You have joined the chat', userList: userList(wss.getWss().clients, ws.currentRoom), rooms: ws.rooms, currentRoom: ws.currentRoom }));
 
         ws.on('message', (data) => {
             try {
@@ -42,15 +42,15 @@ module.exports = (app, wss) => {
                                 if (args[0]) {
                                     ws.currentRoom = args[0];
                                     ws.rooms.push(args[0]);
-                                    ws.send(JSON.stringify({ sender: 'Server', room: args[0], message: 'You have joined the room', rooms: ws.rooms }));
+                                    ws.send(JSON.stringify({ sender: 'Server', room: args[0], message: 'You have joined the room', rooms: ws.rooms, currentRoom: ws.currentRoom }));
                                 }
                                 break;
                             case 'leave':
                                 if (args[0]) {
                                     ws.rooms = ws.rooms.filter(room => room !== args[0]);
-                                    ws.send(JSON.stringify({ sender: 'Server', room: args[0], message: 'You have left the room', rooms: ws.rooms }));
+                                    ws.currentRoom = ws.rooms[0];
+                                    ws.send(JSON.stringify({ sender: 'Server', room: args[0], message: 'You have left the room', rooms: ws.rooms, currentRoom: ws.currentRoom }));
                                 }
-
                                 break;
                             case 'list':
                                 ws.send(JSON.stringify({ rooms: ws.rooms }));
@@ -62,7 +62,10 @@ module.exports = (app, wss) => {
                                 ws.currentRoom = command;
                                 if (!ws.rooms.includes(command)) {
                                     ws.rooms.push(command);
-                                    ws.send(JSON.stringify({ userList: userList(wss.getWss().clients, ws.currentRoom), rooms: ws.rooms, sender: 'Server', room: command, message: `You have joined room ${command}` }));
+                                    ws.send(JSON.stringify({ userList: userList(wss.getWss().clients, ws.currentRoom), rooms: ws.rooms, sender: 'Server', room: command, message: `You have joined room ${command}`, currentRoom: ws.currentRoom }));
+                                } else {
+                                    ws.send(JSON.stringify({ currentRoom: ws.currentRoom }));
+
                                 }
                                 //remove command from message
                                 data.message = data.message.substring(command.length + 1);
@@ -75,14 +78,6 @@ module.exports = (app, wss) => {
                     } else {
                         broadcast(wss.getWss().clients, ws.token.username, ws.currentRoom, data.message);
                     }
-                }
-
-                if (data.release) {
-
-                }
-
-                if (data.resize) {
-
                 }
             } catch (err) {
                 console.error(err);

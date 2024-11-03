@@ -9,6 +9,7 @@ Master Server
 - ~~Chat rooms~~
 - ~~Route Handling~~
 - ~~WS Broken~~
+- Profiles with links
 - local and formbar username overlap
 
 Game Server

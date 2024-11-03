@@ -32,35 +32,64 @@ h1 {
     text-align: center;
 }
 
-
 /* chat */
 #chatBox {
     border: 1px solid #000;
     border-radius: 5px;
+    margin: 5px;
+    background-color: #ccc;
 }
 
-#listBox {
+#chatContainer {
+}
+
+.tabs {
+}
+
+.tab {
+    cursor: pointer;
+    background-color: #FFF;
+    border: 1px solid #000;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 5px;
 }
 
 #userList {
-    list-style-type: none;
+    padding: 10px;
     background-color: #FFF;
     border: 1px solid #000;
     border-radius: 5px;
-}
-
-#roomList {
-    list-style-type: none;
-    background-color: #FFF;
-    border: 1px solid #000;
-    border-radius: 5px;
+    white-space: nowrap;
+    margin: 5px;
 }
 
 #chatMessages {
+    margin: 5px;
 }
 
 #chatMessagesContent {
     background-color: #FFF;
     border: 1px solid #000;
     border-radius: 5px;
+    padding: 10px;
+}
+
+#chatInput {
+    margin-top: 5px;
+}
+
+#chatInput input {
+    padding: 10px;
+    border: 1px solid #000;
+    border-radius: 5px 0 0 5px;
+}
+
+#chatInput button {
+    padding: 10px;
+    border: 1px solid #000;
+    border-radius: 0 5px 5px 0;
+    background-color: #333;
+    color: white;
+    cursor: pointer;
 }
