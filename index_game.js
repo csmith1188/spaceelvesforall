@@ -54,13 +54,7 @@ const sessionMiddleware = session({
 app.use(sessionMiddleware);
 
 // use the express-ws module to add websockets to express
-expressWs(app);
-
-// This function is used to intercept page loads to check if the user is authenticated
-function isAuthenticated(req, res, next) {
-    if (req.session.user) next()
-    else res.redirect('/login')
-};
+const wss = expressWs(app);
 
 // Define a route handler for the default home page
 app.get('/', (req, res) => {
@@ -73,8 +67,8 @@ app.get('/', (req, res) => {
 
 app.ws('/game', (ws, req) => {
     // send the client their id when they connect
-    // ws.send(JSON.stringify({ id: ws.id }));
-    console.info(`Client connected, ${new Date()}`);
+    ws.send(JSON.stringify({ message: 'You are connected to the game server' }));
+    console.info(`Game Client connected, ${new Date()}`);
 
     ws.on('message', (message) => {
         message = JSON.parse(message);
@@ -103,3 +97,6 @@ app.ws('/game', (ws, req) => {
 app.listen(PORT, () => {
     console.info(`Server started on http://localhost:${PORT}`);
 });
+
+const { greet } = require('./public/engine/shared.js');
+console.log(greet("Node.js"));

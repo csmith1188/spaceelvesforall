@@ -6,7 +6,7 @@ exports.gameServers = [];
 
 exports.spawnGameServer = (req, res) => {
     // Start another Node.js script with the port argument
-    const child = spawn('node', ['game/index_game.js', '-p ' + exports.gameServerCount]); // add { detached: true } to run in the background
+    const child = spawn('node', ['index_game.js', '-p ' + exports.gameServerCount]); // add { detached: true } to run in the background
     child.PORT = exports.gameServerCount;
 
     // Listen for standard output (stdout) data from the child process
