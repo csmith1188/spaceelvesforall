@@ -16,9 +16,7 @@ function userList(clients, room) {
     return users;
 }
 
-module.exports = (app) => {
-    const wss = require('express-ws')(app).getWss();
-
+module.exports = (app, wss) => {
     app.ws('/chat', (ws, req) => {
         console.info(`Client connected, ${new Date()}`);
 

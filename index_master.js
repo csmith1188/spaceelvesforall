@@ -1,5 +1,6 @@
 // Start an express server with websockets without socket.io
 const express = require('express');
+const expressWs = require('express-ws');
 // load the configuration file
 const config = require('./modules/config.js');
 // load modules/authoriation.js
@@ -9,9 +10,13 @@ const game = require('./modules/gameServer.js');
 
 // Create a new express application
 const app = express();
+const wss = expressWs(app);
+
+// use the session middleware in express
+app.use(config.sessionMiddleware);
 
 // WebSocket
-require('./modules/chat.js')(app);
+require('./modules/chat.js')(app, wss);
 
 // set the express view engine to ejs
 app.set('view engine', 'ejs');
@@ -21,12 +26,6 @@ app.use(express.static(__dirname + '/public'));
 
 // read the body of the request
 app.use(express.urlencoded({ extended: true }));
-
-// make 'public' the static folder
-app.use(express.static(__dirname + '/public'));
-
-// use the session middleware in express
-app.use(config.sessionMiddleware);
 
 // This function is used to intercept page loads to check if the user is authenticated
 function isAuthenticated(req, res, next) {
