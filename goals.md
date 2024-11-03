@@ -5,10 +5,10 @@ Master Server
 - ~~redirect user with credentials~~
 - ~~Local Login~~
 - ~~Email Validation~~
-- Discriminators
-- Chat WS
-- Chat rooms
-- Route Handling
+- ~~Chat WS~~
+- ~~Chat rooms~~
+- ~~Route Handling~~
+- local and formbar username overlap
 
 Game Server
 - Create and run a game
