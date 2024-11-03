@@ -56,6 +56,12 @@ app.use(sessionMiddleware);
 // use the express-ws module to add websockets to express
 const wss = expressWs(app);
 
+const engine = require('./public/engine/shared.js');
+
+var player = new engine.Thing();
+console.log(player.name);
+
+
 // Define a route handler for the default home page
 app.get('/', (req, res) => {
     if (req.session.token) {
@@ -71,20 +77,24 @@ app.ws('/game', (ws, req) => {
     console.info(`Game Client connected, ${new Date()}`);
 
     ws.on('message', (message) => {
-        message = JSON.parse(message);
-        if (message.press) {
+        try {
+            message = JSON.parse(message).data;
+            if (message.ctrlChange) {
+                player.buttons = message.ctrlChange;
+
+            }
+
+            if (message.release) {
+
+            }
+
+            if (message.resize) {
+
+            }
+        } catch (error) {
+            console.log(error);
 
         }
-
-
-        if (message.release) {
-
-        }
-
-        if (message.resize) {
-
-        }
-
     });
 
     // listen for disconnects
@@ -97,6 +107,3 @@ app.ws('/game', (ws, req) => {
 app.listen(PORT, () => {
     console.info(`Server started on http://localhost:${PORT}`);
 });
-
-const { greet } = require('./public/engine/shared.js');
-console.log(greet("Node.js"));

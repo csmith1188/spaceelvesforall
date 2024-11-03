@@ -15,6 +15,7 @@ Master Server
 - Newsletter/Updates/Unsubscribe
 - News Blog
 - Forums
+- Two windows one user chat
 
 Game Server
 - Create and run a game

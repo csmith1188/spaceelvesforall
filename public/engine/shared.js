@@ -15,11 +15,38 @@
         }
     }
 }(typeof self !== 'undefined' ? self : this, function () {
-    function greet(name) {
-        return `Hello, ${name}!`;
+
+    class Thing {
+        constructor(pos={x:0, y:0}, name="noname", size = 32, color = 'green') {
+            this.name = name;
+            this.pos = { x: pos.x || 0, y: pos.y || 0 };
+            this.vel = { x: pos.x || 0, y: pos.y || 0 };
+            this.buttons = {
+                up: false,
+                down: false,
+                left: false,
+                right: false
+            };
+            this.ctlrChange = false;
+            this.spd = 2;
+            this.friction = 0.9;
+            this.maxSpd = 5;
+            this.r = size;
+            this.color = 'green';
+        }
+
+        move() {
+            this.pos.x += this.vel.x;
+            this.pos.y += this.vel.y;
+        }
+
+        draw(ctx) {
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.arc(this.pos.x, this.pos.y, this.r, 0, Math.PI * 2);
+            ctx.fill();
+        }
     }
 
-    var testString = "This is a test string";
-
-    return { greet, testString };
+    return { Thing };
 }));
