@@ -1,5 +1,3 @@
-<a href="/newgame">Start a new Game</a><br>
-<% if (gamesList.length > 0) { %>
 <h2>Games</h2>
 <div id="gameList">
   <div class="headerRow">
@@ -7,6 +5,12 @@
     <div class="colCell">Status</div>
     <div class="colCell">Players</div>
   </div>
+  <div class="listRow">
+    <div class="colCell colCellDouble"><a href="/newgame">Start a new Game</a></div>
+    <div class="colCell">---</div>
+    <div class="colCell">---</div>
+  </div>
+  <% if (gamesList.length > 0) { %>
   <% gamesList.forEach(game => { %>
   <div class="listRow">
     <%# <div style="flex: 1;">game.serverName</div> #%>

@@ -1,3 +1,6 @@
+// load the database module
+const { db } = require('./database.js');
+
 function broadcast(clients, sender, room, message) {
     for (const client of clients) {
         if (client.rooms.includes(room)) {
@@ -23,65 +26,74 @@ module.exports = (app, wss) => {
         ws.token = req.session.token;
         ws.rooms = ['lfg'];
         ws.currentRoom = 'lfg';
+        ws.lastMessage = new Date();
 
         ws.send(JSON.stringify({ sender: 'Server', room: 'All', message: 'You have joined the chat', userList: userList(wss.getWss().clients, ws.currentRoom), rooms: ws.rooms, currentRoom: ws.currentRoom }));
 
         ws.on('message', (data) => {
-            try {
-                data = JSON.parse(data);
-                if (data.message) {
-                    console.info(`Received data: ${data.message}`);
-                    // the first word is the command if it starts with '/'
-                    if (data.message.trim().startsWith('/')) {
-                        const command = data.message.split(' ')[0].substring(1);
-                        const args = data.message.split(' ').slice(1);
-                        console.log(`Command: ${command}, Args: ${args}`);
+            //if it's been more than 1/2 second since the last message, update the last message time
+            if (new Date() - ws.lastMessage > 500) {
+                ws.lastMessage = new Date();
+                try {
+                    data = JSON.parse(data);
+                    if (data.message) {
+                        console.info(`Received data: ${data.message}`);
+                        // the first word is the command if it starts with '/'
+                        if (data.message.trim().startsWith('/')) {
+                            const command = data.message.split(' ')[0].substring(1);
+                            const args = data.message.split(' ').slice(1);
+                            console.log(`Command: ${command}, Args: ${args}`);
 
-                        switch (command) {
-                            case 'join':
-                                if (args[0]) {
-                                    ws.currentRoom = args[0];
-                                    ws.rooms.push(args[0]);
-                                    ws.send(JSON.stringify({ sender: 'Server', room: args[0], message: 'You have joined the room', rooms: ws.rooms, currentRoom: ws.currentRoom }));
-                                }
-                                break;
-                            case 'leave':
-                                if (args[0]) {
-                                    ws.rooms = ws.rooms.filter(room => room !== args[0]);
-                                    ws.currentRoom = ws.rooms[0];
-                                    ws.send(JSON.stringify({ sender: 'Server', room: args[0], message: 'You have left the room', rooms: ws.rooms, currentRoom: ws.currentRoom }));
-                                }
-                                break;
-                            case 'list':
-                                ws.send(JSON.stringify({ rooms: ws.rooms }));
-                                break;
-                            case 'help':
-                                ws.send(JSON.stringify({ sender: 'Server', room: command, message: 'Available commands: /join xxx, /leave xxx, /list, /help. /xxx to start speaking in room xxx' }));
-                                break;
-                            default:
-                                ws.currentRoom = command;
-                                if (!ws.rooms.includes(command)) {
-                                    ws.rooms.push(command);
-                                    ws.send(JSON.stringify({ userList: userList(wss.getWss().clients, ws.currentRoom), rooms: ws.rooms, sender: 'Server', room: command, message: `You have joined room ${command}`, currentRoom: ws.currentRoom }));
-                                } else {
-                                    ws.send(JSON.stringify({ currentRoom: ws.currentRoom }));
+                            switch (command) {
+                                case 'join':
+                                    if (args[0]) {
+                                        ws.currentRoom = args[0];
+                                        ws.rooms.push(args[0]);
+                                        ws.send(JSON.stringify({ sender: 'Server', room: args[0], message: 'You have joined the room', rooms: ws.rooms, currentRoom: ws.currentRoom }));
+                                    }
+                                    break;
+                                case 'leave':
+                                    if (args[0]) {
+                                        ws.rooms = ws.rooms.filter(room => room !== args[0]);
+                                        ws.currentRoom = ws.rooms[0];
+                                        ws.send(JSON.stringify({ sender: 'Server', room: args[0], message: 'You have left the room', rooms: ws.rooms, currentRoom: ws.currentRoom }));
+                                    }
+                                    break;
+                                case 'list':
+                                    ws.send(JSON.stringify({ rooms: ws.rooms }));
+                                    break;
+                                case 'help':
+                                    ws.send(JSON.stringify({ sender: 'Server', room: command, message: 'Available commands: /join xxx, /leave xxx, /list, /help. /xxx to start speaking in room xxx' }));
+                                    break;
+                                default:
+                                    ws.currentRoom = command;
+                                    if (!ws.rooms.includes(command)) {
+                                        ws.rooms.push(command);
+                                        ws.send(JSON.stringify({ userList: userList(wss.getWss().clients, ws.currentRoom), rooms: ws.rooms, sender: 'Server', room: command, message: `You have joined room ${command}`, currentRoom: ws.currentRoom }));
+                                    } else {
+                                        ws.send(JSON.stringify({ currentRoom: ws.currentRoom }));
 
-                                }
-                                //remove command from message
-                                data.message = data.message.substring(command.length + 1);
-                                if (data.message.trim()) {
-                                    broadcast(wss.getWss().clients, ws.token.username, ws.currentRoom, data.message);
-                                }
-                                // ws.send(JSON.stringify({ error: `Unknown command: ${command}` }));
-                                break;
+                                    }
+                                    //remove command from message
+                                    data.message = data.message.substring(command.length + 1);
+                                    if (data.message.trim()) {
+                                        broadcast(wss.getWss().clients, ws.token.username, ws.currentRoom, data.message);
+                                        db.run('INSERT INTO chat (sender, room, message) VALUES (?, ?, ?)', [ws.token.username, ws.currentRoom, data.message]);
+                                    }
+                                    // ws.send(JSON.stringify({ error: `Unknown command: ${command}` }));
+                                    break;
+                            }
+                        } else {
+                            broadcast(wss.getWss().clients, ws.token.username, ws.currentRoom, data.message);
                         }
-                    } else {
-                        broadcast(wss.getWss().clients, ws.token.username, ws.currentRoom, data.message);
                     }
+                } catch (err) {
+                    console.error(err);
+                    ws.send(JSON.stringify({ sender: 'Server', room: 'All', message: err.message }));
                 }
-            } catch (err) {
-                console.error(err);
-                ws.send(JSON.stringify({ error: `Error parsing message: ${err}` }));
+            } else {
+                ws.send(JSON.stringify({ sender: 'Server', room: 'All', message: 'You need to chill.' }));
+                return;
             }
         });
 

@@ -9,8 +9,12 @@ Master Server
 - ~~Chat rooms~~
 - ~~Route Handling~~
 - ~~WS Broken~~
+- Better chat rate limiting
 - Profiles with links
 - local and formbar username overlap
+- Newsletter/Updates/Unsubscribe
+- News Blog
+- Forums
 
 Game Server
 - Create and run a game
