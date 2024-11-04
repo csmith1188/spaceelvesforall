@@ -50,6 +50,7 @@ const sessionMiddleware = session({
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
 });
+
 // use the session middleware in express
 app.use(sessionMiddleware);
 
@@ -60,7 +61,6 @@ const engine = require('./public/engine/shared.js');
 
 var player = new engine.Thing();
 console.log(player.name);
-
 
 // Define a route handler for the default home page
 app.get('/', (req, res) => {
@@ -78,22 +78,18 @@ app.ws('/game', (ws, req) => {
 
     ws.on('message', (message) => {
         try {
-            message = JSON.parse(message).data;
-            if (message.ctrlChange) {
-                player.buttons = message.ctrlChange;
-
+            message = JSON.parse(message);
+            
+            if (message.press) {
+                player.buttons[message.press] = true;
             }
 
             if (message.release) {
-
+                player.buttons[message.release] = false;
             }
 
-            if (message.resize) {
-
-            }
         } catch (error) {
             console.log(error);
-
         }
     });
 
@@ -107,3 +103,10 @@ app.ws('/game', (ws, req) => {
 app.listen(PORT, () => {
     console.info(`Server started on http://localhost:${PORT}`);
 });
+
+// setInterval(() => {
+//     player.move();
+//     wss.getWss().clients.forEach((client) => {
+//         client.send(JSON.stringify(player.buttons));
+//     });
+// }, 1000 / 60);

@@ -18,14 +18,15 @@ Master Server
 - Two windows one user chat
 
 Game Server
-- Create and run a game
-- Basic WS
+- ~~Basic WS~~
+- Load a single player space elves
+- Fix controller / player / character relationship
+- multiplayer space elves
 - Report stats back to Master
-- Game State
-- Physics
-- Fast test
+- Database performance stats
+- Master profile stats from DB
 
 Client
-- Basic WS
+- ~~Basic WS~~
 - SP shared Physics engine
 - Drawing

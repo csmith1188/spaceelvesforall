@@ -1,45 +1,49 @@
-document.addEventListener('keydown', function(event) {
-    switch(event.key) {
+document.addEventListener('keydown', function (event) {
+    switch (event.key) {
         case 'ArrowUp':
         case 'w':
         case 'W':
-            console.log('Up key pressed');
+            gameWSS.send(JSON.stringify({ press: 'up' }));
             break;
         case 'ArrowDown':
         case 's':
         case 'S':
-            console.log('Down key pressed');
+            gameWSS.send(JSON.stringify({ press: 'down' }));
             break;
         case 'ArrowLeft':
         case 'a':
         case 'A':
-            console.log('Left key pressed');
+            gameWSS.send(JSON.stringify({ press: 'left' }));
             break;
         case 'ArrowRight':
         case 'd':
         case 'D':
-            console.log('Right key pressed');
+            gameWSS.send(JSON.stringify({ press: 'right' }));
             break;
     }
 });
 
-document.addEventListener('keyup', function(event) {
-    switch(event.key) {
+document.addEventListener('keyup', function (event) {
+    switch (event.key) {
         case 'ArrowUp':
         case 'w':
-            console.log('Up key released');
+        case 'W':
+            gameWSS.send(JSON.stringify({ release: 'up' }));
             break;
         case 'ArrowDown':
         case 's':
-            console.log('Down key released');
+        case 'S':
+            gameWSS.send(JSON.stringify({ release: 'down' }));
             break;
         case 'ArrowLeft':
         case 'a':
-            console.log('Left key released');
+        case 'A':
+            gameWSS.send(JSON.stringify({ release: 'left' }));
             break;
         case 'ArrowRight':
         case 'd':
-            console.log('Right key released');
+        case 'D':
+            gameWSS.send(JSON.stringify({ release: 'right' }));
             break;
     }
 });

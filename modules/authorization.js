@@ -56,6 +56,7 @@ exports.loginGET = (req, res) => {
         // decode the token and set the session token and user
         let tokenData = jwt.decode(req.query.token);
         req.session.token = tokenData;
+        req.session.token.verified = true;
         db.get("SELECT * FROM users WHERE fb_username=?;", req.session.token.username, (err, row) => {
             if (err) {
                 console.error(err);
