@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://csmith1188.github.io/">
+    <meta property="og:title" content="Space Elves on Jetbikes">
+    <meta property="og:description" content="For Speed. For Honor. Forever.">
+    <meta property="og:image" content="img/sprites/jetbike.png">
+    <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
+    <title>Space Elves on Jetbikes</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="img/icons//apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="img/icons//favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/icons/favicon-32x32.png">
+    <link rel="stylesheet" href="styles/game.css">
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="js/online_mp.js"></script>
+    <script src="js/index.js"></script>
+    <script src="js/sound.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/game/game.js"></script>
+    <script src="js/game/items.js"></script>
+    <script src="js/game/menus.js"></script>
+    <script src="js/game/match/match.js"></script>
+    <script src="js/game/match/start_screen.js"></script>
+    <script src="js/game/match/for_speed.js"></script>
+    <script src="js/game/match/for_honor.js"></script>
+    <script src="js/game/match/for_ever.js"></script>
+    <script src="js/game/match/online_mp.js"></script>
+    <script src="js/game/match/map/map.js"></script>
+    <script src="js/game/match/map/blocks/block.js"></script>
+    <script src="js/game/match/map/blocks/powerups.js"></script>
+    <script src="js/game/match/map/blocks/projectiles.js"></script>
+    <script src="js/game/match/map/blocks/world.js"></script>
+    <script src="js/game/player/player.js"></script>
+    <script src="js/game/player/camera.js"></script>
+    <script src="js/game/player/character.js"></script>
+    <script src="js/game/player/controller.js"></script>
+    <script src="js/game/player/interface.js"></script>
+</head>
+
+<body>
+    <canvas width=900 height=600 id="game-canvas">Your browser needs to be able to render an HTML5 Canvas</canvas>
+    <div id="debugger">
+        Enable Debug
+        <input type="checkbox" onchange="game.debug = this.checked;">
+        <br>
+        Enable 3D
+        <input type="checkbox" onchange="game.player.camera._3D = this.checked;">
+        <input type="range" value="1" min="0" max="1" step="0.01" oninput="game.player.camera.angle = this.value;">
+    </div>
+</body>
+
+</html>

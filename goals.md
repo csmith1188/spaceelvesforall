@@ -19,7 +19,7 @@ Master Server
 
 Game Server
 - ~~Basic WS~~
-- Load a single player space elves
+- ~~Load a single player space elves~~
 - Fix controller / player / character relationship
 - multiplayer space elves
 - Report stats back to Master
