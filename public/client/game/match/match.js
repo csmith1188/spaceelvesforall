@@ -101,7 +101,7 @@ class DebugMatch extends Match {
             allID++,
             new Vect3((this.map.w / 2), (this.map.h / 2), 0),
             game.player,
-            { name: 'Cpt. Fabius', gfx: 'img/sprites/jetbike' });
+            { name: token.username || 'Cpt. Fabius', gfx: 'img/sprites/jetbike' });
         game.player.camera.target = game.player.character;
         for (let i = 0; i < 5; i++) {
             this.map.blocks.push(new Ammo_Ballistic(

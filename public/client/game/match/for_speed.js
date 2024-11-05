@@ -36,7 +36,7 @@ class Match_ForSpeed extends Match {
             new Vect3((this.map.w / 2) + 4500, (this.map.h / 2)),
             game.player,
             {
-                name: 'Cpt. Fabius', gfx: 'img/sprites/jetbike',
+                name: token.username || 'Cpt. Fabius', gfx: 'img/sprites/jetbike',
                 laps: -1, lapsTimes: [], lapTime: 0, lapBest: null, startTime: null, endTime: null,
                 hp: 250, hp_max: 250
             });

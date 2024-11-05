@@ -16,7 +16,9 @@
     <link rel="icon" type="image/png" sizes="16x16" href="img/icons/favicon-32x32.png">
     <link rel="stylesheet" href="styles/game.css">
 
-    var token = <%= token %>";
+    <script>
+        var token = <%- JSON.stringify(token) %>;
+    </script>
 
     <script src="client/index.js"></script>
     <script src="client/sound.js"></script>

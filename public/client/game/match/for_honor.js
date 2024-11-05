@@ -130,7 +130,7 @@ class Match_ForHonor extends Match {
             allID++,
             new Vect3((this.map.w / 2) - 800, (this.map.h / 2), 0),
             game.player,
-            { name: 'Cpt. Fabius', gfx: 'img/sprites/jetbike', cleanup: false });
+            { name: token.username || 'Cpt. Fabius', gfx: 'img/sprites/jetbike', cleanup: false });
         game.player.interface = new Interface_LocalMP(game.player, 0, 0);
 
         // Add player 2
