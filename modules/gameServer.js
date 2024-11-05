@@ -1,7 +1,7 @@
 // import child process handler
 const { spawn } = require('child_process');
 
-exports.gameServerCount = 11100;
+exports.gameServerCount = 10000;
 exports.gameServers = [];
 
 exports.spawnGameServer = (req, res) => {

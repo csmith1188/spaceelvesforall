@@ -17,7 +17,7 @@ MasterWSS.addEventListener('error', () => {
     console.log('Error connecting to Master WSS');
 });
 
-const gameWSS = new WebSocket('ws://localhost:11100/game');
+const gameWSS = new WebSocket('ws://localhost:10000/game');
 
 gameWSS.addEventListener('open', () => {
     console.log('Connected to Game WSS');

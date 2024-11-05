@@ -15,7 +15,7 @@ const SQLiteStore = require('connect-sqlite3')(session);
 // Retrieve all command-line arguments starting from the third element
 const args = process.argv.slice(2);
 
-var PORT = 11100;
+var PORT = 10000;
 
 // Example: Log each argument
 args.forEach((arg, index) => {
@@ -65,7 +65,7 @@ console.log(player.name);
 // Define a route handler for the default home page
 app.get('/', (req, res) => {
     if (req.session.token) {
-        res.render('game', { token: req.session.token });
+        res.render('game', { token: req.session.token, PORT: PORT });
     } else {
         res.redirect('http://localhost:3000');
     }
