@@ -1,4 +1,4 @@
-// Start an express server with websockets without socket.io
+// Start an express server with websockets
 const express = require('express');
 // import express session module
 const session = require('express-session');

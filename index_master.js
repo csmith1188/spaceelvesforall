@@ -1,4 +1,4 @@
-// Start an express server with websockets without socket.io
+// Start an express server with websockets
 const express = require('express');
 const expressWs = require('express-ws');
 // load the configuration file
