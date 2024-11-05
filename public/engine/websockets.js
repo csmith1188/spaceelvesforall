@@ -27,8 +27,15 @@ gameWSS.addEventListener('message', (event) => {
     try {
         const message = JSON.parse(event.data);
         console.log(message);
-        
+        if (message.players) {
+            game.players = message.players;
+        }
     } catch (error) {
         console.log(error);
     }
+});
+
+gameWSS.addEventListener('close', (event) => {
+    console.log('Disconnected from Game WSS');
+
 });

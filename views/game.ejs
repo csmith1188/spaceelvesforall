@@ -21,27 +21,6 @@
         var PORT = <%- JSON.stringify(PORT) %>;
     </script>
 
-    <script src="client/index.js"></script>
-    <script src="client/sound.js"></script>
-    <script src="client/utils.js"></script>
-    <script src="client/game/game.js"></script>
-    <script src="client/game/items.js"></script>
-    <script src="client/game/menus.js"></script>
-    <script src="client/game/match/match.js"></script>
-    <script src="client/game/match/start_screen.js"></script>
-    <script src="client/game/match/for_speed.js"></script>
-    <script src="client/game/match/for_honor.js"></script>
-    <script src="client/game/match/for_ever.js"></script>
-    <script src="client/game/match/map/map.js"></script>
-    <script src="client/game/match/map/blocks/block.js"></script>
-    <script src="client/game/match/map/blocks/powerups.js"></script>
-    <script src="client/game/match/map/blocks/projectiles.js"></script>
-    <script src="client/game/match/map/blocks/world.js"></script>
-    <script src="client/game/player/player.js"></script>
-    <script src="client/game/player/camera.js"></script>
-    <script src="client/game/player/character.js"></script>
-    <script src="client/game/player/controller.js"></script>
-    <script src="client/game/player/interface.js"></script>
 </head>
 
 <body>
@@ -58,9 +37,8 @@
 
 </html>
 <!-- In your HTML file -->
-<script src="engine/shared.js"></script>
 <script src="engine/websockets.js"></script>
-<script src="client/controller.js"></script>
+<script src="engine/game/game.js"></script>
 <script>
-
+var game = new Game();
 </script>

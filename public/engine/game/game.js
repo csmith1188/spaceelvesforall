@@ -22,6 +22,10 @@
             this.maxPlayers = 2;
             this.match = {};
         }
+
+        step() {
+            
+        }
     }
 
     return { Game };

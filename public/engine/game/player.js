@@ -17,7 +17,7 @@
 }(typeof self !== 'undefined' ? self : this, function () {
 
     class Bot {
-        constructor() {
+        constructor(options) {
             this.id = null;
             this.buttons = {
                 up: {
@@ -37,13 +37,33 @@
                     last: false
                 }
             };
+            // loop through the options and add them to the bot
+            for (let key in options) {
+                if (options.hasOwnProperty(key)) {
+                    this[key] = options[key];
+                }
+            }
+        }
+
+        pack() {
+            return {
+                id: this.id,
+                buttons: this.buttons
+            };
         }
     }
 
-    class Player {
-        constructor() {
-            super();
+    class Player extends Bot {
+        constructor(options) {
+            super(options);
+            this.ws = null;
             this.token = {};
+            // loop through the options and add them to the player
+            for (let key in options) {
+                if (options.hasOwnProperty(key)) {
+                    this[key] = options[key];
+                }
+            }
         }
     }
 

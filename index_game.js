@@ -57,10 +57,10 @@ app.use(sessionMiddleware);
 // use the express-ws module to add websockets to express
 const wss = expressWs(app);
 
-const engine = require('./public/engine/shared.js');
+const { Game } = require('./public/engine/game/game.js');
+const Players = require('./public/engine/game/player.js');
 
-var player = new engine.Thing();
-console.log(player.name);
+global.game = new Game();
 
 // Define a route handler for the default home page
 app.get('/', (req, res) => {
@@ -71,15 +71,55 @@ app.get('/', (req, res) => {
     }
 });
 
+function broadcast(data) {
+    for (const player of game.players) {
+        player.ws.send(JSON.stringify(data));
+    }
+}
+
 app.ws('/game', (ws, req) => {
     // send the client their id when they connect
     ws.send(JSON.stringify({ message: 'You are connected to the game server' }));
     console.info(`Game Client connected, ${new Date()}`);
 
+    // if the client does not have a token, close the connection
+    if (!req.session.token) {
+        console.error('No token found');
+        ws.send(JSON.stringify({ message: 'You are not authorized.' }));
+        ws.close();
+        return;
+    }
+
+    // if the game is full, close the connection
+    if (!(game.maxPlayers > game.players.length)) {
+        console.error('Game server is full');
+        ws.send(JSON.stringify({ message: 'Game server is full' }));
+        ws.close();
+        return;
+    }
+
+    // set the token for the websocket
+    ws.token = req.session.token;
+    
+    // create a new player
+    game.players.push(new Players.Player({ token: ws.token, ws: ws }));
+    
+    // listen for messages
     ws.on('message', (message) => {
+        // If the message is not formatted as JSON, this will fail.
         try {
+            // parse the message
             message = JSON.parse(message);
+            // find the player
             
+            let player = game.players.find(player => player.token === ws.token);
+            // if the player is not found, close the connection
+            if (!player) {
+                ws.send(JSON.stringify({ message: 'Could not find you in this game.' }));
+                ws.close();
+                return;
+            }
+
             if (message.press) {
                 player.buttons[message.press] = true;
             }
@@ -89,14 +129,26 @@ app.ws('/game', (ws, req) => {
             }
 
         } catch (error) {
-            console.log(error);
+            console.error(error);
         }
     });
 
     // listen for disconnects
     ws.on('close', () => {
-
+        // remove the player from the game
+        game.players = game.players.filter(player => player.token !== ws.token);
+        // broadcast the new player list
+        broadcast({ message: 'Players Changed', players: game.players });
     });
+
+    let playersList = [];
+    for (const player of game.players) {
+        playersList.push(player.pack());
+    }
+
+    // broadcast the new player to all players
+    broadcast({ message: 'Players Changed', players: playersList });
+
 });
 
 // Start the server on port 3000
@@ -104,9 +156,6 @@ app.listen(PORT, () => {
     console.info(`Server started on http://localhost:${PORT}`);
 });
 
-// setInterval(() => {
-//     player.move();
-//     wss.getWss().clients.forEach((client) => {
-//         client.send(JSON.stringify(player.buttons));
-//     });
-// }, 1000 / 60);
+setInterval(() => {
+
+}, 1000 / 60);

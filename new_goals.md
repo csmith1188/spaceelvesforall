@@ -1,4 +1,4 @@
-- Players connect, id, add to player list
+- ~~Players connect, id, add to player list~~
 - load a match
 - handle inputs from players
 - handle bots
