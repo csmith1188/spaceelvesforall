@@ -58,7 +58,7 @@ app.use(sessionMiddleware);
 const wss = expressWs(app);
 
 const { Game } = require('./public/engine/game/game.js');
-const Players = require('./public/engine/game/player.js');
+const Players = require('./public/engine/game/player/player.js');
 
 global.game = new Game();
 
@@ -79,13 +79,13 @@ function broadcast(data) {
 
 app.ws('/game', (ws, req) => {
     // send the client their id when they connect
-    ws.send(JSON.stringify({ message: 'You are connected to the game server' }));
+    ws.send(JSON.stringify({ debug: 'You are connected to the game server' }));
     console.info(`Game Client connected, ${new Date()}`);
 
     // if the client does not have a token, close the connection
     if (!req.session.token) {
         console.error('No token found');
-        ws.send(JSON.stringify({ message: 'You are not authorized.' }));
+        ws.send(JSON.stringify({ debug: 'You are not authorized.' }));
         ws.close();
         return;
     }
@@ -93,7 +93,7 @@ app.ws('/game', (ws, req) => {
     // if the game is full, close the connection
     if (!(game.maxPlayers > game.players.length)) {
         console.error('Game server is full');
-        ws.send(JSON.stringify({ message: 'Game server is full' }));
+        ws.send(JSON.stringify({ debug: 'Game server is full' }));
         ws.close();
         return;
     }
@@ -115,7 +115,7 @@ app.ws('/game', (ws, req) => {
             let player = game.players.find(player => player.token === ws.token);
             // if the player is not found, close the connection
             if (!player) {
-                ws.send(JSON.stringify({ message: 'Could not find you in this game.' }));
+                ws.send(JSON.stringify({ debug: 'Could not find you in this game.' }));
                 ws.close();
                 return;
             }
@@ -138,7 +138,7 @@ app.ws('/game', (ws, req) => {
         // remove the player from the game
         game.players = game.players.filter(player => player.token !== ws.token);
         // broadcast the new player list
-        broadcast({ message: 'Players Changed', players: game.players });
+        broadcast({ debug: 'Players Changed', players: game.players });
     });
 
     let playersList = [];
@@ -147,7 +147,7 @@ app.ws('/game', (ws, req) => {
     }
 
     // broadcast the new player to all players
-    broadcast({ message: 'Players Changed', players: playersList });
+    broadcast({ debug: 'Players Changed', players: playersList });
 
 });
 
