@@ -39,6 +39,13 @@
 <!-- In your HTML file -->
 <script src="engine/websockets.js"></script>
 <script src="engine/game/game.js"></script>
+<script src="engine/game/player/controller.js"></script>
+
+
 <script>
-var game = new Game();
+    var game = new Game({client: true});
+
+    setInterval(() => {
+        game.step();
+    }, 1000 / 60);
 </script>

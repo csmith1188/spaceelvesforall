@@ -59,6 +59,7 @@ const wss = expressWs(app);
 
 const { Game } = require('./public/engine/game/game.js');
 const Players = require('./public/engine/game/player/player.js');
+const game = require('./public/engine/game/game.js');
 
 global.game = new Game();
 
@@ -157,5 +158,5 @@ app.listen(PORT, () => {
 });
 
 setInterval(() => {
-
-}, 1000 / 60);
+    global.game.step();
+}, global.game.time.tickRate);

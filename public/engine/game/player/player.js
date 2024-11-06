@@ -19,24 +19,7 @@
     class Bot {
         constructor(options) {
             this.id = null;
-            this.buttons = {
-                up: {
-                    current: false,
-                    last: false
-                },
-                down: {
-                    current: false,
-                    last: false
-                },
-                left: {
-                    current: false,
-                    last: false
-                },
-                right: {
-                    current: false,
-                    last: false
-                }
-            };
+            this.controller = null;
             // loop through the options and add them to the bot
             for (let key in options) {
                 if (options.hasOwnProperty(key)) {
@@ -47,8 +30,7 @@
 
         pack() {
             return {
-                id: this.id,
-                buttons: this.buttons
+                id: this.id
             };
         }
     }
@@ -58,6 +40,8 @@
             super(options);
             this.ws = null;
             this.token = {};
+            this.inMenu = false;
+            this.ready = false;
             // loop through the options and add them to the player
             for (let key in options) {
                 if (options.hasOwnProperty(key)) {
@@ -65,6 +49,7 @@
                 }
             }
         }
+        
     }
 
     return { Bot, Player };
