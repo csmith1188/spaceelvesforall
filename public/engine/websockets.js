@@ -30,6 +30,9 @@ gameWSS.addEventListener('message', (event) => {
         if (message.players) {
             game.players = message.players;
         }
+        if (message.match) {
+            game.loadMatch(message.match);
+        }
     } catch (error) {
         console.log(error);
     }

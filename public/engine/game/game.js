@@ -1,21 +1,22 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(['broadcast'], factory);
+        define(['Sockets', 'Matches'], factory);
     } else if (typeof module === 'object' && module.exports) {
         // Node.js
-        const { broadcast } = require('../../../index_game.js');
-        module.exports = factory(broadcast);
+        const Sockets = require('../socket_server.js');
+        const Matches = require('./match/match.js');
+        module.exports = factory(Sockets, Matches);
     } else {
         // Browser globals: attach each export directly to the global scope
-        const exports = factory(root.broadcast);
+        const exports = factory(root.Sockets, root.Matches);
         for (let key in exports) {
             if (exports.hasOwnProperty(key)) {
                 root[key] = exports[key];
             }
         }
     }
-}(typeof self !== 'undefined' ? self : this, function () {
+}(typeof self !== 'undefined' ? self : this, function (Sockets, Matches) {
 
     class Game {
         constructor(options) {
@@ -50,13 +51,18 @@
             }
 
             if (this.match) this.match.step();
-
         }
 
         loadMatch(match) {
-            console.log(match);
-            this.match = match;
-            if (!this.client) this.client.send(JSON.stringify({ match: this.match }));
+            if (match instanceof Matches.Match) {
+                console.log('Loading match', match);
+                this.match = match;
+            } else {
+                this.match = new Matches.Match(match);
+            }
+            if (!this.client) {
+                Sockets.broadcast({ debug: 'Loaded new match', match: this.match });
+            }
         }
     }
 
