@@ -57,11 +57,12 @@ app.use(sessionMiddleware);
 // use the express-ws module to add websockets to express
 const wss = expressWs(app);
 
-const { Game } = require('./public/engine/game/game.js');
+const Games = require('./public/engine/game/game.js');
 const Players = require('./public/engine/game/player/player.js');
 const game = require('./public/engine/game/game.js');
+const Matches = require('./public/engine/game/match/match.js');
 
-global.game = new Game();
+global.game = new Games.Game();
 
 // Define a route handler for the default home page
 app.get('/', (req, res) => {
@@ -73,7 +74,7 @@ app.get('/', (req, res) => {
 });
 
 function broadcast(data) {
-    for (const player of game.players) {
+    for (const player of global.game.players) {
         player.ws.send(JSON.stringify(data));
     }
 }
@@ -92,7 +93,7 @@ app.ws('/game', (ws, req) => {
     }
 
     // if the game is full, close the connection
-    if (!(game.maxPlayers > game.players.length)) {
+    if (!(global.game.maxPlayers > global.game.players.length)) {
         console.error('Game server is full');
         ws.send(JSON.stringify({ debug: 'Game server is full' }));
         ws.close();
@@ -101,9 +102,12 @@ app.ws('/game', (ws, req) => {
 
     // set the token for the websocket
     ws.token = req.session.token;
-    
+
+    // if there are no players when this user connects, load a new match
+    if (global.game.players.length == 0) global.game.loadMatch(new Matches.Match());
+
     // create a new player
-    game.players.push(new Players.Player({ token: ws.token, ws: ws }));
+    global.game.players.push(new Players.Player({ token: ws.token, ws: ws }));
     
     // listen for messages
     ws.on('message', (message) => {
@@ -113,7 +117,7 @@ app.ws('/game', (ws, req) => {
             message = JSON.parse(message);
             // find the player
             
-            let player = game.players.find(player => player.token === ws.token);
+            let player = global.game.players.find(player => player.token === ws.token);
             // if the player is not found, close the connection
             if (!player) {
                 ws.send(JSON.stringify({ debug: 'Could not find you in this game.' }));
@@ -137,13 +141,13 @@ app.ws('/game', (ws, req) => {
     // listen for disconnects
     ws.on('close', () => {
         // remove the player from the game
-        game.players = game.players.filter(player => player.token !== ws.token);
+        global.game.players = global.game.players.filter(player => player.token !== ws.token);
         // broadcast the new player list
-        broadcast({ debug: 'Players Changed', players: game.players });
+        broadcast({ debug: 'Players Changed', players: global.game.players });
     });
-
+    
     let playersList = [];
-    for (const player of game.players) {
+    for (const player of global.game.players) {
         playersList.push(player.pack());
     }
 
@@ -160,3 +164,5 @@ app.listen(PORT, () => {
 setInterval(() => {
     global.game.step();
 }, global.game.time.tickRate);
+
+module.exports = {broadcast}

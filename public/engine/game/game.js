@@ -1,13 +1,14 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define([], factory);
+        define(['broadcast'], factory);
     } else if (typeof module === 'object' && module.exports) {
         // Node.js
-        module.exports = factory();
+        const { broadcast } = require('../../../index_game.js');
+        module.exports = factory(broadcast);
     } else {
         // Browser globals: attach each export directly to the global scope
-        const exports = factory();
+        const exports = factory(root.broadcast);
         for (let key in exports) {
             if (exports.hasOwnProperty(key)) {
                 root[key] = exports[key];
@@ -21,7 +22,7 @@
             this.players = [];
             this.maxPlayers = 2;
             this.client = false;
-            this.match = {};
+            this.match = null;
             this.time = {
                 tickRate: 1000 / 60,
                 ticks: 0,
@@ -44,12 +45,18 @@
 
             // handle each player's controller
             for (let player of this.players) {
-                player.controller.step();
+                if (player.controller) player.controller.step();
+                else if (this.match) this.match.paused = `Player ${player.id} has no controller`;
             }
+
+            if (this.match) this.match.step();
+
         }
 
         loadMatch(match) {
+            console.log(match);
             this.match = match;
+            if (!this.client) this.client.send(JSON.stringify({ match: this.match }));
         }
     }
 

@@ -14,6 +14,9 @@
     class Match {
         constructor() {
             this.characters = [];
+            this.paused = false;
+            this.runFunc = [];
+            this.ticks = 0;
             this.setup();
         }
 
@@ -32,19 +35,21 @@
                     chara.step();
                 }
 
-                for (const block of this.map.blocks) {
-                    block.step();
-                }
+                if (this.map) {
+                    for (const block of this.map.blocks) {
+                        block.step();
+                    }
 
-                for (const bullet of this.map.bullets) {
-                    bullet.step();
-                }
+                    for (const bullet of this.map.bullets) {
+                        bullet.step();
+                    }
 
-                for (const debris of this.map.debris) {
-                    debris.step();
-                }
+                    for (const debris of this.map.debris) {
+                        debris.step();
+                    }
 
-                game.match.map.step();
+                    this.map.step();
+                }
 
                 // Run all runFunc
                 for (const func of this.runFunc) {
@@ -60,7 +65,6 @@
                 }
 
                 this.ticks++;
-
             }
 
         }

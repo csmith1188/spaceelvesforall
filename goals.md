@@ -9,13 +9,14 @@ Master Server
 - ~~Chat rooms~~
 - ~~Route Handling~~
 - ~~WS Broken~~
+- ~~Two windows one user chat~~
 - Better chat rate limiting
 - Profiles with links
 - local and formbar username overlap
 - Newsletter/Updates/Unsubscribe
 - News Blog
 - Forums
-- Two windows one user chat
+- Forgot Password
 
 Game Server
 - ~~Basic WS~~
