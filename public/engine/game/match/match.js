@@ -7,10 +7,9 @@
         module.exports = factory();
     } else {
         // Browser globals (root is window)
-        root.myModule = factory();
+        root.Matches = factory();
     }
 }(typeof self !== 'undefined' ? self : this, function () {
-
     class Match {
         constructor() {
             this.characters = [];
@@ -20,17 +19,12 @@
             this.setup();
         }
 
-        reset() {
+        reset() { }
 
-        }
-
-        setup() {
-
-        }
+        setup() { }
 
         step() {
             if (!this.paused) {
-
                 for (const chara of this.characters) {
                     chara.step();
                 }
@@ -66,12 +60,9 @@
 
                 this.ticks++;
             }
-
         }
 
-        draw() {
-
-        }
+        draw() { }
     }
 
     return { Match };

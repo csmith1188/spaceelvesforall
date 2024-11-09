@@ -37,8 +37,6 @@
                     this[key] = options[key];
                 }
             }
-            console.log('Game created');
-                        
         }
 
         step() {
@@ -60,7 +58,7 @@
                 this.match = match;
                 Sockets.broadcast(this.wss, { debug: 'Loaded new match', match: this.match });
             } else {
-                this.match = new Match(match);
+                this.match = new Matches.Match(match);
             }
         }
     }
