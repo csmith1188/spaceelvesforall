@@ -60,12 +60,12 @@ const wss = expressWs(app);
 const Games = require('./public/engine/game/game.js');
 const Sockets = require('./public/engine/socket_server.js');
 
-global.game = new Games.Game();
+global.game = new Games.Game({wss: wss});
 
 // Define a route handler for the default home page
 app.get('/', (req, res) => {
     if (req.session.token) {
-        res.render('game', { token: req.session.token, PORT: PORT });
+        res.render('client', { token: req.session.token, PORT: PORT });
     } else {
         res.redirect('http://localhost:3000');
     }

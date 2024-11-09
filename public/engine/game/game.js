@@ -37,6 +37,8 @@
                     this[key] = options[key];
                 }
             }
+            console.log('Game created');
+                        
         }
 
         step() {
@@ -54,14 +56,11 @@
         }
 
         loadMatch(match) {
-            if (match instanceof Matches.Match) {
-                console.log('Loading match', match);
-                this.match = match;
-            } else {
-                this.match = new Matches.Match(match);
-            }
             if (!this.client) {
-                Sockets.broadcast({ debug: 'Loaded new match', match: this.match });
+                this.match = match;
+                Sockets.broadcast(this.wss, { debug: 'Loaded new match', match: this.match });
+            } else {
+                this.match = new Match(match);
             }
         }
     }

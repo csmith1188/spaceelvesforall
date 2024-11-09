@@ -27,11 +27,13 @@ gameWSS.addEventListener('message', (event) => {
     try {
         const message = JSON.parse(event.data);
         console.log(message);
-        if (message.players) {
-            game.players = message.players;
-        }
-        if (message.match) {
-            game.loadMatch(message.match);
+        if (game) {
+            if (message.players) {
+                game.players = message.players;
+            }
+            if (message.match) {
+                game.loadMatch(message.match);
+            }
         }
     } catch (error) {
         console.log(error);

@@ -37,14 +37,10 @@
 
 </html>
 <!-- In your HTML file -->
-<script src="engine/websockets.js"></script>
+<script src="engine/game/match/match.js"></script>
 <script src="engine/game/game.js"></script>
 <!-- <script src="engine/game/player/controller.js"></script> -->
-<script src="engine/game/match/match.js"></script>
-
-
 <script>
-
   var game = new Game({
     client: true
   });
@@ -53,3 +49,4 @@
     game.step();
   }, 1000 / 60);
 </script>
+<script src="engine/socket_client.js"></script>
