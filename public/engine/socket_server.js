@@ -1,6 +1,4 @@
 const Players = require('./game/player/player.js');
-const Matches = require('./game/match/match.js');
-
 
 function broadcast(server, data) {
     if (!server) return;
@@ -12,7 +10,7 @@ function broadcast(server, data) {
 
 function gameHandler(ws, req) {
     // get this ws's server
-    const wss = ws._socket.server
+    const wss = global.game.wss;
 
     // send the client their id when they connect
     ws.send(JSON.stringify({ debug: 'You are connected to the game server' }));
@@ -34,14 +32,11 @@ function gameHandler(ws, req) {
         return;
     }
 
-
     // set the token for the websocket
     ws.token = req.session.token;
 
     // if this is the first player when this user connects, load a new match
-    if (global.game.players.length == 0) {
-        global.game.loadMatch(new Matches.Match());
-    }
+    if (global.game.players.length == 0) global.game.loadMatch('Match');
 
     // create a new player
     global.game.players.push(new Players.Player({ token: ws.token, ws: ws }));
@@ -53,6 +48,9 @@ function gameHandler(ws, req) {
 
     // broadcast the new player to all players
     broadcast(wss, { debug: 'Player connected', players: playersList });
+
+    console.log("Players: ", global.game.players);  
+    
 
     // listen for messages
     ws.on('message', (message) => {

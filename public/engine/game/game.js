@@ -26,10 +26,7 @@
             this.match = null;
             this.time = {
                 tickRate: 1000 / 60,
-                ticks: 0,
-                start: performance.now(),
-                last: performance.now(),
-                delta: 0
+                start: Date.now()
             }
             // loop through the options and add them to the game
             for (let key in options) {
@@ -40,10 +37,6 @@
         }
 
         step() {
-            this.time.ticks++;
-            this.time.delta = (performance.now() - this.time.last) / this.time.tickRate;
-            this.time.last = performance.now();
-
             // handle each player's controller
             for (let player of this.players) {
                 if (player.controller) player.controller.step();
@@ -54,11 +47,16 @@
         }
 
         loadMatch(match) {
+            switch (match) {
+                case 'Match':
+                    this.match = new Matches.Match();
+                    break;
+                default:
+                    this.match = new Matches.Match();
+                    break;
+            }
             if (!this.client) {
-                this.match = match;
-                Sockets.broadcast(this.wss, { debug: 'Loaded new match', match: this.match });
-            } else {
-                this.match = new Matches.Match(match);
+                Sockets.broadcast(this.wss, { debug: 'Loaded new match', newMatch: match });
             }
         }
     }
