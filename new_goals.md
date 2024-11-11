@@ -1,5 +1,5 @@
 - ~~Players connect, id, add to player list~~
-- load a match
+- ~~load a match~~
 - handle inputs from players
 - handle bots
 - client side interfaces

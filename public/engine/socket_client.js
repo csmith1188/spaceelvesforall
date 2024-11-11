@@ -17,6 +17,8 @@
 //     console.log('Error connecting to Master WSS');
 // });
 
+
+
 const gameWSS = new WebSocket('ws://localhost:10000/game');
 
 gameWSS.addEventListener('open', () => {
@@ -24,19 +26,33 @@ gameWSS.addEventListener('open', () => {
 });
 
 gameWSS.addEventListener('message', (event) => {
+    let message;
     try {
-        const message = JSON.parse(event.data);
+        message = JSON.parse(event.data);
         console.log(message);
-        if (game) {
-            if (message.players) {
-                game.players = message.players;
-            }
-            if (message.match) {
-                game.loadMatch(message.match);
-            }
-        }
     } catch (error) {
         console.log(error);
+        return;
+    }
+    if (game) {
+        if (message.players) {
+            for (let player of message.players) {
+                //if a player is in the message but not the game.players array, add a new Player
+                if (!game.players.find(p => p.token.username === player.token.username)) {
+                    // if this player's token's id is the same as the client's token id
+                    if (player.token.username === token.username) {
+                        game.players.push(new Players.Player({ ...player, ...{ camera: new Camera() } }));
+                    }
+                }
+                // if a player is in the game.players array but not in the message, remove the player
+                if (!message.players.find(p => p.token.username === player.token.username)) {
+                    game.players = game.players.filter(p => p.token.username !== player.token.username);
+                }
+            }
+        }
+        if (message.newMatch) {
+            game.loadMatch(message.match);
+        }
     }
 });
 

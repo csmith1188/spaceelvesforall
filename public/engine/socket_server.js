@@ -10,7 +10,7 @@ function broadcast(server, data) {
 
 function gameHandler(ws, req) {
     // get this ws's server
-    const wss = global.game.wss;
+    const wss = game.wss;
 
     // send the client their id when they connect
     ws.send(JSON.stringify({ debug: 'You are connected to the game server' }));
@@ -25,7 +25,7 @@ function gameHandler(ws, req) {
     }
 
     // if the game is full, close the connection
-    if (!(global.game.maxPlayers > global.game.players.length)) {
+    if (!(game.maxPlayers > game.players.length)) {
         console.error('Game server is full');
         ws.send(JSON.stringify({ debug: 'Game server is full' }));
         ws.close();
@@ -36,21 +36,19 @@ function gameHandler(ws, req) {
     ws.token = req.session.token;
 
     // if this is the first player when this user connects, load a new match
-    if (global.game.players.length == 0) global.game.loadMatch('Match');
+    if (game.players.length == 0) game.loadMatch('Match');
+    broadcast(wss, { debug: 'Loaded new match', newMatch: game.match });
 
     // create a new player
-    global.game.players.push(new Players.Player({ token: ws.token, ws: ws }));
+    game.players.push(new Players.Player({ token: ws.token, ws: ws }));
 
     let playersList = [];
-    for (const player of global.game.players) {
+    for (const player of game.players) {
         playersList.push(player.pack());
     }
 
     // broadcast the new player to all players
     broadcast(wss, { debug: 'Player connected', players: playersList });
-
-    console.log("Players: ", global.game.players);  
-    
 
     // listen for messages
     ws.on('message', (message) => {
@@ -59,7 +57,7 @@ function gameHandler(ws, req) {
             // parse the message
             message = JSON.parse(message);
             // find the player
-            let player = global.game.players.find(player => player.token === ws.token);
+            let player = game.players.find(player => player.token === ws.token);
             // if the player is not found, close the connection
             if (!player) {
                 ws.send(JSON.stringify({ debug: 'Could not find you in this game.' }));
@@ -83,9 +81,9 @@ function gameHandler(ws, req) {
     // listen for disconnects
     ws.on('close', () => {
         // remove the player from the game
-        global.game.players = global.game.players.filter(player => player.token !== ws.token);
+        game.players = game.players.filter(player => player.token !== ws.token);
         // broadcast the new player list
-        broadcast(wss, { debug: 'Player disconnected', players: global.game.players });
+        broadcast(wss, { debug: 'Player disconnected', players: game.players });
     });
 
 }

@@ -1,20 +1,16 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define([], factory);
+        define(['Cameras'], factory);
     } else if (typeof module === 'object' && module.exports) {
         // Node.js
+        const Cameras = require('./camera.js');
         module.exports = factory();
     } else {
         // Browser globals: attach each export directly to the global scope
-        const exports = factory();
-        for (let key in exports) {
-            if (exports.hasOwnProperty(key)) {
-                root[key] = exports[key];
-            }
-        }
+        root.Players = factory(root.Cameras);
     }
-}(typeof self !== 'undefined' ? self : this, function () {
+}(typeof self !== 'undefined' ? self : this, function (Cameras) {
 
     class Bot {
         constructor(options) {
@@ -30,7 +26,11 @@
 
         pack() {
             return {
-                id: this.id
+                id: this.id,
+                token: {
+                    username: this.token.username,
+                    id: this.token.id
+                }
             };
         }
     }
@@ -49,7 +49,7 @@
                 }
             }
         }
-        
+
     }
 
     return { Bot, Player };

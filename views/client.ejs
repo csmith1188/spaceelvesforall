@@ -34,10 +34,19 @@
     <input type="range" value="1" min="0" max="1" step="0.01" oninput="game.player.camera.angle = this.value;">
   </div>
 </body>
+<script src="engine/sound.js"></script>
+<script src="engine/utils.js"></script>
+<script src="engine/game/match/character.js"></script>
 <script src="engine/game/match/match.js"></script>
+<script src="engine/game/player/camera.js"></script>
+<script src="engine/game/player/player.js"></script>
 <script src="engine/game/game.js"></script>
 <!-- <script src="engine/game/player/controller.js"></script> -->
 <script>
+  // Get canvas and context
+  var canvas = document.getElementById('game-canvas');
+  var ctx = canvas.getContext('2d');
+  
   var game = new Game({
     client: true
   });

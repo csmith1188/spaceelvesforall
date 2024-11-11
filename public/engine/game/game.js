@@ -24,6 +24,18 @@
             this.maxPlayers = 2;
             this.client = false;
             this.match = null;
+            this.window = {
+                w: 0,
+                h: 0,
+                cx: () => { return this.w / 2 },
+                cy: () => { return this.h / 2 }
+            };
+            this.gameView = {
+                w: 0,
+                h: 0,
+                cx: () => { return this.w / 2 },
+                cy: () => { return this.h / 2 }
+            };
             this.time = {
                 tickRate: 1000 / 60,
                 start: Date.now()
@@ -37,13 +49,27 @@
         }
 
         step() {
-            // handle each player's controller
-            for (let player of this.players) {
-                if (player.controller) player.controller.step();
-                else if (this.match) this.match.paused = `Player ${player.id} has no controller`;
+
+            if (this.client) {
+                this.player = this.players.find(player => player.token.id == token.id);
+                this.window.w = window.innerWidth;
+                this.window.h = window.innerHeight;
+                this.gameView.w = Math.min(window.innerWidth, 1920);
+                this.gameView.h = Math.min(window.innerHeight, 1080);
             }
 
-            if (this.match) this.match.step();
+            // handle each player's controller
+            for (let player of this.players) {
+                // if (player.controller) player.controller.step();
+                // else if (this.match) this.match.paused = `Player ${player.id} has no controller`;
+            }
+
+            if (this.match) {
+                this.match.step();
+                if (this.client) {
+                    this.match.draw();
+                }
+            }
         }
 
         loadMatch(match) {
@@ -54,9 +80,6 @@
                 default:
                     this.match = new Matches.Match();
                     break;
-            }
-            if (!this.client) {
-                Sockets.broadcast(this.wss, { debug: 'Loaded new match', newMatch: match });
             }
         }
     }

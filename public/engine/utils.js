@@ -7,12 +7,8 @@
         module.exports = factory();
     } else {
         // Browser globals: attach each export directly to the global scope
-        const exports = factory();
-        for (let key in exports) {
-            if (exports.hasOwnProperty(key)) {
-                root[key] = exports[key];
-            }
-        }
+        root.Utils = factory();
+
     }
 }(typeof self !== 'undefined' ? self : this, function () {
 
@@ -336,7 +332,7 @@
      */
     function sineAnimate(amp, freq, offset) {
         if (!offset) offset = 0
-        return amp * Math.sin(freq * (game.match.ticks + offset));
+        return amp * Math.sin(freq * (game.match.time.ticks + offset));
     }
 
     /**
