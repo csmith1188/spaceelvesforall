@@ -126,7 +126,8 @@
                 for (var key of Object.keys(options)) {
                     this[key] = options[key];
                 }
-
+                console.log(this.spawnVect);
+                
             // Hitbox must be built after options are applied
             this.HB = new Utils.Cylinder(new Utils.Vect3(this.spawnVect.x, this.spawnVect.y, this.spawnVect.z), 8, 32);
 

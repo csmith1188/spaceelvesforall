@@ -42,6 +42,8 @@ gameWSS.addEventListener('message', (event) => {
                     // if this player's token's id is the same as the client's token id
                     if (player.token.username === token.username) {
                         game.players.push(new Players.Player({ ...player, ...{ camera: new Camera() } }));
+                    } else {
+                        game.players.push(new Players.Player(player));
                     }
                 }
                 // if a player is in the game.players array but not in the message, remove the player

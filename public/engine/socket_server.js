@@ -37,7 +37,7 @@ function gameHandler(ws, req) {
 
     // if this is the first player when this user connects, load a new match
     if (game.players.length == 0) game.loadMatch('Match');
-    broadcast(wss, { debug: 'Loaded new match', newMatch: game.match });
+    ws.send(JSON.stringify({ debug: 'Loaded new match', newMatch: game.match }));
 
     // create a new player
     game.players.push(new Players.Player({ token: ws.token, ws: ws }));
