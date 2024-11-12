@@ -36,16 +36,20 @@
         }
 
         setup() {
-            this.map = new Maps.Map();
+            try {
+                this.map = new Maps.Map_FieldCity();
+            } catch (e) {
+                console.error(e);
+            }
         }
 
         awaitPlayers() {
             // if the length of the global game players is greater than or equal to the max players, start the match
-            if (game.players.length == game.maxPlayers) {
+            if (game.players.length == 1) {
                 // create a new character for each player
                 for (let i = 0; i < game.players.length; i++) {
                     console.log('Creating character for player', game.players[i].token.username);
-                    this.characters.push(new Characters.Character({ id: this.allID++, active: true, cleanup: false, spawnVect: new Utils.Vect3(i * 100, i * 100, 0) }));
+                    this.characters.push(new Characters.Character({ id: allID++, active: true, cleanup: false, spawnVect: new Utils.Vect3(i * 100, i * 100, 0) }));
                 }
                 this.stage = 'startMatch';
             }

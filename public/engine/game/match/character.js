@@ -256,7 +256,7 @@
                             if (this.inventory.length > 0) {
                                 // make a pickup
                                 game.match.map.blocks.push(new WeaponPickup(
-                                    allID++,
+                                    global.allID++,
                                     new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z + this.HB.height / 2),
                                     new Utils.Vect3(this.speed.x, this.speed.y, this.speed.z + 20),
                                     { weapon: this.inventory[this.item].weapon, ammo: this.inventory[this.item].ammo, livetime: game.match.despawnTimer, dying: true }));
@@ -515,7 +515,7 @@
                     this.speed.x *= -game.match.map.collideReflect;
                     this.mom.x *= -game.match.map.collideReflect;
                     // sounds.wallhit.currentTime = 0;
-                    if (!this.muted) sounds.wallhit.play();
+                    if (!this.muted && global.client) sounds.wallhit.play();
                 }
                 if (this.HB.pos.y < 0) {
                     this.HB.pos.y = 0;
@@ -566,7 +566,7 @@
                         this.deathSFX.play();
                     if (this.inventory[this.item])
                         game.match.map.blocks.push(new WeaponPickup(
-                            allID++,
+                            global.allID++,
                             new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z + this.HB.height / 2),
                             new Utils.Vect3(this.speed.x, this.speed.y, this.speed.z + 20),
                             { weapon: this.inventory[this.item].weapon, ammo: this.inventory[this.item].ammo, livetime: game.match.despawnTimer, dying: true }))

@@ -1,6 +1,8 @@
 - ~~Players connect, id, add to player list~~
 - ~~load a match~~
-- load a map
+- ~~load a map~~
+- load a map with blocks
+- camera follows player's character
 - handle inputs from players
 - handle bots
 - client side interfaces
