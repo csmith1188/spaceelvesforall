@@ -1,17 +1,18 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        define(['Characters', 'Utils'], factory);
+        define(['Characters', 'Utils', 'Maps'], factory);
     } else if (typeof module === 'object' && module.exports) {
         // Nodejs
         const Characters = require('./character.js');
         const Utils = require('../../utils.js');
-        module.exports = factory(Characters, Utils);
+        const Maps = require('./map/map.js');
+        module.exports = factory(Characters, Utils, Maps);
     } else {
         // Browser globals (root is window)
-        root.Matches = factory(root.Characters, root.Utils);
+        root.Matches = factory(root.Characters, root.Utils, root.Maps);
     }
-}(typeof self !== 'undefined' ? self : this, function (Characters, Utils) {
+}(typeof self !== 'undefined' ? self : this, function (Characters, Utils, Maps) {
     class Match {
         constructor() {
             this.allID = 0;
@@ -31,9 +32,12 @@
             this.setup();
         }
 
-        reset() { }
+        reset() {
+        }
 
-        setup() { }
+        setup() {
+            this.map = new Maps.Map();
+        }
 
         awaitPlayers() {
             // if the length of the global game players is greater than or equal to the max players, start the match
@@ -41,7 +45,7 @@
                 // create a new character for each player
                 for (let i = 0; i < game.players.length; i++) {
                     console.log('Creating character for player', game.players[i].token.username);
-                    this.characters.push(new Characters.Character({ id: this.allID++, active: false, cleanup: false, spawnVect: new Utils.Vect3(i * 10, i * 10, 0) }));
+                    this.characters.push(new Characters.Character({ id: this.allID++, active: true, cleanup: false, spawnVect: new Utils.Vect3(i * 100, i * 100, 0) }));
                 }
                 this.stage = 'startMatch';
             }

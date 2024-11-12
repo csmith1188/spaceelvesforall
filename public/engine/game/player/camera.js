@@ -12,8 +12,8 @@
 }(typeof self !== 'undefined' ? self : this, function () {
 
     class Camera {
-        constructor(owner, options) {
-            this.owner = owner;
+        constructor(options) {
+            this.owner = null;
             this.x = 0;
             this.y = 0;
             this.target;

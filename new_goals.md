@@ -1,7 +1,7 @@
 - ~~Players connect, id, add to player list~~
 - ~~load a match~~
+- load a map
 - handle inputs from players
 - handle bots
 - client side interfaces
-- load a map
 - show players / bots

@@ -126,8 +126,7 @@
                 for (var key of Object.keys(options)) {
                     this[key] = options[key];
                 }
-                console.log(this.spawnVect);
-                
+
             // Hitbox must be built after options are applied
             this.HB = new Utils.Cylinder(new Utils.Vect3(this.spawnVect.x, this.spawnVect.y, this.spawnVect.z), 8, 32);
 
@@ -273,6 +272,7 @@
                         }
                     }
                 }
+
                 // for every item in the inventory, run its step method
                 for (let i = 0; i < this.inventory.length; i++) {
                     this.inventory[i].step('player');
@@ -353,10 +353,10 @@
                   \___\_, |_|_|_||_\__,_\___|_|
                       |__/
                 */
-                for (let c of game.match.bots) {
-                    if (c.character === this) //Don't collide with yourself
+                for (let c of game.match.characters) {
+                    if (c === this) //Don't collide with yourself
                         continue;
-                    c = c.character; //Get the character from the bot
+                    c = c; //Get the character from the bot
                     if (this.HB.above(c.HB) && c.solid) //If you are above the block and the block is not solid
                         this.floor = c.HB.pos.z + c.HB.height; //Set the floor to the block's height
                     let side = this.HB.collide(c.HB); //Check for collision
@@ -487,6 +487,9 @@
                  |_|  |_\__,_|_\_\___|  \__|_||_\___| |_|  |_\___/\_/\___|
     
                 */
+
+                this.speed.x += 1;
+
                 this.HB.pos.x += this.speed.x;
                 this.HB.pos.y += this.speed.y;
                 this.HB.pos.z += this.speed.z;
@@ -628,7 +631,7 @@
                         game.window.h / 2 - compareY - this.HB.radius + shadowShrink - this.floor,
                         this.HB.radius * 2 - shadowShrink * 2,
                         this.HB.radius * 2 - shadowShrink * 2
-                    );                    
+                    );
                     ctx.globalAlpha = 1;
 
                     /*

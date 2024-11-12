@@ -1,22 +1,21 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(['Sockets', 'Matches'], factory);
+        define(['Matches'], factory);
     } else if (typeof module === 'object' && module.exports) {
         // Node.js
-        const Sockets = require('../socket_server.js');
         const Matches = require('./match/match.js');
-        module.exports = factory(Sockets, Matches);
+        module.exports = factory(Matches);
     } else {
         // Browser globals: attach each export directly to the global scope
-        const exports = factory(root.Sockets, root.Matches);
+        const exports = factory(root.Matches);
         for (let key in exports) {
             if (exports.hasOwnProperty(key)) {
                 root[key] = exports[key];
             }
         }
     }
-}(typeof self !== 'undefined' ? self : this, function (Sockets, Matches) {
+}(typeof self !== 'undefined' ? self : this, function (Matches) {
 
     class Game {
         constructor(options) {
