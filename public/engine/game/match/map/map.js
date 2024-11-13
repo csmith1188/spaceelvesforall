@@ -336,7 +336,6 @@
                 let ran2 = function () { return Math.floor(Math.random() * 3) + 1 }
                 let ran3 = function () { return Math.floor(Math.random() * 3) + 1 }
                 this.blocks.push(new Blocks.Block(
-                    global.allID++,
                     new Utils.Vect3(Math.round(Math.random() * this.w), Math.round(Math.random() * this.h), 0),
                     new Utils.Vect3(ran1() * 48, ran2() * 48, ran3() * 48),
                     { imgFile: 'img/tiles/wall_top.png', imgFileSide: 'img/tiles/wall_side.png' }))
@@ -367,7 +366,6 @@
             //     let ran2 = function () { return Math.floor(Math.random() * 3) + 1 }
             //     let ran3 = function () { return Math.floor(Math.random() * 3) + 1 }
             //     this.blocks.push(new Blocks.Block(
-            //         global.allID++,
             //         new Utils.Vect3(Math.round(Math.random() * this.w), Math.round(Math.random() * this.h), 0),
             //         new Utils.Vect3(ran1() * 48, ran2() * 48, ran3() * 48),
             //         { imgFile: 'img/tiles/wall_top.png', imgFileSide: 'img/tiles/wall_side.png' }))
@@ -379,60 +377,50 @@
             let opts = { imgFile: 'img/tiles/wall_top.png', imgFileSide: 'img/tiles/wall_side.png' }
 
             this.blocks.push(new Blocks.Block(
-                global.allID++,
                 new Utils.Vect3(mapCX - 700, mapCY + 30, 0),
                 new Utils.Vect3(this.tileSize, 200, 128),
                 opts))
             this.blocks.push(new Blocks.Block(
-                global.allID++,
                 new Utils.Vect3(mapCX + 700, mapCY - 230, 0),
                 new Utils.Vect3(this.tileSize, 200, 128),
                 opts))
             // horizontal wall in top left quadrant of map
             this.blocks.push(new Blocks.Block(
-                global.allID++,
                 new Utils.Vect3(mapCX - 500, mapCY - 230, 0),
                 new Utils.Vect3(500, this.tileSize, 128),
                 opts));
             // horizontal wall in bottom right quadrant of map
             this.blocks.push(new Blocks.Block(
-                global.allID++,
                 new Utils.Vect3(mapCX, mapCY + 230, 0),
                 new Utils.Vect3(500, this.tileSize, 128),
                 opts));
             // square short wall in bottom left quadrant of map
             this.blocks.push(new Blocks.Block(
-                global.allID++,
                 new Utils.Vect3(mapCX - 400, mapCY + 230, 0),
                 new Utils.Vect3(this.tileSize * 2, this.tileSize * 2, this.tileSize),
                 opts));
             // square short wall in top right quadrant of map
             this.blocks.push(new Blocks.Block(
-                global.allID++,
                 new Utils.Vect3(mapCX + 400 - (this.tileSize * 2), mapCY - 230 - (this.tileSize), 0),
                 new Utils.Vect3(this.tileSize * 2, this.tileSize * 2, this.tileSize),
                 opts));
             // push into the blocks array a block across the bottom of the map
             this.blocks.push(new Blocks.Block(
-                global.allID++,
                 new Utils.Vect3(0, this.h, 0),
                 new Utils.Vect3(this.w, this.tileSize, this.tileSize),
                 opts))
             // push into the blocks array a block across the top of the map
             this.blocks.push(new Blocks.Block(
-                global.allID++,
                 new Utils.Vect3(0, -this.tileSize, 0),
                 new Utils.Vect3(this.w, this.tileSize, this.tileSize),
                 opts))
             // push into the blocks array a block across the left of the map
             this.blocks.push(new Blocks.Block(
-                global.allID++,
                 new Utils.Vect3(0, 0, 0),
                 new Utils.Vect3(this.tileSize, this.h, this.tileSize),
                 opts))
             // push into the blocks array a block across the right of the map
             this.blocks.push(new Blocks.Block(
-                global.allID++,
                 new Utils.Vect3(this.w - this.tileSize, 0, 0),
                 new Utils.Vect3(this.tileSize, this.h, this.tileSize),
                 opts))

@@ -42,7 +42,7 @@ gameWSS.addEventListener('message', (event) => {
                     // if this player's token's id is the same as the client's token id
                     if (player.token.username === token.username) {
                         game.players.push(new Players.Player({ token: token }));
-                        game.players[game.players.length - 1].camera = new Camera({ owner: player });
+                        game.players[game.players.length - 1].camera = new Camera({ owner: game.players[game.players.length - 1] });
                     } else {
                         game.players.push(new Players.Player(player));
                     }

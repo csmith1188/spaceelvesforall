@@ -23,7 +23,6 @@
     */
     class Character {
         constructor(options) {
-            this.id = 0;
             this.spawnVect = new Utils.Vect3(0, 0, 0);
             this.name = '';
             this.parent = {};
@@ -181,7 +180,7 @@
                             // If the player has positive power points (pp)
                             if (this.pp > 2) {
                                 // sounds.upBoost.currentTime = 0;
-                                // if (!this.muted) sounds.upBoost.play();
+                                // if (!this.muted && typeof window === 'object') sounds.upBoost.play();
                                 // Set the z momentum to 1 (move upwards)
                                 this.mom.z = 1;
                                 // Decrease the power points by 1
@@ -198,7 +197,7 @@
                         if (this.pp > 60) {
                             this.pp -= 60;
                             sounds.boost.currentTime = 0;
-                            if (!this.muted) sounds.boost.play();
+                            if (!this.muted && typeof window === 'object') sounds.boost.play();
                             this.speed.x += this.mom.x * 8;
                             this.speed.y += this.mom.y * 8;
                             this.speed.z += this.mom.z * 8;
@@ -256,7 +255,6 @@
                             if (this.inventory.length > 0) {
                                 // make a pickup
                                 game.match.map.blocks.push(new WeaponPickup(
-                                    global.allID++,
                                     new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z + this.HB.height / 2),
                                     new Utils.Vect3(this.speed.x, this.speed.y, this.speed.z + 20),
                                     { weapon: this.inventory[this.item].weapon, ammo: this.inventory[this.item].ammo, livetime: game.match.despawnTimer, dying: true }));
@@ -414,9 +412,9 @@
                     let side = this.HB.collide(c.HB); //Check for collision
                     if (side) c.trigger(this, side); //Trigger the block's trigger function
                     if (c.solid && side) { //If the block is solid
-                        if (this == game.player.character) { // Only play for the player until sound ranges are implemented
+                        if (this.owner == game.player) { // Only play for the player until sound ranges are implemented
                             // sounds.wallhit.currentTime = 0;
-                            if (!this.muted) sounds.wallhit.play();
+                            if (!this.muted && typeof window === 'object') sounds.wallhit.play();
                         }
                         switch (side) { //see which side you collided on
                             case 'front':
@@ -508,28 +506,28 @@
                     this.speed.x *= -game.match.map.collideReflect;
                     this.mom.x *= -game.match.map.collideReflect;
                     // sounds.wallhit.currentTime = 0;
-                    if (!this.muted) sounds.wallhit.play();
+                    if (!this.muted && typeof window === 'object') sounds.wallhit.play();
                 }
                 if (this.HB.pos.x > game.match.map.w) {
                     this.HB.pos.x = game.match.map.w;
                     this.speed.x *= -game.match.map.collideReflect;
                     this.mom.x *= -game.match.map.collideReflect;
                     // sounds.wallhit.currentTime = 0;
-                    if (!this.muted && global.client) sounds.wallhit.play();
+                    if (!this.muted && typeof window === 'object') sounds.wallhit.play();
                 }
                 if (this.HB.pos.y < 0) {
                     this.HB.pos.y = 0;
                     this.speed.y *= -game.match.map.collideReflect;
                     this.mom.y *= -game.match.map.collideReflect;
                     // sounds.wallhit.currentTime = 0;
-                    if (!this.muted) sounds.wallhit.play();
+                    if (!this.muted && typeof window === 'object') sounds.wallhit.play();
                 }
                 if (this.HB.pos.y > game.match.map.h) {
                     this.HB.pos.y = game.match.map.h;
                     this.speed.y *= -game.match.map.collideReflect;
                     this.mom.y *= -game.match.map.collideReflect;
                     // sounds.wallhit.currentTime = 0;
-                    if (!this.muted) sounds.wallhit.play();
+                    if (!this.muted && typeof window === 'object') sounds.wallhit.play();
                 }
 
                 /*
@@ -544,7 +542,7 @@
                     // this.speed.z *= -0.5
                     if (this.hover > 0) {
                         // sounds.groundhit.currentTime = 0;
-                        if (!this.muted) sounds.groundhit.play();
+                        if (!this.muted && typeof window === 'object') sounds.groundhit.play();
                     }
                 }
 
@@ -562,11 +560,10 @@
                 if (this.hp <= 0) {
                     this.active = false;
                     this.visible = false;
-                    if (!this.muted)
+                    if (!this.muted && typeof window === 'object')
                         this.deathSFX.play();
                     if (this.inventory[this.item])
                         game.match.map.blocks.push(new WeaponPickup(
-                            global.allID++,
                             new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z + this.HB.height / 2),
                             new Utils.Vect3(this.speed.x, this.speed.y, this.speed.z + 20),
                             { weapon: this.inventory[this.item].weapon, ammo: this.inventory[this.item].ammo, livetime: game.match.despawnTimer, dying: true }))

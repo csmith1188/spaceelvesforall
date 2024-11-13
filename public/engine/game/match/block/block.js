@@ -23,7 +23,7 @@
     */
 
     class Block {
-        constructor(id, posVect, volVect, options) {
+        constructor(posVect, volVect, options) {
             // Position
             this.spawn = new Utils.Vect3(posVect.x, posVect.y, posVect.z)
             this.HB = new Utils.Cube(new Utils.Vect3(posVect.x, posVect.y, posVect.z), new Utils.Vect3(volVect.x, volVect.y, volVect.z))
@@ -32,7 +32,6 @@
             this.speed = new Utils.Vect3(0, 0, 0);
 
             // Lifespan
-            this.id = id;
             this.parent = {};   // Who does this belong to?
             this.active = true; //Are we tracking this in the game?
             this.dying = false; //Is the lifespan counting down?
@@ -57,21 +56,24 @@
             this.opacity = 1;
             this.color = [100, 100, 100];    // Leave blank to add collision to a background
             this.colorSide = [200, 200, 200]; //The color of the wall of the block
-            this.img = new Image();
-            this.img.src = this.imgFile;
-            this.imgSide = new Image();
-            this.imgSide.src = this.imgFileSide;
+            // if not in a browser
+            if (typeof window === undefined) {
+                this.img = new Image();
+                this.img.src = this.imgFile;
+                this.imgSide = new Image();
+                this.imgSide.src = this.imgFileSide;
+                this.shadow = new Image();
+                this.shadow.src = 'img/sprites/shadow.png';
+            }
             this.drawStyle = 'tile'; // 'tile' or 'stretch'
             this.shadowDraw = false;
-            this.shadow = new Image();
-            this.shadow.src = 'img/sprites/shadow.png';
             this.drawFunc = [];
             // Options
             if (typeof options === 'object')
                 for (var key of Object.keys(options)) {
                     this[key] = options[key];
                 }
-            this.img.src = this.imgFile;
+            if (typeof window === undefined) this.img.src = this.imgFile;
         }
 
         step() {
@@ -402,8 +404,7 @@
     ###         ########  ########## ###    #########  ########## ########   ########  ###    ###
     */
     class PolyBlock {
-        constructor(id, x, y, options) {
-            this.id = id;
+        constructor(x, y, options) {
             this.x = x;
             this.y = y;
             this.d = 16;
@@ -466,9 +467,9 @@
                         let tempz = (Math.random() * 6) - 3;
                         if (this.color) {
                             if (game.match.ticks % 4 == 0) {
-                                game.match.map.debris.push(new Debris(global.allID++, c.x, c.y + (c.h / 2), { wind: false, w: 16, h: 12, z: c.z, color: this.splash, livetime: 12, dying: true, landable: true }))
+                                game.match.map.debris.push(new Debris(c.x, c.y + (c.h / 2), { wind: false, w: 16, h: 12, z: c.z, color: this.splash, livetime: 12, dying: true, landable: true }))
                             }
-                            game.match.map.debris.push(new Debris(global.allID++, c.x, c.y + (c.h / 2), { wind: false, w: 6, h: 6, xspeed: tempx, zspeed: 3 + tempz, z: c.z + c.hover, color: this.splash, livetime: 30, dying: true, landable: true }))
+                            game.match.map.debris.push(new Debris(c.x, c.y + (c.h / 2), { wind: false, w: 6, h: 6, xspeed: tempx, zspeed: 3 + tempz, z: c.z + c.hover, color: this.splash, livetime: 30, dying: true, landable: true }))
                         }
                     }
                 }

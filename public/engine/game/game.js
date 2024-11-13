@@ -67,6 +67,7 @@
                 this.match.step();
                 if (this.client) {
                     this.match.draw();
+                    this.player.camera.update(this.player); // Update the camera
                 }
             }
         }

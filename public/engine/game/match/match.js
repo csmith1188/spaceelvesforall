@@ -15,7 +15,6 @@
 }(typeof self !== 'undefined' ? self : this, function (Characters, Utils, Maps) {
     class Match {
         constructor() {
-            this.allID = 0;
             this.matchType = 'Match';
             this.characters = [];
             this.paused = false;
@@ -49,7 +48,7 @@
                 // create a new character for each player
                 for (let i = 0; i < game.players.length; i++) {
                     console.log('Creating character for player', game.players[i].token.username);
-                    this.characters.push(new Characters.Character({ id: allID++, active: true, cleanup: false, spawnVect: new Utils.Vect3(i * 100, i * 100, 0) }));
+                    this.characters.push(new Characters.Character({ parent: game.players[i], active: true, cleanup: false, spawnVect: new Utils.Vect3(i * 100, i * 100, 0) }));
                 }
                 this.stage = 'startMatch';
             }
