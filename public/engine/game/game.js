@@ -53,6 +53,9 @@
                 this.player = this.players.find(player => player.token.id == token.id);
                 this.window.w = window.innerWidth;
                 this.window.h = window.innerHeight;
+                if (this.player.camera) this.player.camera.radius = Math.sqrt((this.window.w / 2) ** 2 + (this.window.h / 2) ** 2)
+                canvas.width = this.window.w;
+                canvas.height = this.window.h;
                 this.gameView.w = Math.min(window.innerWidth, 1920);
                 this.gameView.h = Math.min(window.innerHeight, 1080);
             }
@@ -84,5 +87,14 @@
         }
     }
 
-    return { Game };
+    /* For a single instance across all modules, instantiate here, then export */
+    /*
+    var game = new Game();
+
+    if (typeof window === undefined) {
+        game.client = true;
+    }
+    */
+
+    return { Game /*, game */ };
 }));

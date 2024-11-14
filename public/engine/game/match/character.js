@@ -46,6 +46,9 @@
             this.floor = 0;
             this.bouyancy = 1;
             this.hover = 0; // 12
+            this.zMod = () => {
+                return 0;
+            }
 
             /*
               ___ _           _
@@ -486,7 +489,9 @@
     
                 */
 
-                this.speed.x += 1;
+                // Uncomment these for testing
+                // this.speed.x += 1;
+                // this.speed.y += 1;
 
                 this.HB.pos.x += this.speed.x;
                 this.HB.pos.y += this.speed.y;
@@ -731,7 +736,7 @@
                     ctx.drawImage(
                         this.img,
                         game.window.w / 2 - compareX - this.HB.radius,
-                        game.window.h / 2 - compareY - this.HB.height - this.HB.pos.z - Utils.sineAnimate(1, 0.1),
+                        game.window.h / 2 - compareY - this.HB.height - this.HB.pos.z - this.zMod(),
                         this.HB.radius * 2, this.HB.height
                     );
                     if (game.debug) {
@@ -972,11 +977,14 @@
     #####      ##########     ###     ######### ########### ###    ### ##########
     */
     class Jetbike extends Character {
-        constructor(id, spawnVect, parent, options) {
-            super(id, spawnVect, parent, options);
-            this.HB = new Utils.Cylinder(new Utils.Vect3(spawnVect.x, spawnVect.y, spawnVect.z), 29, 37);
+        constructor(options) {
+            super(options);
+            this.HB = new Utils.Cylinder(new Utils.Vect3(this.spawnVect.x, this.spawnVect.y, this.spawnVect.z), 29, 37);
             this.airAccel = new Utils.Vect3(0.15, 0.15, 1);
             this.hover = 16;
+            this.zMod = () => {
+                return Utils.sineAnimate(1, 0.1);
+            }
         }
     }
 

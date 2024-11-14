@@ -1,9 +1,14 @@
 - ~~Players connect, id, add to player list~~
 - ~~load a match~~
 - ~~load a map~~
-- load a map with blocks
-- camera follows player's character
+- ~~load a map with blocks~~
+- ~~load a map with tiles~~
+- ~~camera follows player's character~~
 - handle inputs from players
+- fix fast movement speed
+- fix team selector rings
 - handle bots
 - client side interfaces
-- show players / bots
+- player calc and draw distance
+- show score tab
+- restore full camera functionality
