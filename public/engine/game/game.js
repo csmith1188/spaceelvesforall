@@ -53,7 +53,8 @@
                 this.player = this.players.find(player => player.token.id == token.id);
                 this.window.w = window.innerWidth;
                 this.window.h = window.innerHeight;
-                if (this.player.camera) this.player.camera.radius = Math.sqrt((this.window.w / 2) ** 2 + (this.window.h / 2) ** 2)
+                if (this.player)
+                    this.player.camera.radius = Math.sqrt((this.window.w / 2) ** 2 + (this.window.h / 2) ** 2)
                 canvas.width = this.window.w;
                 canvas.height = this.window.h;
                 this.gameView.w = Math.min(window.innerWidth, 1920);
@@ -62,7 +63,8 @@
 
             // handle each player's controller
             for (let player of this.players) {
-                // if (player.controller) player.controller.step();
+                player.step();
+                if (player.controller) player.controller.read();
                 // else if (this.match) this.match.paused = `Player ${player.id} has no controller`;
             }
 
@@ -84,6 +86,10 @@
                     this.match = new Matches.Match();
                     break;
             }
+        }
+
+        loadPlayer(options) {
+            this.players.push(Players.Player(options));
         }
     }
 

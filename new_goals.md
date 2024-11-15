@@ -5,6 +5,7 @@
 - ~~load a map with tiles~~
 - ~~camera follows player's character~~
 - handle inputs from players
+- fix mouse controls aiming from camera instead character.
 - fix fast movement speed
 - fix team selector rings
 - handle bots

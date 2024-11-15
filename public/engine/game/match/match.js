@@ -35,11 +35,7 @@
         }
 
         setup() {
-            try {
-                this.map = new Maps.Map_FieldCity();
-            } catch (e) {
-                console.error(e);
-            }
+            this.map = new Maps.Map_FieldCity();
         }
 
         awaitPlayers() {

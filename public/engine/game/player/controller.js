@@ -1,15 +1,16 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        define([], factory);
+        define(['Utils'], factory);
     } else if (typeof module === 'object' && module.exports) {
         // Nodejs
-        module.exports = factory();
+        const Utils = require('../../utils.js');
+        module.exports = factory(Utils);
     } else {
         // Browser globals (root is window)
-        root.myModule = factory();
+        root.Controllers = factory(root.Utils);
     }
-}(typeof self !== 'undefined' ? self : this, function () {
+}(typeof self !== 'undefined' ? self : this, function (Utils) {
     /*
           ::::::::::: ::::    ::: :::::::::  :::    ::: ::::::::::: ::::::::
              :+:     :+:+:   :+: :+:    :+: :+:    :+:     :+:    :+:    :+:
@@ -20,16 +21,17 @@
     ########### ###    #### ###         ########      ###     ########
     */
 
-
-    let lastDevice = null;
-
-    function listenLastDevice() {
-        document.addEventListener("keyup", (event) => {
-            lastDevice = "keyboard";
-        });
-        window.addEventListener('touchstart', (event) => { lastDevice = "touch"; });
-        // Check for gamepads in game
-    }
+    let utils = {
+        lastDevice: null,
+        listenLastDevice: () => {
+            document.addEventListener("keyup", () => {
+                utils.lastDevice = "keyboard";
+            });
+            window.addEventListener("touchstart", () => {
+                utils.lastDevice = "touch";
+            });
+        }
+    };
 
     // Collect all input data and send it to the controller for better handling
     function getCanvasRelative(e, center = true) {
@@ -41,7 +43,7 @@
                 bx: bx
             };
         } else if (center) {
-            if (center instanceof Vect3) {
+            if (center instanceof Utils.Vect3) {
                 center = { x: center.x, y: center.y, z: center.z };
             }
             else {
@@ -225,7 +227,7 @@
                 coords = getCanvasRelative(event, true); // from top-left
                 this.centerX = coords.x;
                 this.centerY = coords.y;
-                coords = getCanvasRelative(event, this.owner.character.HB);
+                coords = getCanvasRelative(event, { x: this.owner.camera.x, y: this.owner.camera.y, z: 0 });
                 this.aimX = coords.x
                 this.aimY = coords.y
                 // Get which mousebutton they clicked
@@ -251,7 +253,7 @@
                 coords = getCanvasRelative(event, true); // from top-left
                 this.centerX = coords.x;
                 this.centerY = coords.y;
-                coords = getCanvasRelative(event, this.owner.character.HB);
+                coords = getCanvasRelative(event, { x: this.owner.camera.x, y: this.owner.camera.y, z: 0 });
                 this.aimX = coords.x
                 this.aimY = coords.y
             }.bind(this));
@@ -699,5 +701,16 @@
         read() { return }
         draw() { return }
     }
-    return { Keyboard, GamePad, Touch, DummyController, listenLastDevice, lastDevice };
+
+    class SocketController extends Controller {
+        constructor(owner) {
+            super(owner);
+            this.type = "socket";
+        }
+        setupInputs() { return }
+        read() { return }
+        draw() { return }
+    }
+
+    return { Keyboard, GamePad, Touch, DummyController, SocketController, utils };
 }));
