@@ -5,7 +5,8 @@
 - ~~load a map with tiles~~
 - ~~camera follows player's character~~
 - handle inputs from players
-- fix mouse controls aiming from camera instead character.
+- match await player ready (await controls)
+- fix mouse controls aiming from camera instead character
 - fix fast movement speed
 - fix team selector rings
 - handle bots
@@ -13,3 +14,4 @@
 - player calc and draw distance
 - show score tab
 - restore full camera functionality
+- offline mode
