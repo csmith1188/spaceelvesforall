@@ -4,7 +4,9 @@
 - ~~load a map with blocks~~
 - ~~load a map with tiles~~
 - ~~camera follows player's character~~
-- handle inputs from players
+- ~~handle inputs from players~~
+- move player on client
+- send position back to user
 - match await player ready (await controls)
 - fix mouse controls aiming from camera instead character
 - fix fast movement speed
@@ -15,3 +17,4 @@
 - show score tab
 - restore full camera functionality
 - offline mode
+- why does it redownload block textures every second?

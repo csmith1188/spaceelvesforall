@@ -64,8 +64,19 @@
             // handle each player's controller
             for (let player of this.players) {
                 player.step();
-                if (player.controller) player.controller.read();
-                // else if (this.match) this.match.paused = `Player ${player.id} has no controller`;
+                if (player.controller) {
+                    player.controller.read();
+                    if (typeof window !== 'undefined') {
+                        //if the newState has at least one property
+                        if (Object.keys(player.controller.newState).length > 0) {
+                            // send newState to server
+                            gameWSS.send(JSON.stringify({ controller: player.controller.newState }));
+                        }
+                    }
+                }
+                else if (this.match) {
+                    // this.match.paused = `Player ${player.id} has no controller`;
+                }
             }
 
             if (this.match) {

@@ -65,12 +65,11 @@ function gameHandler(ws, req) {
                 return;
             }
 
-            if (message.press) {
-                player.buttons[message.press] = true;
-            }
-
-            if (message.release) {
-                player.buttons[message.release] = false;
+            if (message.controller) {
+                // for each controller input, update the player's controller's button
+                for (let button in message.controller) {
+                    player.controller.buttons[button] = message.controller[button];
+                }
             }
 
         } catch (error) {

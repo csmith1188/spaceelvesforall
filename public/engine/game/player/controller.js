@@ -47,7 +47,9 @@
                 center = { x: center.x, y: center.y, z: center.z };
             }
             else {
-                center = center.center();
+                // if the center has a center() method, call it
+                if (center.center)
+                    center = center.center();
                 center.x = game.player.camera.x - center.x;
                 center.y = game.player.camera.y - center.y;
             }
@@ -78,33 +80,12 @@
         constructor(owner) {
             this.owner = owner;
             this.type = "controller";
-            this.buttons = {
-                moveRight: { current: 0, last: 0 },
-                moveLeft: { current: 0, last: 0 },
-                moveDown: { current: 0, last: 0 },
-                moveUp: { current: 0, last: 0 },
-                jump: { current: 0, last: 0 },
-                brake: { current: 0, last: 0 },
-                boost: { current: 0, last: 0 },
-                fire: { current: 0, last: 0 },
-                altfire: { current: 0, last: 0 },
-                weaponPrevious: { current: 0, last: 0 },
-                weaponNext: { current: 0, last: 0 },
-                start: { current: 0, last: 0 },
-                select: { current: 0, last: 0 },
-                inventory1: { current: 0, last: 0 },
-                inventory2: { current: 0, last: 0 },
-                throw: { current: 0, last: 0 },
-                selectRight: { current: 0, last: 0 },
-                selectLeft: { current: 0, last: 0 },
-                selectUp: { current: 0, last: 0 },
-                selectDown: { current: 0, last: 0 }
-            };
+            this.newState = {};
             this.setupInputs();
         }
 
         setupInputs() {
-
+            this.resetButtons();
         }
 
         read() {
@@ -164,6 +145,7 @@
         }
 
         setupInputs() {
+            super.setupInputs();
             /*
               _  __         ___
              | |/ /___ _  _|   \ _____ __ ___ _  ___
@@ -263,42 +245,49 @@
         read() {
             super.read();
             // Because buttons can get cleared at other points, we need to check for them here at the same time as other inputs
-            if (this.rightKey) this.buttons.moveRight.current = 1;
-            else this.buttons.moveRight.current = 0;
-            if (this.leftKey) this.buttons.moveLeft.current = 1;
-            else this.buttons.moveLeft.current = 0;
-            if (this.downKey) this.buttons.moveDown.current = 1;
-            else this.buttons.moveDown.current = 0;
-            if (this.upKey) this.buttons.moveUp.current = 1;
-            else this.buttons.moveUp.current = 0;
-            if (this.spaceKey) this.buttons.jump.current = 1;
-            else this.buttons.jump.current = 0;
-            if (this.shiftKey) this.buttons.brake.current = 1;
-            else this.buttons.brake.current = 0;
-            if (this.altKey) this.buttons.boost.current = 1;
-            else this.buttons.boost.current = 0;
-            if (this.clickButton) this.buttons.fire.current = 1;
-            else this.buttons.fire.current = 0;
-            if (this.rclickButton) this.buttons.altfire.current = 1;
-            else this.buttons.altfire.current = 0;
-            if (this.inventory1Key) this.buttons.inventory1.current = 1;
-            else this.buttons.inventory1.current = 0;
-            if (this.inventory2Key) this.buttons.inventory2.current = 1;
-            else this.buttons.inventory2.current = 0;
-            if (this.startKey) this.buttons.start.current = 1;
-            else this.buttons.start.current = 0;
-            if (this.throwKey) this.buttons.throw.current = 1;
-            else this.buttons.throw.current = 0;
+            if (this.rightKey) this.buttons.moveRight.current = this.newState.moveRight = 1;
+            else this.buttons.moveRight.current = this.newState.moveRight = 0;
+            if (this.leftKey) this.buttons.moveLeft.current = this.newState.moveLeft = 1;
+            else this.buttons.moveLeft.current = this.newState.moveLeft = 0;
+            if (this.downKey) this.buttons.moveDown.current = this.newState.moveDown = 1;
+            else this.buttons.moveDown.current = this.newState.moveDown = 0;
+            if (this.upKey) this.buttons.moveUp.current = this.newState.moveUp = 1;
+            else this.buttons.moveUp.current = this.newState.moveUp = 0;
+            if (this.spaceKey) this.buttons.jump.current = this.newState.jump = 1;
+            else this.buttons.jump.current = this.newState.jump = 0;
+            if (this.shiftKey) this.buttons.brake.current = this.newState.brake = 1;
+            else this.buttons.brake.current = this.newState.brake = 0;
+            if (this.altKey) this.buttons.boost.current = this.newState.boost = 1;
+            else this.buttons.boost.current = this.newState.boost = 0;
+            if (this.clickButton) this.buttons.fire.current = this.newState.fire = 1;
+            else this.buttons.fire.current = this.newState.fire = 0;
+            if (this.rclickButton) this.buttons.altfire.current = this.newState.altfire = 1;
+            else this.buttons.altfire.current = this.newState.altfire = 0;
+            if (this.inventory1Key) this.buttons.inventory1.current = this.newState.inventory1 = 1;
+            else this.buttons.inventory1.current = this.newState.inventory1 = 0;
+            if (this.inventory2Key) this.buttons.inventory2.current = this.newState.inventory2 = 1;
+            else this.buttons.inventory2.current = this.newState.inventory2 = 0;
+            if (this.startKey) this.buttons.start.current = this.newState.start = 1;
+            else this.buttons.start.current = this.newState.start = 0;
+            if (this.throwKey) this.buttons.throw.current = this.newState.throw = 1;
+            else this.buttons.throw.current = this.newState.throw = 0;
             if (this.wheelUp) {
-                this.buttons.weaponPrevious.current = this.wheelUp;
+                this.buttons.weaponPrevious.current = this.newState.weaponPrevious = this.wheelUp;
                 this.wheelUp = 0;
             }
-            else this.buttons.weaponPrevious.current = 0;
+            else this.buttons.weaponPrevious.current = this.newState.weaponPrevious = 0;
             if (this.wheelDown) {
-                this.buttons.weaponNext.current = this.wheelDown;
+                this.buttons.weaponNext.current = this.newState.weaponNext = this.wheelDown;
                 this.wheelDown = 0;
             }
-            else this.buttons.weaponNext.current = 0;
+            else this.buttons.weaponNext.current = this.newState.weaponNext = 0;
+            // remove all properties in newState whose value match's the buttons's last value
+            for (const button in this.newState) {
+                // console.log(this.newState[button], this.buttons[button].last);
+                if (this.newState[button] == this.buttons[button].last) {
+                    delete this.newState[button];
+                }
+            }
         }
     }
 
@@ -707,7 +696,6 @@
             super(owner);
             this.type = "socket";
         }
-        setupInputs() { return }
         read() { return }
         draw() { return }
     }
