@@ -53,6 +53,18 @@ gameWSS.addEventListener('message', (event) => {
                 }
             }
         }
+
+        if (message.characters) {
+            for (let character of message.characters) {
+                let c = game.match.characters.find(c => c.parent.token.username === character.ownerName);
+                if (c) {
+                    c.HB.x = character.pos.x;
+                    c.HB.y = character.pos.y;
+                    c.HB.z = character.pos.z;
+                }
+            }
+        }
+        
         if (message.newMatch) {
             game.loadMatch(message.match);
         }

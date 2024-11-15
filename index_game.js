@@ -60,7 +60,7 @@ const wss = expressWs(app);
 const Games = require('./public/engine/game/game.js');
 const Sockets = require('./public/engine/socket_server.js');
 
-global.game = new Games.Game({wss: wss});
+global.game = new Games.Game({wss: wss, broadcast: Sockets.broadcast});
 
 // Define a route handler for the default home page
 app.get('/', (req, res) => {

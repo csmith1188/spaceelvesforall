@@ -84,6 +84,13 @@
                 if (this.client) {
                     this.match.draw();
                     this.player.camera.update(this.player); // Update the camera
+                } else {
+                    // get all characters whose HB is not equal to their lastHB
+                    let characters = this.match.characters.filter(character => character.HB != character.lastHB);
+                    // replace each character in the list with their pack()ed version
+                    characters = characters.map(character => character.pack());
+                    // send all characters to the client
+                    this.broadcast(this.wss, { characters: characters });
                 }
             }
         }

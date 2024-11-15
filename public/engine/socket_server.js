@@ -67,9 +67,7 @@ function gameHandler(ws, req) {
 
             if (message.controller) {
                 // for each controller input, update the player's controller's button
-                for (let button in message.controller) {
-                    player.controller.buttons[button] = message.controller[button];
-                }
+                player.controller.newState = message.controller;
             }
 
         } catch (error) {

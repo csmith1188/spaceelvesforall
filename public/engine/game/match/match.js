@@ -40,7 +40,7 @@
 
         awaitPlayers() {
             // if the length of the global game players is greater than or equal to the max players, start the match
-            if (game.players.length == 1) {
+            if (game.players.length == 2) {
                 // create a new character for each player
                 for (let i = 0; i < game.players.length; i++) {
                     console.log('Creating character for player', game.players[i].token.username);

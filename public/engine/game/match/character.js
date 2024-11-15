@@ -32,7 +32,6 @@
             this.team = 0;
             this.teams = [this.team];
             this.target = null;
-            // this.controller = this.parent.controller;
 
             /*
               ___        _ _   _            ___       _
@@ -131,7 +130,7 @@
 
             // Hitbox must be built after options are applied
             this.HB = new Utils.Cylinder(new Utils.Vect3(this.spawnVect.x, this.spawnVect.y, this.spawnVect.z), 8, 32);
-
+            this.lastHB = new Utils.Cylinder(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), this.HB.radius, this.HB.height);
             this.leftgfx = this.gfx + '_l'; // Set this after options so you only have to set gfx
             if (game.client) {
                 this.img.src = this.gfx + '.png'
@@ -166,20 +165,20 @@
                                                 |_|
                 */
 
-                if (this.controller) {
+                if (this.parent.controller) {
                     // If the player is pressing the start button
-                    if (this.controller.buttons.start.current != this.controller.buttons.start.last && this.controller.buttons.start.current)
+                    if (this.parent.controller.buttons.start.current != this.parent.controller.buttons.start.last && this.parent.controller.buttons.start.current)
                         game.paused = !game.paused;
 
-                    if (this.controller.buttons.moveLeft.current) this.mom.x = -1;
-                    if (this.controller.buttons.moveRight.current) this.mom.x = 1;
-                    if (this.controller.buttons.moveUp.current) this.mom.y = -1;
-                    if (this.controller.buttons.moveDown.current) this.mom.y = 1;
-                    if (this.controller.buttons.jump.current && this.controller.buttons.brake.current) {
+                    if (this.parent.controller.buttons.moveLeft.current) this.mom.x = -1;
+                    if (this.parent.controller.buttons.moveRight.current) this.mom.x = 1;
+                    if (this.parent.controller.buttons.moveUp.current) this.mom.y = -1;
+                    if (this.parent.controller.buttons.moveDown.current) this.mom.y = 1;
+                    if (this.parent.controller.buttons.jump.current && this.parent.controller.buttons.brake.current) {
                         this.brace = 1;
                     }
                     else {
-                        if (this.controller.buttons.jump.current) {
+                        if (this.parent.controller.buttons.jump.current) {
                             // If the player has positive power points (pp)
                             if (this.pp > 2) {
                                 // sounds.upBoost.currentTime = 0;
@@ -190,12 +189,12 @@
                                 this.pp -= 2;
                             }
                         }
-                        if (this.controller.buttons.brake.current) this.mom.z = -1;
+                        if (this.parent.controller.buttons.brake.current) this.mom.z = -1;
 
                     }
                     // if the boost button current is not equal to the boost button last
                     // and the boost current is 1
-                    if (this.controller.buttons.boost.current != this.controller.buttons.boost.last && this.controller.buttons.boost.current) {
+                    if (this.parent.controller.buttons.boost.current != this.parent.controller.buttons.boost.last && this.parent.controller.buttons.boost.current) {
                         // if the player has positive power points (pp)
                         if (this.pp > 60) {
                             this.pp -= 60;
@@ -213,12 +212,12 @@
                      /__/_||_\___/\___/\__|_|_||_\__, |
                                                  |___/
                     */
-                    if (this.controller.buttons.fire.current != this.controller.buttons.fire.last) {
+                    if (this.parent.controller.buttons.fire.current != this.parent.controller.buttons.fire.last) {
                         if (this.inventory.length) {
-                            if (this.controller.buttons.fire.current) {
+                            if (this.parent.controller.buttons.fire.current) {
                                 const xMulti = (game.player.camera._3D) ? game.player.camera.angle : 1;
-                                let aimX = this.controller.aimX * xMulti;
-                                let aimY = this.controller.aimY;
+                                let aimX = this.parent.controller.aimX * xMulti;
+                                let aimY = this.parent.controller.aimY;
                                 let aimZ = 0;
                                 if (game.player.camera._3D) {
                                     aimZ = aimY * game.player.camera.angle;
@@ -237,23 +236,23 @@
                                                       |__/                        |___/
                     */
                     // Weapon switching
-                    if (this.controller.buttons.inventory1.current != this.controller.buttons.inventory1.last)
-                        if (this.controller.buttons.inventory1.current)
+                    if (this.parent.controller.buttons.inventory1.current != this.parent.controller.buttons.inventory1.last)
+                        if (this.parent.controller.buttons.inventory1.current)
                             if (this.inventory.length > 0) {
                                 this.item = 0;
                                 if (this.parent.interface)
                                     this.parent.interface.itemChangeTicks = game.match.ticks + 180;
                             }
 
-                    if (this.controller.buttons.inventory2.current != this.controller.buttons.inventory2.last)
-                        if (this.controller.buttons.inventory2.current)
+                    if (this.parent.controller.buttons.inventory2.current != this.parent.controller.buttons.inventory2.last)
+                        if (this.parent.controller.buttons.inventory2.current)
                             if (this.inventory.length > 1) {
                                 this.item = 1;
                                 if (this.parent.interface)
                                     this.parent.interface.itemChangeTicks = game.match.ticks + 180;
                             }
 
-                    if (this.controller.buttons.throw.current != this.controller.buttons.throw.last) {
+                    if (this.parent.controller.buttons.throw.current != this.parent.controller.buttons.throw.last) {
                         if (this.parent.controller.buttons.throw.current) {
                             if (this.inventory.length > 0) {
                                 // make a pickup
@@ -489,13 +488,13 @@
     
                 */
 
-                // Uncomment these for testing
-                // this.speed.x += 1;
-                // this.speed.y += 1;
+                // make lastHB the same as HB
+                this.lastHB = new Utils.Cylinder(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), this.HB.radius, this.HB.height);
 
                 this.HB.pos.x += this.speed.x;
                 this.HB.pos.y += this.speed.y;
                 this.HB.pos.z += this.speed.z;
+
 
                 /*
                    ___       _          __   ___                   _
@@ -962,6 +961,13 @@
         */
         trigger(actor, side) {
 
+        }
+
+        pack() {
+            return {
+                ownerName: this.parent.token.username || this.name,
+                pos: this.HB.pos
+            }
         }
 
     }

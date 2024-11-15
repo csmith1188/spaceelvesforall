@@ -283,7 +283,6 @@
             else this.buttons.weaponNext.current = this.newState.weaponNext = 0;
             // remove all properties in newState whose value match's the buttons's last value
             for (const button in this.newState) {
-                // console.log(this.newState[button], this.buttons[button].last);
                 if (this.newState[button] == this.buttons[button].last) {
                     delete this.newState[button];
                 }
@@ -696,7 +695,13 @@
             super(owner);
             this.type = "socket";
         }
-        read() { return }
+        read() {
+            super.read();
+            // for every property in newState, change buttons current value to the value of newState
+            for (const button in this.newState) {
+                this.buttons[button].current = this.newState[button];
+            }
+        }
         draw() { return }
     }
 
