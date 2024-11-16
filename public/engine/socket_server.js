@@ -24,7 +24,7 @@ function gameHandler(ws, req) {
     }
 
     // if the game is full, close the connection
-    if (!(game.maxPlayers > game.players.length)) {
+    if (game.players.length >= game.playerLimit.max) {
         console.error('Game server is full');
         ws.send(JSON.stringify({ debug: 'Game server is full' }));
         ws.close();

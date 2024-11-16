@@ -20,7 +20,7 @@
     class Game {
         constructor(options) {
             this.players = [];
-            this.maxPlayers = 2;
+            this.playerLimit = { min: 2, max: 2 };
             this.client = false;
             this.match = null;
             this.window = {
@@ -37,7 +37,13 @@
             };
             this.time = {
                 tickRate: 1000 / 60,
-                start: Date.now()
+                ticks: 0,
+                start: performance.now(),
+                last: performance.now(),
+                diff: 0,
+                delta: 0,
+                avgList: [],
+                avg: 0
             }
             // loop through the options and add them to the game
             for (let key in options) {
@@ -48,8 +54,18 @@
         }
 
         step() {
+            this.time.ticks++;
+            this.time.diff = performance.now() - this.time.last;
+            this.time.delta = this.time.diff / this.time.tickRate;
+            this.time.last = performance.now();
+            this.time.avgList.push(this.time.delta);
+            if (this.time.avgList.length > 20) {
+                this.time.avgList.shift();
+                this.time.avg = this.time.avgList.reduce((a, b) => a + b, 0) / this.time.avgList.length;
+            }
+            console.log(`Ticks: ${this.time.ticks.toFixed(2)}\t Complete: ${this.time.diff.toFixed(2)}\t Delta: ${this.time.delta.toFixed(2)}\t AVG: ${this.time.avg.toFixed(2)}`);
 
-            if (this.client) {
+            if (typeof window !== 'undefined') {
                 this.player = this.players.find(player => player.token.id == token.id);
                 this.window.w = window.innerWidth;
                 this.window.h = window.innerHeight;
@@ -81,7 +97,7 @@
 
             if (this.match) {
                 this.match.step();
-                if (this.client) {
+                if (typeof window !== 'undefined') {
                     this.match.draw();
                     this.player.camera.update(this.player); // Update the camera
                 } else {
@@ -90,7 +106,7 @@
                     // replace each character in the list with their pack()ed version
                     characters = characters.map(character => character.pack());
                     // send all characters to the client
-                    this.broadcast(this.wss, { characters: characters });
+                    this.broadcast(this.wss, { characters: characters, time: Date.now() });
                 }
             }
         }

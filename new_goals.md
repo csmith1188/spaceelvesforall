@@ -5,8 +5,9 @@
 - ~~load a map with tiles~~
 - ~~camera follows player's character~~
 - ~~handle inputs from players~~
-- move player on client
-- send position back to user
+- ~~move player on client~~
+- ~~send position back to user~~
+- fix desync/rubberbanding
 - match await player ready (await controls)
 - fix mouse controls aiming from camera instead character
 - fix fast movement speed

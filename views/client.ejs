@@ -58,9 +58,26 @@
     client: true
   });
 
-  setInterval(() => {
-    game.step();
-  }, 1000 / 60);
+  const tickInterval = game.time.tickRate; // ~16ms for 60Hz
+  let lastTick = Date.now();
+
+  function gameLoop() {
+    const now = Date.now();
+    const delta = now - lastTick;
+
+    if (delta >= tickInterval) {
+      lastTick = now - (delta % tickInterval); // Adjust for drift
+      game.step(); // Your game logic
+    }
+
+    requestAnimationFrame(gameLoop); // Keeps the event loop alive
+  }
+
+  gameLoop();
+
+  // setInterval(() => {
+  //   game.step();
+  // }, 1000 / 60);
 </script>
 
 </html>

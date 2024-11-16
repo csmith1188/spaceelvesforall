@@ -61,7 +61,7 @@ gameWSS.addEventListener('message', (event) => {
                     c.serverPos.x = character.pos.x;
                     c.serverPos.y = character.pos.y;
                     c.serverPos.z = character.pos.z;
-                    c.serverPos.time = Date.now();
+                    c.serverPos.time = message.time;
                 }
             }
         }

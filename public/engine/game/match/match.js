@@ -22,13 +22,8 @@
             this.map = null;
             this.stage = 'awaitPlayers';
             this.time = {
-                tickRate: 1000 / 60,
                 ticks: 0,
-                start: performance.now(),
-                last: performance.now(),
-                delta: 0,
-                avgList: [],
-                avg: 0
+                start: performance.now()
             }
             this.setup();
         }
@@ -42,7 +37,7 @@
 
         awaitPlayers() {
             // if the length of the global game players is greater than or equal to the max players, start the match
-            if (game.players.length == 1) {
+            if (game.players.length >= game.playerLimit.min) {
                 // create a new character for each player
                 for (let i = 0; i < game.players.length; i++) {
                     console.log('Creating character for player', game.players[i].token.username);
@@ -55,15 +50,6 @@
         step() {
             if (!this.paused) {
                 this.time.ticks++;
-                this.time.delta = (performance.now() - this.time.last) / this.time.tickRate;
-                this.time.last = performance.now();
-                // this.time.avgList.push(this.time.delta);
-                // if (this.time.avgList.length > 60) {
-                //     this.time.avgList.shift();
-                //     this.time.avg = this.time.avgList.reduce((a, b) => a + b, 0) / this.time.avgList.length;
-                // }
-                // console.log(this.time.ticks, this.time.avg);
-                
 
                 switch (this.stage) {
                     case 'awaitPlayers':

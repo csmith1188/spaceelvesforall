@@ -494,14 +494,15 @@
 
                 if (typeof window !== 'undefined') {
                     // let interpolationFactor = Math.min(((Date.now() - this.serverPos.time) / 1000) * 10, 1); // Adjust the factor as needed
-                    this.HB.pos.x += (this.serverPos.x - this.HB.pos.x) * 0.1;
-                    this.HB.pos.y += (this.serverPos.y - this.HB.pos.y) * 0.1;
-                    this.HB.pos.z += (this.serverPos.z - this.HB.pos.z) * 0.1;
+                    let interpolationFactor = 0.1;
+                    this.HB.pos.x += (this.serverPos.x - this.HB.pos.x) * interpolationFactor * game.time.delta;
+                    this.HB.pos.y += (this.serverPos.y - this.HB.pos.y) * interpolationFactor * game.time.delta;
+                    this.HB.pos.z += (this.serverPos.z - this.HB.pos.z) * interpolationFactor * game.time.delta;
                 }
 
-                this.HB.pos.x += this.speed.x * game.match.time.delta;
-                this.HB.pos.y += this.speed.y * game.match.time.delta;
-                this.HB.pos.z += this.speed.z * game.match.time.delta;
+                this.HB.pos.x += this.speed.x * game.time.delta;
+                this.HB.pos.y += this.speed.y * game.time.delta;
+                this.HB.pos.z += this.speed.z * game.time.delta;
 
 
                 /*

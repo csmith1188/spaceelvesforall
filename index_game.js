@@ -78,7 +78,34 @@ app.listen(PORT, () => {
     console.info(`Server started on http://localhost:${PORT}`);
 });
 
-setInterval(() => {
-    global.game.step();
-}, global.game.time.tickRate);
+const tickInterval = global.game.time.tickRate; // ~16ms for 60Hz
+let lastTick = Date.now();
+
+function gameLoop() {
+    const now = Date.now();
+    const delta = now - lastTick;
+
+    if (delta >= tickInterval) {
+        lastTick = now - (delta % tickInterval); // Adjust for drift
+        global.game.step(); // Your game logic
+    }
+
+    setImmediate(gameLoop); // Keeps the event loop alive
+}
+
+gameLoop();
+
+// const gameLoop = setInterval(() => {
+//     global.game.step();
+// }, global.game.time.tickRate);
+
+// // Graceful shutdown
+// process.on('SIGINT', () => {
+//     clearInterval(gameLoop);
+//     process.exit();
+// });
+// process.on('SIGTERM', () => {
+//     clearInterval(gameLoop);
+//     process.exit();
+// });
 

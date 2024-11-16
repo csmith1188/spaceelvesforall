@@ -32,8 +32,10 @@
         update() {
             // find the game's match's character whose parent is this camera's owner
             this.target = game.match.characters.find(character => character.parent == this.owner);
-            this.x = this.target.HB.pos.x;
-            this.y = this.target.HB.pos.y;
+            if (this.target) {
+                this.x = this.target.HB.pos.x;
+                this.y = this.target.HB.pos.y;
+            }
             /*
             // Move camera to next sensible target when player character is inactive or missing
             if (!this.owner.character.active) {

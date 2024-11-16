@@ -332,7 +332,7 @@
      */
     function sineAnimate(amp, freq, offset) {
         if (!offset) offset = 0
-        return amp * Math.sin(freq * (game.match.time.ticks + offset));
+        return amp * Math.sin(freq * (game.time.ticks + offset));
     }
 
     /**

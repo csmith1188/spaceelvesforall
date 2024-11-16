@@ -3,3 +3,4 @@ data/database.db
 .env
 .vscode
 sessions
+.clinic
