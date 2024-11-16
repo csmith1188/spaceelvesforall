@@ -58,9 +58,10 @@ gameWSS.addEventListener('message', (event) => {
             for (let character of message.characters) {
                 let c = game.match.characters.find(c => c.parent.token.username === character.ownerName);
                 if (c) {
-                    c.HB.pos.x = character.pos.x;
-                    c.HB.pos.y = character.pos.y;
-                    c.HB.pos.z = character.pos.z;
+                    c.serverPos.x = character.pos.x;
+                    c.serverPos.y = character.pos.y;
+                    c.serverPos.z = character.pos.z;
+                    c.serverPos.time = Date.now();
                 }
             }
         }

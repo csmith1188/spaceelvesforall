@@ -45,6 +45,7 @@
             this.floor = 0;
             this.bouyancy = 1;
             this.hover = 0; // 12
+            this.serverPos = new Utils.Vect3(0, 0, 0);
             this.zMod = () => {
                 return 0;
             }
@@ -490,6 +491,13 @@
 
                 // make lastHB the same as HB
                 this.lastHB = new Utils.Cylinder(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), this.HB.radius, this.HB.height);
+
+                if (typeof window !== 'undefined') {
+                    // let interpolationFactor = Math.min(((Date.now() - this.serverPos.time) / 1000) * 10, 1); // Adjust the factor as needed
+                    this.HB.pos.x += (this.serverPos.x - this.HB.pos.x) * 0.1;
+                    this.HB.pos.y += (this.serverPos.y - this.HB.pos.y) * 0.1;
+                    this.HB.pos.z += (this.serverPos.z - this.HB.pos.z) * 0.1;
+                }
 
                 this.HB.pos.x += this.speed.x * game.match.time.delta;
                 this.HB.pos.y += this.speed.y * game.match.time.delta;
