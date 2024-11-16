@@ -1,17 +1,18 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        define(['Utils', 'Items'], factory);
+        define(['Utils', 'Items', 'Powerups'], factory);
     } else if (typeof module === 'object' && module.exports) {
         // Nodejs
         const Utils = require('../../utils.js');
         const Items = require('./item.js');
-        module.exports = factory(Utils, Items);
+        const Powerups = require('./block/powerup.js');
+        module.exports = factory(Utils, Items, Powerups);
     } else {
         // Browser globals (root is window)
-        root.Characters = factory(root.Utils, root.Items);
+        root.Characters = factory(root.Utils, root.Items, root.Powerups);
     }
-}(typeof self !== 'undefined' ? self : this, function (Utils, Items) {
+}(typeof self !== 'undefined' ? self : this, function (Utils, Items, Powerups) {
 
     /*
           ::::::::  :::    :::     :::     :::::::::      :::      :::::::: ::::::::::: :::::::::: :::::::::
@@ -260,7 +261,7 @@
                         if (this.parent.controller.buttons.throw.current) {
                             if (this.inventory.length > 0) {
                                 // make a pickup
-                                game.match.map.blocks.push(new WeaponPickup(
+                                game.match.map.blocks.push(new Powerups.WeaponPickup(
                                     new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z + this.HB.height / 2),
                                     new Utils.Vect3(this.speed.x, this.speed.y, this.speed.z + 20),
                                     { weapon: this.inventory[this.item].weapon, ammo: this.inventory[this.item].ammo, livetime: game.match.despawnTimer, dying: true }));
@@ -497,7 +498,7 @@
 
                 if (typeof window !== 'undefined') {
                     // let interpolationFactor = Math.min(((Date.now() - this.serverPos.time) / 1000) * 10, 1); // Adjust the factor as needed
-                    let interpolationFactor = 0.1;
+                    let interpolationFactor = 0.5;
                     this.HB.pos.x += (this.serverPos.x - this.HB.pos.x) * interpolationFactor * game.time.delta;
                     this.HB.pos.y += (this.serverPos.y - this.HB.pos.y) * interpolationFactor * game.time.delta;
                     this.HB.pos.z += (this.serverPos.z - this.HB.pos.z) * interpolationFactor * game.time.delta;
@@ -581,7 +582,7 @@
                     if (!this.muted && typeof window !== 'undefined')
                         this.deathSFX.play();
                     if (this.inventory[this.item])
-                        game.match.map.blocks.push(new WeaponPickup(
+                        game.match.map.blocks.push(new Powerups.WeaponPickup(
                             new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z + this.HB.height / 2),
                             new Utils.Vect3(this.speed.x, this.speed.y, this.speed.z + 20),
                             { weapon: this.inventory[this.item].weapon, ammo: this.inventory[this.item].ammo, livetime: game.match.despawnTimer, dying: true }))

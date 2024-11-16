@@ -1,16 +1,15 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        define(['Utils'], factory);
+        define([], factory);
     } else if (typeof module === 'object' && module.exports) {
         // Nodejs
-        const Utils = require('../../utils.js');
-        module.exports = factory(Utils);
+        module.exports = factory();
     } else {
         // Browser globals (root is window)
-        root.Items = factory(root.Utils);
+        root.Items = factory();
     }
-}(typeof self !== 'undefined' ? self : this, function (Utils) {
+}(typeof self !== 'undefined' ? self : this, function () {
 
     /*
           ::::::::::: ::::::::::: ::::::::::   :::   :::

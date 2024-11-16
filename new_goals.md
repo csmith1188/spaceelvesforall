@@ -8,8 +8,8 @@
 - ~~move player on client~~
 - ~~send position back to user~~
 - fix desync/rubberbanding
-- import items/weapons
-- clientside aiming
+- ~~import items/weapons~~
+- clientside aiming + firing
 - bullets and debris
 - characters assigned to correct players
 

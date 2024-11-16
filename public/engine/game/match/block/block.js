@@ -57,7 +57,7 @@
             this.color = [100, 100, 100];    // Leave blank to add collision to a background
             this.colorSide = [200, 200, 200]; //The color of the wall of the block
             // if not in a browser
-            if (typeof window === undefined) {
+            if (typeof window !== 'undefined') {
                 this.img = new Image();
                 this.img.src = this.imgFile;
                 this.imgSide = new Image();
@@ -73,7 +73,7 @@
                 for (var key of Object.keys(options)) {
                     this[key] = options[key];
                 }
-            if (typeof window === undefined) this.img.src = this.imgFile;
+            if (typeof window !== 'undefined') this.img.src = this.imgFile;
         }
 
         step() {
