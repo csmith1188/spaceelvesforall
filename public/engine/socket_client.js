@@ -29,7 +29,7 @@ gameWSS.addEventListener('message', (event) => {
     let message;
     try {
         message = JSON.parse(event.data);
-        console.log(message);
+        // console.log(message);
     } catch (error) {
         console.log(error);
         return;
@@ -58,9 +58,9 @@ gameWSS.addEventListener('message', (event) => {
             for (let character of message.characters) {
                 let c = game.match.characters.find(c => c.parent.token.username === character.ownerName);
                 if (c) {
-                    c.HB.x = character.pos.x;
-                    c.HB.y = character.pos.y;
-                    c.HB.z = character.pos.z;
+                    c.HB.pos.x = character.pos.x;
+                    c.HB.pos.y = character.pos.y;
+                    c.HB.pos.z = character.pos.z;
                 }
             }
         }

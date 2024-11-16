@@ -491,9 +491,9 @@
                 // make lastHB the same as HB
                 this.lastHB = new Utils.Cylinder(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), this.HB.radius, this.HB.height);
 
-                this.HB.pos.x += this.speed.x;
-                this.HB.pos.y += this.speed.y;
-                this.HB.pos.z += this.speed.z;
+                this.HB.pos.x += this.speed.x * game.match.time.delta;
+                this.HB.pos.y += this.speed.y * game.match.time.delta;
+                this.HB.pos.z += this.speed.z * game.match.time.delta;
 
 
                 /*

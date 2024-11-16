@@ -2,7 +2,6 @@ const Players = require('./game/player/player.js');
 
 function broadcast(server, data) {
     if (!server) return;
-    console.log('Broadcasting', data);
     for (const player of server.getWss().clients) {
         player.send(JSON.stringify(data));
     }

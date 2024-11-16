@@ -26,7 +26,9 @@
                 ticks: 0,
                 start: performance.now(),
                 last: performance.now(),
-                delta: 0
+                delta: 0,
+                avgList: [],
+                avg: 0
             }
             this.setup();
         }
@@ -35,12 +37,12 @@
         }
 
         setup() {
-            this.map = new Maps.Map_FieldCity();
+            this.map = new Maps.Map_Deathbox();
         }
 
         awaitPlayers() {
             // if the length of the global game players is greater than or equal to the max players, start the match
-            if (game.players.length == 2) {
+            if (game.players.length == 1) {
                 // create a new character for each player
                 for (let i = 0; i < game.players.length; i++) {
                     console.log('Creating character for player', game.players[i].token.username);
@@ -55,6 +57,13 @@
                 this.time.ticks++;
                 this.time.delta = (performance.now() - this.time.last) / this.time.tickRate;
                 this.time.last = performance.now();
+                // this.time.avgList.push(this.time.delta);
+                // if (this.time.avgList.length > 60) {
+                //     this.time.avgList.shift();
+                //     this.time.avg = this.time.avgList.reduce((a, b) => a + b, 0) / this.time.avgList.length;
+                // }
+                // console.log(this.time.ticks, this.time.avg);
+                
 
                 switch (this.stage) {
                     case 'awaitPlayers':
