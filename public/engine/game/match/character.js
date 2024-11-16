@@ -1,16 +1,17 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        define(['Utils'], factory);
+        define(['Utils', 'Items'], factory);
     } else if (typeof module === 'object' && module.exports) {
         // Nodejs
         const Utils = require('../../utils.js');
-        module.exports = factory(Utils);
+        const Items = require('./item.js');
+        module.exports = factory(Utils, Items);
     } else {
         // Browser globals (root is window)
-        root.Characters = factory(root.Utils);
+        root.Characters = factory(root.Utils, root.Items);
     }
-}(typeof self !== 'undefined' ? self : this, function (Utils) {
+}(typeof self !== 'undefined' ? self : this, function (Utils, Items) {
 
     /*
           ::::::::  :::    :::     :::     :::::::::      :::      :::::::: ::::::::::: :::::::::: :::::::::
@@ -89,8 +90,8 @@
             */
             this.item = 0;
             this.inventory = [];
-            // this.inventory = [new Sword()];
-            // this.inventory[0].owner = this.parent;
+            this.inventory = [new Items.Sword()];
+            this.inventory[0].owner = this.parent;
             this.ammo = {
                 plasma: 1,
                 plasmaMax: 5,
@@ -105,7 +106,7 @@
               \___|_| \__,_| .__/_||_|_\__/__/
                            |_|
             */
-            if (game.client) {
+            if (typeof window !== 'undefined') {
                 this.img = new Image();
                 this.shadow = new Image();
                 this.shadow.src = 'img/sprites/shadow.png';
@@ -133,7 +134,7 @@
             this.HB = new Utils.Cylinder(new Utils.Vect3(this.spawnVect.x, this.spawnVect.y, this.spawnVect.z), 8, 32);
             this.lastHB = new Utils.Cylinder(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), this.HB.radius, this.HB.height);
             this.leftgfx = this.gfx + '_l'; // Set this after options so you only have to set gfx
-            if (game.client) {
+            if (typeof window !== 'undefined') {
                 this.img.src = this.gfx + '.png'
             }
             this.runFunc = [];
@@ -183,7 +184,7 @@
                             // If the player has positive power points (pp)
                             if (this.pp > 2) {
                                 // sounds.upBoost.currentTime = 0;
-                                // if (!this.muted && typeof window === 'object') sounds.upBoost.play();
+                                // if (!this.muted && typeof window !== 'undefined') sounds.upBoost.play();
                                 // Set the z momentum to 1 (move upwards)
                                 this.mom.z = 1;
                                 // Decrease the power points by 1
@@ -199,8 +200,10 @@
                         // if the player has positive power points (pp)
                         if (this.pp > 60) {
                             this.pp -= 60;
-                            sounds.boost.currentTime = 0;
-                            if (!this.muted && typeof window === 'object') sounds.boost.play();
+                            if (typeof window !== 'undefined') {
+                                sounds.boost.currentTime = 0;
+                                if (!this.muted) sounds.boost.play();
+                            }
                             this.speed.x += this.mom.x * 8;
                             this.speed.y += this.mom.y * 8;
                             this.speed.z += this.mom.z * 8;
@@ -417,7 +420,7 @@
                     if (c.solid && side) { //If the block is solid
                         if (this.owner == game.player) { // Only play for the player until sound ranges are implemented
                             // sounds.wallhit.currentTime = 0;
-                            if (!this.muted && typeof window === 'object') sounds.wallhit.play();
+                            if (!this.muted && typeof window !== 'undefined') sounds.wallhit.play();
                         }
                         switch (side) { //see which side you collided on
                             case 'front':
@@ -519,28 +522,28 @@
                     this.speed.x *= -game.match.map.collideReflect;
                     this.mom.x *= -game.match.map.collideReflect;
                     // sounds.wallhit.currentTime = 0;
-                    if (!this.muted && typeof window === 'object') sounds.wallhit.play();
+                    if (!this.muted && typeof window !== 'undefined') sounds.wallhit.play();
                 }
                 if (this.HB.pos.x > game.match.map.w) {
                     this.HB.pos.x = game.match.map.w;
                     this.speed.x *= -game.match.map.collideReflect;
                     this.mom.x *= -game.match.map.collideReflect;
                     // sounds.wallhit.currentTime = 0;
-                    if (!this.muted && typeof window === 'object') sounds.wallhit.play();
+                    if (!this.muted && typeof window !== 'undefined') sounds.wallhit.play();
                 }
                 if (this.HB.pos.y < 0) {
                     this.HB.pos.y = 0;
                     this.speed.y *= -game.match.map.collideReflect;
                     this.mom.y *= -game.match.map.collideReflect;
                     // sounds.wallhit.currentTime = 0;
-                    if (!this.muted && typeof window === 'object') sounds.wallhit.play();
+                    if (!this.muted && typeof window !== 'undefined') sounds.wallhit.play();
                 }
                 if (this.HB.pos.y > game.match.map.h) {
                     this.HB.pos.y = game.match.map.h;
                     this.speed.y *= -game.match.map.collideReflect;
                     this.mom.y *= -game.match.map.collideReflect;
                     // sounds.wallhit.currentTime = 0;
-                    if (!this.muted && typeof window === 'object') sounds.wallhit.play();
+                    if (!this.muted && typeof window !== 'undefined') sounds.wallhit.play();
                 }
 
                 /*
@@ -554,8 +557,10 @@
                     this.HB.pos.z = 0;
                     // this.speed.z *= -0.5
                     if (this.hover > 0) {
-                        // sounds.groundhit.currentTime = 0;
-                        if (!this.muted && typeof window === 'object') sounds.groundhit.play();
+                        if (typeof window !== 'undefined') {
+                            sounds.groundhit.currentTime = 0;
+                            if (!this.muted) sounds.groundhit.play();
+                        }
                     }
                 }
 
@@ -573,7 +578,7 @@
                 if (this.hp <= 0) {
                     this.active = false;
                     this.visible = false;
-                    if (!this.muted && typeof window === 'object')
+                    if (!this.muted && typeof window !== 'undefined')
                         this.deathSFX.play();
                     if (this.inventory[this.item])
                         game.match.map.blocks.push(new WeaponPickup(

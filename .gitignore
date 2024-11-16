@@ -4,3 +4,4 @@ data/database.db
 .vscode
 sessions
 .clinic
+node_trace*.log

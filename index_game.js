@@ -80,8 +80,11 @@ app.listen(PORT, () => {
 
 const tickInterval = global.game.time.tickRate; // ~16ms for 60Hz
 let lastTick = Date.now();
+let running = true;
 
 function gameLoop() {
+    if (!running) return;
+
     const now = Date.now();
     const delta = now - lastTick;
 
@@ -94,6 +97,16 @@ function gameLoop() {
 }
 
 gameLoop();
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+    running = false;
+    process.exit(); 
+});
+process.on('SIGTERM', () => {
+    running = false;
+    process.exit();
+});
 
 // const gameLoop = setInterval(() => {
 //     global.game.step();

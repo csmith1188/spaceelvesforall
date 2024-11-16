@@ -8,14 +8,19 @@
 - ~~move player on client~~
 - ~~send position back to user~~
 - fix desync/rubberbanding
+- import items/weapons
+- clientside aiming
+- bullets and debris
+- characters assigned to correct players
+
+- client side interfaces
+- why does it redownload block textures every second?
+- move fire function to items (hold to fire flamer)
 - match await player ready (await controls)
 - fix mouse controls aiming from camera instead character
-- fix fast movement speed
 - fix team selector rings
 - handle bots
-- client side interfaces
 - player calc and draw distance
 - show score tab
 - restore full camera functionality
 - offline mode
-- why does it redownload block textures every second?

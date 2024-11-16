@@ -20,7 +20,7 @@
     class Game {
         constructor(options) {
             this.players = [];
-            this.playerLimit = { min: 2, max: 2 };
+            this.playerLimit = { min: 1, max: 2 };
             this.client = false;
             this.match = null;
             this.window = {
@@ -63,7 +63,7 @@
                 this.time.avgList.shift();
                 this.time.avg = this.time.avgList.reduce((a, b) => a + b, 0) / this.time.avgList.length;
             }
-            console.log(`Ticks: ${this.time.ticks.toFixed(2)}\t Complete: ${this.time.diff.toFixed(2)}\t Delta: ${this.time.delta.toFixed(2)}\t AVG: ${this.time.avg.toFixed(2)}`);
+            // console.log(`Ticks: ${this.time.ticks.toFixed(2)}\t Complete: ${this.time.diff.toFixed(2)}\t Delta: ${this.time.delta.toFixed(2)}\t AVG: ${this.time.avg.toFixed(2)}`);
 
             if (typeof window !== 'undefined') {
                 this.player = this.players.find(player => player.token.id == token.id);
