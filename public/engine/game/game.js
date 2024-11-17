@@ -119,11 +119,16 @@
                     let powerups = this.match.map.blocks.filter(block => block.type == 'pickup');
                     // replace each powerup in the list with their pack()ed version
                     powerups = powerups.map(powerup => powerup.pack());
+                    // get all blocks in the list whose type is weapon
+                    let weapons = this.match.map.blocks.filter(block => block.type == 'weapon');
+                    // replace each weapon in the list with their pack()ed version
+                    weapons = weapons.map(weapon => weapon.pack());
                     // send all characters to the client
                     this.broadcast(this.wss, {
                         characters: characters,
                         bullets: bullets,
                         powerups: powerups,
+                        weapons: weapons,
                         time: Date.now()
                     });
 

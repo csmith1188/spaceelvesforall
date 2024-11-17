@@ -66,6 +66,7 @@
 
         */
         spawn(block) {
+            console.log(block);
             // find the character that the block belongs to
             let character = game.match.characters.find(c => c.id === block.user.id);
             if (block.type == "block") {
@@ -97,26 +98,26 @@
                     }
                 ));
             } else if (block.type == "pickup") {
+                let pos = new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z);
+                let vol = new Utils.Vect3(block.vol.x, block.vol.y, block.vol.z);
                 switch (block.subtype) {
                     case "health":
-                        this.blocks.push(new Powerups.HealthPickup(
-                            new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z),
-                            new Utils.Vect3(block.vol.x, block.vol.y, block.vol.z),
-                            {
-                                id: block.id
-                            }
-                        ));
+                        this.blocks.push(new Powerups.HealthPickup(pos, vol, { id: block.id }));
+                        break;
+                    case "ammo_ballistic":
+                        this.blocks.push(new Powerups.Ammo_Ballistic(pos, vol, { id: block.id }));
+                        break;
+                    case "ammo_plasma":
+                        this.blocks.push(new Powerups.Ammo_Plasma(pos, vol, { id: block.id }));
                         break;
                     default:
-                        this.blocks.push(new Powerups.HealthPickup(
-                            new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z),
-                            new Utils.Vect3(block.vol.x, block.vol.y, block.vol.z),
-                            {
-                                id: block.id
-                            }
-                        ));
+                        this.blocks.push(new Powerups.HealthPickup(pos, vol, { id: block.id }));
                         break;
                 }
+            } else if (block.type == "weapon") {
+                let pos = new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z);
+                let vol = new Utils.Vect3(block.vol.x, block.vol.y, block.vol.z);
+                this.blocks.push(new Powerups.WeaponPickup(pos, vol, { id: block.id, weapon: block.weapon || "pistol" }));
             }
         }
 

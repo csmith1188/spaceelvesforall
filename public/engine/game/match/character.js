@@ -92,8 +92,8 @@
             */
             this.item = 0;
             this.inventory = [];
-            // this.inventory = [new Items.Sword()];
-            this.inventory = [new Items.Pistol()];
+            this.inventory = [new Items.Sword()];
+            // this.inventory = [new Items.Pistol()];
             this.inventory[0].owner = this.parent;
             this.ammo = {
                 plasma: 1,
@@ -991,7 +991,11 @@
             return {
                 ownerName: this.parent.token.username || this.name,
                 id: this.id,
-                pos: this.HB.pos
+                pos: this.HB.pos,
+                speed: this.speed,
+                hp: this.hp,
+                pp: this.pp,
+                ammo: this.ammo
             }
         }
 

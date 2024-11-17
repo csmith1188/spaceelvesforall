@@ -63,6 +63,9 @@ gameWSS.addEventListener('message', (event) => {
                     c.serverPos.z = character.pos.z;
                     c.serverPos.time = message.time;
                     c.id = character.id;
+                    c.hp = character.hp;
+                    c.pp = character.pp;
+                    c.ammo = character.ammo;
                 }
             }
         }
@@ -109,6 +112,20 @@ gameWSS.addEventListener('message', (event) => {
                     p.serverPos.time = message.time;
                 } else {
                     game.match.map.spawn({ type: "pickup", ...powerup });
+                }
+            }
+        }
+
+        if (message.weapons) {
+            for (let weapon of message.weapons) {
+                let p = game.match.map.blocks.find(p => p.id === weapon.id);
+                if (p) {
+                    p.serverPos.x = weapon.pos.x;
+                    p.serverPos.y = weapon.pos.y;
+                    p.serverPos.z = weapon.pos.z;
+                    p.serverPos.time = message.time;
+                } else {
+                    game.match.map.spawn({ type: "weapon", ...weapon });
                 }
             }
         }

@@ -51,7 +51,7 @@
                 character.speed.y = 0;
                 character.speed.z = 0;
                 character.hp = character.hp_max;
-                character.inventory = [new Items.Pistol()];
+                character.inventory = [new Items.Sword()];
                 character.item = 0;
                 character.pp = character.pp_max;
                 character.ammo.ballistic = 1;
