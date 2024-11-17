@@ -14,6 +14,8 @@
 - ~~fix desync/rubberbanding (slow cpu issue?)~~
 - ~~characters assigned to correct players~~
 - fix team selector rings, second player sees nuetral first player
+- spawn weapons completely
+- fix bullet size
 
 - client side interfaces
 - why does it redownload block textures every second?

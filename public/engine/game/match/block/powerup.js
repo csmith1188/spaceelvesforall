@@ -38,6 +38,7 @@
             super(id, posVect, volVect, options);
             this.HB = new Utils.Cube(new Utils.Vect3(posVect.x, posVect.y, posVect.z + 16), new Utils.Vect3(32, 32, 32));
             this.type = 'pickup';
+            this.subtype = 'pickup';
             if (typeof window !== 'undefined') this.touchSFX = sounds.pickup_ammo;
             this.solid = false;
             this.shadowDraw = true;
@@ -54,8 +55,43 @@
 
         }
 
+        pack() {
+            let pack = {
+                id: this.id,
+                pos: this.HB.pos
+            }
+            if (this.user != null) {
+                pack.user = {
+                    id: this.user.id,
+                    team: this.user.team,
+                    name: this.user.name
+                }
+            }
+            if (this.HB instanceof Utils.Cube) {
+                pack.shape = 'cube';
+                pack.vol = this.HB.volume;
+            } else if (this.HB instanceof Utils.Cylinder) {
+                pack.shape = 'cylinder';
+                pack.radius = this.HB.radius;
+                pack.height = this.HB.height;
+            }
+
+            pack.subtype = this.subtype;
+
+            // // for each key in this object
+            // // if that key's value is not equal to the default value
+            // // add it to the pack
+            // for (let key in this) {
+            //     if (this[key] !== PickUp.prototype[key]) {
+            //         pack[key] = this[key];
+            //     }
+            // }
+
+            return pack;
+        }
+
         trigger(actor, side) {
-            if (actor instanceof Character) {
+            if (game.match.characters.includes(actor)) {
                 this.active = false;
                 // if this actor's target was this pickup, set it to null
                 if (actor.target == this) actor.target = null;
@@ -90,7 +126,7 @@
             this.colorSide = [255, 128, 128];
             this.shadowDraw = true;
             this.runFunc.push((actor, side) => {
-                if (actor instanceof Character)
+                if (game.match.characters.includes(actor))
                     if (actor.ammo.ballistic < actor.ammo.ballisticMax) {
                         actor.ammo.ballistic++; // Add ballistic ammo
                         // Play pickup sound
@@ -105,8 +141,10 @@
                 for (var key of Object.keys(options)) {
                     this[key] = options[key];
                 }
-            this.img.src = this.imgFile;
-            this.imgSide.src = this.imgFileSide;
+            if (typeof window !== 'undefined') {
+                this.img.src = this.imgFile;
+                this.imgSide.src = this.imgFileSide;
+            }
         }
     }
 
@@ -128,12 +166,11 @@
             this.imgFile = 'img/sprites/pickups/ammo_plasma_top.png';
             this.imgFileSide = 'img/sprites/pickups/ammo_plasma_top.png';
             // this.imgFileSide = 'img/sprites/pickups/ammo_plasma_side.png';
-            this.img.src = this.imgFile;
             this.color = [255, 0, 255];
             this.colorSide = [255, 128, 255];
             this.shadowDraw = true;
             this.runFunc.push((actor, side) => {
-                if (actor instanceof Character)
+                if (game.match.characters.includes(actor))
                     if (actor.ammo.plasma < actor.ammo.plasmaMax) {
                         // Play pickup sound
                         this.touchSFX.currentTime = 0;
@@ -148,8 +185,10 @@
                 for (var key of Object.keys(options)) {
                     this[key] = options[key];
                 }
-            this.img.src = this.imgFile;
-            this.imgSide.src = this.imgFileSide;
+            if (typeof window !== 'undefined') {
+                this.img.src = this.imgFile;
+                this.imgSide.src = this.imgFileSide;
+            }
         }
     }
 
@@ -171,12 +210,12 @@
             this.imgFile = 'img/sprites/pickups/health_top.png';
             this.imgFileSide = 'img/sprites/pickups/health_top.png';
             // this.imgFileSide = 'img/sprites/pickups/health_side.png';
-            this.touchSFX = sounds.pickup_health;
+            if (typeof window !== 'undefined') this.touchSFX = sounds.pickup_health;
             this.color = [0, 255, 0];
             this.colorSide = [128, 255, 128];
             //if health is not full
             this.runFunc.push((actor, side) => {
-                if (actor instanceof Character)
+                if (game.match.characters.includes(actor))
                     if (actor.hp < actor.hp_max) {
                         // Play pickup sound
                         this.touchSFX.currentTime = 0;
@@ -192,8 +231,10 @@
                 for (var key of Object.keys(options)) {
                     this[key] = options[key];
                 }
-            this.img.src = this.imgFile;
-            this.imgSide.src = this.imgFileSide;
+            if (typeof window !== 'undefined') {
+                this.img.src = this.imgFile;
+                this.imgSide.src = this.imgFileSide;
+            }
         }
     }
 
@@ -220,7 +261,7 @@
             if (typeof window !== 'undefined') this.touchSFX = sounds.pickup_weapon;
             this.runFunc = [(actor, side) => {
                 if (this.pickupDelay < game.match.ticks) {
-                    if (actor instanceof Character) {
+                    if (game.match.characters.includes(actor)) {
                         if (actor.inventory.length < 2) {
                             if (!actor.muted)
                                 this.touchSFX.play();

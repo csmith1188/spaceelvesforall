@@ -24,18 +24,20 @@ function gameHandler(ws, req) {
     }
 
     // if the game is full, close the connection
-    if (game.players.length >= game.playerLimit.max) {
-        console.error('Game server is full');
-        ws.send(JSON.stringify({ debug: 'Game server is full' }));
-        ws.close();
-        return;
+    if (game.match) {
+        if (game.players.length >= game.match.playerLimit.max) {
+            console.error('Game server is full');
+            ws.send(JSON.stringify({ debug: 'Game server is full' }));
+            ws.close();
+            return;
+        }
     }
 
     // set the token for the websocket
     ws.token = req.session.token;
 
     // if this is the first player when this user connects, load a new match
-    if (game.players.length == 0) game.loadMatch('Match');
+    if (game.players.length == 0) game.loadMatch('ForHonorMP');
     ws.send(JSON.stringify({ debug: 'Loaded new match', newMatch: game.match }));
 
     // create a new player

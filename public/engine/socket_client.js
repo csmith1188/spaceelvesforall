@@ -99,8 +99,22 @@ gameWSS.addEventListener('message', (event) => {
             }
         }
 
+        if (message.powerups) {
+            for (let powerup of message.powerups) {
+                let p = game.match.map.blocks.find(p => p.id === powerup.id);
+                if (p) {
+                    p.serverPos.x = powerup.pos.x;
+                    p.serverPos.y = powerup.pos.y;
+                    p.serverPos.z = powerup.pos.z;
+                    p.serverPos.time = message.time;
+                } else {
+                    game.match.map.spawn({ type: "pickup", ...powerup });
+                }
+            }
+        }
+
         if (message.newMatch) {
-            game.loadMatch(message.match);
+            game.loadMatch(message.newMatch);
         }
     }
 });

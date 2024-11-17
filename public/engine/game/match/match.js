@@ -16,6 +16,7 @@
     class Match {
         constructor() {
             this.matchType = 'Match';
+            this.playerLimit = { min: 1, max: 2 };
             this.characters = [];
             this.paused = false;
             this.runFunc = [];
@@ -37,7 +38,7 @@
 
         awaitPlayers() {
             // if the length of the global game players is greater than or equal to the max players, start the match
-            if (game.players.length >= game.playerLimit.min) {
+            if (game.players.length >= this.playerLimit.min) {
                 // create a new character for each player
                 for (let i = 0; i < game.players.length; i++) {
                     console.log('Creating character for player', game.players[i].token.username);

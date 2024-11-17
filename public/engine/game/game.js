@@ -5,6 +5,7 @@
     } else if (typeof module === 'object' && module.exports) {
         // Node.js
         const Matches = require('./match/match.js');
+        require('./match/match_forhonormp.js');
         module.exports = factory(Matches);
     } else {
         // Browser globals: attach each export directly to the global scope
@@ -20,8 +21,8 @@
     class Game {
         constructor(options) {
             this.players = [];
-            this.playerLimit = { min: 2, max: 2 };
             this.client = false;
+            this.multiplayer = true;
             this.match = null;
             this.window = {
                 w: 0,
@@ -114,10 +115,15 @@
                     characters = characters.map(character => character.pack());
                     // replace each bullet in the list with their pack()ed version
                     let bullets = this.match.map.bullets.map(bullet => bullet.pack());
+                    // get all blocks in the list whose type is pickup
+                    let powerups = this.match.map.blocks.filter(block => block.type == 'pickup');
+                    // replace each powerup in the list with their pack()ed version
+                    powerups = powerups.map(powerup => powerup.pack());
                     // send all characters to the client
                     this.broadcast(this.wss, {
                         characters: characters,
                         bullets: bullets,
+                        powerups: powerups,
                         time: Date.now()
                     });
 
@@ -126,13 +132,24 @@
         }
 
         loadMatch(match) {
-            switch (match) {
-                case 'Match':
-                    this.match = new Matches.Match();
-                    break;
-                default:
-                    this.match = new Matches.Match();
-                    break;
+            try {
+
+                switch (match) {
+                    case 'Match':
+                        this.match = new Matches.Match();
+                        break;
+                    case 'ForHonorMP':
+                        console.log('For Honor Multiplayer');
+
+                        this.match = new Matches.ForHonorMP();
+                        break;
+                    default:
+                        this.match = new Matches.Match();
+                        break;
+                }
+            } catch (error) {
+                console.log(error);
+                
             }
         }
 

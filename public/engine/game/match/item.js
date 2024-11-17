@@ -623,8 +623,6 @@
 
         use(user, aimX, aimY, aimZ, mode) {
             // Check cooldown
-            console.log(game.match.time.ticks, this.nextCool);
-
             if (game.match.time.ticks > this.nextCool) {
                 // Stop reloading
                 this.reloading = false;

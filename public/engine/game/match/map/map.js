@@ -79,11 +79,30 @@
                     block.user,
                     {
                         speed: block.speed,
-                        radius: block.radius,
-                        height: block.height,
                         id: block.id
                     }
                 ));
+            } else if (block.type == "pickup") {
+                switch (block.subtype) {
+                    case "health":
+                        this.blocks.push(new Powerups.HealthPickup(
+                            new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z),
+                            new Utils.Vect3(block.vol.x, block.vol.y, block.vol.z),
+                            {
+                                id: block.id
+                            }
+                        ));
+                        break;
+                    default:
+                        this.blocks.push(new Powerups.HealthPickup(
+                            new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z),
+                            new Utils.Vect3(block.vol.x, block.vol.y, block.vol.z),
+                            {
+                                id: block.id
+                            }
+                        ));
+                        break;
+                }
             }
         }
 
