@@ -734,12 +734,12 @@
                             let tempz = (Math.random() * 4) - 2;
                             let tempC = Math.ceil(Math.random() * 255);
                             game.match.map.debris.push(
-                                new Block(
+                                new Blocks.Block(
                                     new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
                                     new Utils.Vect3(1, 1, 1),
                                     {
                                         speed: new Utils.Vect3(tempx + (this.speed.x * 0.25), tempy + (this.speed.y * 0.25), tempz + (this.speed.z * 0.25)),
-                                        HB: new Cube(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Utils.Vect3(6, 3, 1)),
+                                        HB: new Utils.Cube(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Utils.Vect3(6, 3, 1)),
                                         z: this.HB.pos.z,
                                         color: [tempC, tempC, tempC],
                                         livetime: 20,

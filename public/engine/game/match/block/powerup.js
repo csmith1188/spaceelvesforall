@@ -129,10 +129,12 @@
                 if (game.match.characters.includes(actor))
                     if (actor.ammo.ballistic < actor.ammo.ballisticMax) {
                         actor.ammo.ballistic++; // Add ballistic ammo
-                        // Play pickup sound
-                        this.touchSFX.currentTime = 0;
-                        if (!actor.muted)
-                            this.touchSFX.play();
+                        if (typeof window !== 'undefined') {
+                            // Play pickup sound
+                            this.touchSFX.currentTime = 0;
+                            if (!actor.muted)
+                                this.touchSFX.play();
+                        }
                     } else {
                         this.active = true; // Turn this back on if the player is full ammo
                     }
@@ -172,10 +174,12 @@
             this.runFunc.push((actor, side) => {
                 if (game.match.characters.includes(actor))
                     if (actor.ammo.plasma < actor.ammo.plasmaMax) {
-                        // Play pickup sound
-                        this.touchSFX.currentTime = 0;
-                        if (!actor.muted)
-                            this.touchSFX.play();
+                        if (typeof window !== 'undefined') {
+                            // Play pickup sound
+                            this.touchSFX.currentTime = 0;
+                            if (!actor.muted)
+                                this.touchSFX.play();
+                        }
                         actor.ammo.plasma++; // Add plasma ammo
                     } else {
                         this.active = true; // Turn this back on if the player is full ammo
@@ -217,10 +221,12 @@
             this.runFunc.push((actor, side) => {
                 if (game.match.characters.includes(actor))
                     if (actor.hp < actor.hp_max) {
-                        // Play pickup sound
-                        this.touchSFX.currentTime = 0;
-                        if (!actor.muted)
-                            this.touchSFX.play();
+                        if (typeof window !== 'undefined') {
+                            // Play pickup sound
+                            this.touchSFX.currentTime = 0;
+                            if (!actor.muted)
+                                this.touchSFX.play();
+                        }
                         actor.hp = Math.min(actor.hp + 50, actor.hp_max); // Add health
                     }
                     else {

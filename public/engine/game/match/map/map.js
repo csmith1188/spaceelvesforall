@@ -79,10 +79,13 @@
                     block.user,
                     {
                         speed: block.speed,
+                        radius: block.radius,
+                        height: block.height,
                         id: block.id
                     }
                 ));
             } else if (block.type == "pickup") {
+
                 switch (block.subtype) {
                     case "health":
                         this.blocks.push(new Powerups.HealthPickup(
