@@ -1,15 +1,18 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        define([], factory);
+        define(['Projectiles', 'Utils', 'Blocks'], factory);
     } else if (typeof module === 'object' && module.exports) {
         // Nodejs
-        module.exports = factory();
+        const Projectiles = require('./block/projectile.js');
+        const Utils = require('../../utils.js');
+        const Blocks = require('./block/block.js');
+        module.exports = factory(Projectiles, Utils, Blocks);
     } else {
         // Browser globals (root is window)
-        root.Items = factory();
+        root.Items = factory(root.Projectiles, root.Utils, root.Blocks);
     }
-}(typeof self !== 'undefined' ? self : this, function () {
+}(typeof self !== 'undefined' ? self : this, function (Projectiles, Utils, Blocks) {
 
     /*
           ::::::::::: ::::::::::: ::::::::::   :::   :::
@@ -33,10 +36,10 @@
         }
 
         step() {
-            if (game.match.ticks == this.nextCool) {
+            if (game.match.time.ticks == this.nextCool) {
                 if (this.reloading) {
                     this.reloading = false;
-                    if (this.owner instanceof Player)
+                    if (this.owner && typeof window !== 'undefined')
                         this.reload_done.play();
                 }
             }
@@ -84,16 +87,18 @@
 
         use(user, aimX, aimY, aimZ, mode) {
             // Check cooldown
-            if (game.match.ticks > this.nextCool) {
+            if (game.match.time.ticks > this.nextCool) {
                 // Stop reloading
                 this.reloading = false;
                 // Check ammo
                 if (this.ammo > 0) {
                     // Set next cooldown
-                    this.nextCool = game.match.ticks + this.coolDown;
+                    this.nextCool = game.match.time.ticks + this.coolDown;
                     this.ammo--; // consume a bullet
-                    this.shootSFX.currentTime = 0;
-                    if (!user.muted) this.shootSFX.play(); // play shoot sound
+                    if (typeof window !== 'undefined') {
+                        this.shootSFX.currentTime = 0;
+                        if (!user.muted) this.shootSFX.play(); // play shoot sound
+                    }
                     //find the distance from player to mouse with pythagorean theorem
                     let distance = ((aimX ** 2) + (aimY ** 2)) ** 0.5;
                     //Normalize the dimension distance by the real distance (ratio)
@@ -115,29 +120,31 @@
                     aimY *= this.projectileSpeed;
                     aimZ *= this.projectileSpeed;
                     // Add bullet to map
-                    game.match.map.bullets.push(
-                        new Bullet(
-                            allID++, // ID
-                            new Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), new Vect3(4, 4, 0), user, // Position and size
-                            {
-                                speed: new Vect3(aimX, aimY, 0), //aimZ doesn't work
-                                color: user.color
-                            }
-                        )
-                    );
+                    if (typeof window === 'undefined')
+                        game.match.map.bullets.push(
+                            new Projectiles.Bullet(
+                                new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), // Position
+                                new Utils.Vect3(4, 4, 0), // size
+                                user, // the person firing this bullet
+                                {
+                                    speed: new Utils.Vect3(aimX, aimY, 0), //aimZ doesn't work
+                                    color: user.color
+                                }
+                            )
+                        );
 
                     if (user.parent.controller.type == 'gamepad') user.parent.controller.rumble(100, 0.5, 0);
                     if (user.parent.controller.type == 'touch' && user.parent.controller.canVibrate) navigator.vibrate(50);
 
 
                 } else {
-                    if (this.owner instanceof Player)
+                    if (this.owner && typeof window !== 'undefined')
                         if (!user.muted)
                             this.reload_empty.play();
                     if (user.ammo[this.type] > 0 && !this.reloading) {
                         this.reloading = true;    // set reloading to true
                         this.ammo = this.ammoMax;   // reload
-                        this.nextCool = game.match.ticks + this.reloadTime; // set reload time
+                        this.nextCool = game.match.time.ticks + this.reloadTime; // set reload time
                         user.ammo[this.type]--;      // consume a clip from a user
                     }
                 }
@@ -187,19 +194,21 @@
 
         use(user, aimX, aimY, aimZ, mode) {
             // Check cooldown
-            if (game.match.ticks > this.nextCool) {
+            if (game.match.time.ticks > this.nextCool) {
                 // Stop reloading
                 this.reloading = false;
                 // Check ammo
                 if (this.ammo > 0) {
                     // Set next cooldown
-                    this.nextCool = game.match.ticks + this.coolDown;
+                    this.nextCool = game.match.time.ticks + this.coolDown;
                     let xaim = aimX;
                     let yaim = aimY;
                     let zaim = aimZ;
                     this.ammo--; // consume a bullet
-                    this.shootSFX.currentTime = 0;
-                    if (!user.muted) this.shootSFX.play(); // play shoot sound
+                    if (typeof window !== 'undefined') {
+                        this.shootSFX.currentTime = 0;
+                        if (!user.muted) this.shootSFX.play(); // play shoot sound
+                    }
                     //find the distance from player to mouse with pythagorean theorem
                     let distance = ((xaim ** 2) + (yaim ** 2)) ** 0.5;
                     //Normalize the dimension distance by the real distance (ratio)
@@ -213,11 +222,10 @@
                     // Add the user's speed and multiply speed BEFORE spread for satisfying flamer ???
                     // Add bullet to map
                     game.match.map.bullets.push(
-                        new Bullet(
-                            allID++, // ID
-                            new Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), new Vect3(4, 4, 0), user, // Position and size
+                        new Projectiles.Bullet(
+                            new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), new Utils.Vect3(4, 4, 0), user, // Position and size
                             {
-                                speed: new Vect3(xaim, yaim, 0), //zaim doesn't work
+                                speed: new Utils.Vect3(xaim, yaim, 0), //zaim doesn't work
                                 color: user.color,
                                 damage: this.damage,
                                 livetime: 300,
@@ -231,12 +239,11 @@
                             let tempz = ((Math.random() * 1) - 0.5) * 2;
                             game.match.map.debris.push(
                                 new Block(
-                                    allID++,
-                                    new Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
-                                    new Vect3(1, 1, 1),
+                                    new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
+                                    new Utils.Vect3(1, 1, 1),
                                     {
-                                        speed: new Vect3(tempx, tempy, tempz),
-                                        HB: new Cube(new Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Vect3(4, 4, 4)),
+                                        speed: new Utils.Vect3(tempx, tempy, tempz),
+                                        HB: new Cube(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Utils.Vect3(4, 4, 4)),
                                         z: this.HB.pos.z,
                                         color: [220, 220, 200],
                                         livetime: 15,
@@ -255,12 +262,11 @@
                             let tempC = Math.ceil(Math.random() * 255);
                             game.match.map.debris.push(
                                 new Block(
-                                    allID++,
-                                    new Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
-                                    new Vect3(1, 1, 1),
+                                    new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
+                                    new Utils.Vect3(1, 1, 1),
                                     {
-                                        speed: new Vect3(tempx + (this.speed.x * 0.25), tempy + (this.speed.y * 0.25), tempz + (this.speed.z * 0.25)),
-                                        HB: new Cube(new Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Vect3(6, 3, 1)),
+                                        speed: new Utils.Vect3(tempx + (this.speed.x * 0.25), tempy + (this.speed.y * 0.25), tempz + (this.speed.z * 0.25)),
+                                        HB: new Cube(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Utils.Vect3(6, 3, 1)),
                                         z: this.HB.pos.z,
                                         color: [0, tempC, 255],
                                         livetime: 20,
@@ -283,15 +289,15 @@
 
 
                 } else {
-                    if (this.owner instanceof Player)
+                    if (this.owner && typeof window !== 'undefined')
                         if (!user.muted)
                             this.reload_empty.play();
                     if (user.ammo[this.type] > 0 && !this.reloading) {
                         this.reloading = true;    // set reloading to true
                         this.ammo = this.ammoMax;   // reload
-                        this.nextCool = game.match.ticks + this.reloadTime; // set reload time
+                        this.nextCool = game.match.time.ticks + this.reloadTime; // set reload time
                         user.ammo[this.type]--;      // consume a clip from a user
-                        if (this.owner instanceof Player)
+                        if (this.owner && typeof window !== 'undefined')
                             if (!user.muted)
                                 this.reload_empty.play();
                     }
@@ -340,17 +346,19 @@
         }
         use(user, aimX, aimY, mode) {
             // Check cooldown
-            if (game.match.ticks > this.nextCool) {
+            if (game.match.time.ticks > this.nextCool) {
                 user.parent.controller.buttons.fire.last = 0;
                 // Check ammo
                 if (this.ammo > 0) {
                     // Stop reloading
                     this.reloading = false;
                     // Set next cooldown
-                    this.nextCool = game.match.ticks + this.coolDown;
+                    this.nextCool = game.match.time.ticks + this.coolDown;
                     this.ammo--; // consume a bullet
-                    this.shootSFX.currentTime = 0;
-                    // if (!user.muted) this.shootSFX.play(); // play shoot sound
+                    if (typeof window !== 'undefined') {
+                        this.shootSFX.currentTime = 0;
+                        if (!user.muted) this.shootSFX.play(); // play shoot sound
+                    }
                     if (!user.muted)
                         this.shootSFX.play(); // play shoot sound
                     for (let i = 0; i < 5; i++) {
@@ -372,12 +380,11 @@
                         aimY += spreadY;
                         // Add bullets to map
                         game.match.map.bullets.push(
-                            new Bullet(
-                                allID++, // ID
-                                new Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), new Vect3(4, 4, 0), user, // Position and size
+                            new Projectiles.Bullet(
+                                new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), new Utils.Vect3(4, 4, 0), user, // Position and size
                                 {
                                     livetime: 16,
-                                    speed: new Vect3(aimX, aimY, 0),
+                                    speed: new Utils.Vect3(aimX, aimY, 0),
                                     color: user.color,
                                     damage: 10,
                                     touchSFX: sounds.hit_flamer
@@ -391,15 +398,15 @@
 
 
                 } else {
-                    if (this.owner instanceof Player)
+                    if (this.owner && typeof window !== 'undefined')
                         if (!user.muted)
                             this.reload_empty.play();
                     if (user.ammo[this.type] > 0 && !this.reloading) {
                         this.reloading = true;    // set reloading to true
                         this.ammo = this.ammoMax;   // reload
-                        this.nextCool = game.match.ticks + this.reloadTime; // set reload time
+                        this.nextCool = game.match.time.ticks + this.reloadTime; // set reload time
                         user.ammo[this.type]--;      // consume a clip from a user
-                        if (this.owner instanceof Player)
+                        if (this.owner && typeof window !== 'undefined')
                             if (!user.muted)
                                 this.reload_empty.play();
                     }
@@ -450,16 +457,18 @@
 
         use(user, aimX, aimY, aimZ, mode) {
             // Check cooldown
-            if (game.match.ticks > this.nextCool) {
+            if (game.match.time.ticks > this.nextCool) {
                 // Stop reloading
                 this.reloading = false;
                 // Check ammo
                 if (this.ammo > 0) {
                     // Set next cooldown
-                    this.nextCool = game.match.ticks + this.coolDown;
+                    this.nextCool = game.match.time.ticks + this.coolDown;
                     this.ammo--; // consume a bullet
-                    this.shootSFX.currentTime = 0;
-                    if (!user.muted) this.shootSFX.play(); // play shoot sound
+                    if (typeof window !== 'undefined') {
+                        this.shootSFX.currentTime = 0;
+                        if (!user.muted) this.shootSFX.play(); // play shoot sound
+                    }
                     //find the distance from player to mouse with pythagorean theorem
                     let distance = ((aimX ** 2) + (aimY ** 2)) ** 0.5;
                     //Normalize the dimension distance by the real distance (ratio)
@@ -476,11 +485,10 @@
 
                     // Add a new missile at this user's position
                     game.match.map.bullets.push(
-                        new Bullet(
-                            allID++, // ID
-                            new Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), new Vect3(4, 4, 0), user, // Position and size
+                        new Projectiles.Bullet(
+                            new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), new Utils.Vect3(4, 4, 0), user, // Position and size
                             {
-                                speed: new Vect3(aimX, aimY, 0),
+                                speed: new Utils.Vect3(aimX, aimY, 0),
                                 parent: user,
                                 color: user.color,
                                 damage: 10,
@@ -512,12 +520,11 @@
                             // add a debris block to the map at the player's position with a random speed
                             game.match.map.debris.push(
                                 new Block(
-                                    allID++,
-                                    new Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
-                                    new Vect3(1, 1, 1),
+                                    new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
+                                    new Utils.Vect3(1, 1, 1),
                                     {
-                                        speed: new Vect3(tempx, tempy, tempz),
-                                        HB: new Cube(new Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Vect3(4, 4, 4)),
+                                        speed: new Utils.Vect3(tempx, tempy, tempz),
+                                        HB: new Cube(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Utils.Vect3(4, 4, 4)),
                                         z: this.HB.pos.z,
                                         color: [tempC1, 0, tempC2],
                                         colorSide: [tempC2, 0, tempC1],
@@ -538,12 +545,11 @@
                             let tempC = Math.ceil(Math.random() * 255);
                             game.match.map.debris.push(
                                 new Block(
-                                    allID++,
-                                    new Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
-                                    new Vect3(1, 1, 1),
+                                    new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
+                                    new Utils.Vect3(1, 1, 1),
                                     {
-                                        speed: new Vect3(tempx + (this.speed.x * 0.25), tempy + (this.speed.y * 0.25), tempz + (this.speed.z * 0.25)),
-                                        HB: new Cube(new Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Vect3(6, 3, 1)),
+                                        speed: new Utils.Vect3(tempx + (this.speed.x * 0.25), tempy + (this.speed.y * 0.25), tempz + (this.speed.z * 0.25)),
+                                        HB: new Cube(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Utils.Vect3(6, 3, 1)),
                                         z: this.HB.pos.z,
                                         color: [255, tempC, 0],
                                         livetime: 20,
@@ -562,13 +568,13 @@
 
 
                 } else {
-                    if (this.owner instanceof Player)
+                    if (this.owner && typeof window !== 'undefined')
                         if (!user.muted)
                             this.reload_empty.play();
                     if (user.ammo[this.type] > 0 && !this.reloading) {
                         this.reloading = true;    // set reloading to true
                         this.ammo = this.ammoMax;   // reload
-                        this.nextCool = game.match.ticks + this.reloadTime; // set reload time
+                        this.nextCool = game.match.time.ticks + this.reloadTime; // set reload time
                         user.ammo[this.type]--;      // consume a clip from a user
                     }
                 }
@@ -617,16 +623,20 @@
 
         use(user, aimX, aimY, aimZ, mode) {
             // Check cooldown
-            if (game.match.ticks > this.nextCool) {
+            console.log(game.match.time.ticks, this.nextCool);
+
+            if (game.match.time.ticks > this.nextCool) {
                 // Stop reloading
                 this.reloading = false;
                 // Check ammo
                 if (user.pp >= this.ppCost) {
                     user.pp -= this.ppCost;
                     // Set next cooldown
-                    this.nextCool = game.match.ticks + this.coolDown;
-                    this.shootSFX.currentTime = 0;
-                    if (!user.muted) this.shootSFX.play(); // play shoot sound
+                    this.nextCool = game.match.time.ticks + this.coolDown;
+                    if (typeof window !== 'undefined') {
+                        this.shootSFX.currentTime = 0;
+                        if (!user.muted) this.shootSFX.play(); // play shoot sound
+                    }
                     //find the distance from player to mouse with pythagorean theorem
                     let distance = ((aimX ** 2) + (aimY ** 2)) ** 0.5;
                     //Normalize the dimension distance by the real distance (ratio)
@@ -636,16 +646,15 @@
 
                     // Add a new missile at this user's position
                     game.match.map.bullets.push(
-                        new Bullet(
-                            allID++, // ID
-                            new Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), new Vect3(4, 4, 0), user, // Position and size
+                        new Projectiles.Bullet(
+                            new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), new Utils.Vect3(4, 4, 0), user, // Position and size
                             {
-                                speed: new Vect3(aimX, aimY, 0),
+                                speed: new Utils.Vect3(aimX, aimY, 0),
                                 parent: user,
                                 color: user.color,
                                 damage: 10,
                                 livetime: 10,
-                                touchSFX: sounds.hit_lance,
+                                touchSFX: typeof window !== 'undefined' ? sounds.hit_lance : null,
                                 opacity: 0,
                                 shadowDraw: false,
                                 force: 0.2
@@ -653,7 +662,7 @@
                         )
                     );
                     // Overwrite the runFunc list with this function
-                    // TODO: Make a new bullet class for a sword strike
+                    // TODO: Make a new Projectiles.Bullet class for a sword strike
                     game.match.map.bullets[game.match.map.bullets.length - 1].runFunc = [
                         function () {
                             this.HB.pos.x = this.parent.HB.pos.x + aimX;
@@ -671,13 +680,12 @@
                             let compareY = this.HB.pos.y - ((this.parent.HB.pos.y - this.HB.pos.y) / 2);
 
                             game.match.map.debris.push(
-                                new Block(
-                                    allID++,
-                                    new Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
-                                    new Vect3(1, 1, 1),
+                                new Blocks.Block(
+                                    new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
+                                    new Utils.Vect3(1, 1, 1),
                                     {
-                                        speed: new Vect3(tempx, tempy, tempz),
-                                        HB: new Cube(new Vect3(compareX, compareY, this.HB.pos.z + this.HB.height), new Vect3(2, 2, 2)),
+                                        speed: new Utils.Vect3(tempx, tempy, tempz),
+                                        HB: new Utils.Cube(new Utils.Vect3(compareX, compareY, this.HB.pos.z + this.HB.height), new Utils.Vect3(2, 2, 2)),
                                         z: this.HB.pos.z,
                                         color: [tempC1, tempC1, tempC1],
                                         colorSide: [tempC2, tempC2, tempC2],
@@ -729,12 +737,11 @@
                             let tempC = Math.ceil(Math.random() * 255);
                             game.match.map.debris.push(
                                 new Block(
-                                    allID++,
-                                    new Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
-                                    new Vect3(1, 1, 1),
+                                    new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
+                                    new Utils.Vect3(1, 1, 1),
                                     {
-                                        speed: new Vect3(tempx + (this.speed.x * 0.25), tempy + (this.speed.y * 0.25), tempz + (this.speed.z * 0.25)),
-                                        HB: new Cube(new Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Vect3(6, 3, 1)),
+                                        speed: new Utils.Vect3(tempx + (this.speed.x * 0.25), tempy + (this.speed.y * 0.25), tempz + (this.speed.z * 0.25)),
+                                        HB: new Cube(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Utils.Vect3(6, 3, 1)),
                                         z: this.HB.pos.z,
                                         color: [tempC, tempC, tempC],
                                         livetime: 20,
@@ -748,13 +755,13 @@
 
 
                 } else {
-                    if (this.owner instanceof Player)
+                    if (this.owner && typeof window !== 'undefined')
                         if (!user.muted)
                             this.reload_empty.play();
                     if (user.ammo[this.type] > 0 && !this.reloading) {
                         this.reloading = true;    // set reloading to true
                         this.ammo = this.ammoMax;   // reload
-                        this.nextCool = game.match.ticks + this.reloadTime; // set reload time
+                        this.nextCool = game.match.time.ticks + this.reloadTime; // set reload time
                         user.ammo[this.type]--;      // consume a clip from a user
                     }
                 }

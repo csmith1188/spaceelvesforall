@@ -25,6 +25,7 @@
     */
     class Character {
         constructor(options) {
+            this.id = Utils.uuidGen(4);
             this.spawnVect = new Utils.Vect3(0, 0, 0);
             this.name = '';
             this.parent = {};
@@ -91,7 +92,8 @@
             */
             this.item = 0;
             this.inventory = [];
-            this.inventory = [new Items.Sword()];
+            // this.inventory = [new Items.Sword()];
+            this.inventory = [new Items.Pistol()];
             this.inventory[0].owner = this.parent;
             this.ammo = {
                 plasma: 1,
@@ -220,14 +222,15 @@
                     if (this.parent.controller.buttons.fire.current != this.parent.controller.buttons.fire.last) {
                         if (this.inventory.length) {
                             if (this.parent.controller.buttons.fire.current) {
-                                const xMulti = (game.player.camera._3D) ? game.player.camera.angle : 1;
+                                // const xMulti = (game.player.camera._3D) ? game.player.camera.angle : 1;
+                                const xMulti = 1;
                                 let aimX = this.parent.controller.aimX * xMulti;
                                 let aimY = this.parent.controller.aimY;
                                 let aimZ = 0;
-                                if (game.player.camera._3D) {
-                                    aimZ = aimY * game.player.camera.angle;
-                                    aimY = aimY * (1 - game.player.camera.angle);
-                                }
+                                // if (game.player.camera._3D) {
+                                //     aimZ = aimY * game.player.camera.angle;
+                                //     aimY = aimY * (1 - game.player.camera.angle);
+                                // }
                                 this.inventory[this.item].use(this, aimX, aimY, aimZ, 0, { color: this.color });
                             }
                         }

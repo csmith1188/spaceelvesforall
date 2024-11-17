@@ -25,11 +25,19 @@
     class Block {
         constructor(posVect, volVect, options) {
             // Position
+            this.id = Utils.uuidGen(4);
             this.spawn = new Utils.Vect3(posVect.x, posVect.y, posVect.z)
             this.HB = new Utils.Cube(new Utils.Vect3(posVect.x, posVect.y, posVect.z), new Utils.Vect3(volVect.x, volVect.y, volVect.z))
             this.aim = new Utils.Vect3(0, 0, 0);
             this.angle = new Utils.Vect3(0, 0, 0);
             this.speed = new Utils.Vect3(0, 0, 0);
+            this.serverPos = {
+                pos: { x: 0, y: 0, z: 0 },
+                vol: { x: 0, y: 0, z: 0 },
+                speed: { x: 0, y: 0, z: 0 },
+                time: 0
+            }
+            this.user = { id: null };
 
             // Lifespan
             this.parent = {};   // Who does this belong to?
@@ -84,6 +92,7 @@
              |_|_|_\___/\_/\___|_|_|_\___|_||_\__|
     
             */
+
             if (this.livetime != 0) {
                 this.HB.pos.x += this.speed.x;
                 this.HB.pos.y += this.speed.y;
@@ -389,6 +398,30 @@
         */
         trigger(actor, side) {
             return
+        }
+
+        pack() {
+            let pack = {
+                id: this.id,
+                pos: this.HB.pos,
+                speed: this.speed,
+            }
+            if (this.user != null) {
+                pack.user = {
+                    id: this.user.id,
+                    team: this.user.team,
+                    name: this.user.name
+                }
+            }
+            if (this.HB instanceof Utils.Cube) {
+                    pack.shape = 'cylinder';
+                    pack.radius = this.HB.radius;
+                    pack.height = this.HB.height;
+            } else if (this.HB instanceof Utils.Cylinder) {
+                    pack.shape = 'cube';
+                    pack.pos = this.HB.pos;
+            }
+            return pack;
         }
 
     }

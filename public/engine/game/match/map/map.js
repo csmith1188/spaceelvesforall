@@ -1,17 +1,18 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        define(['Utils', 'Blocks'], factory);
+        define(['Utils', 'Blocks', 'Projectiles'], factory);
     } else if (typeof module === 'object' && module.exports) {
         // Nodejs
         const Utils = require('../../../utils.js');
         const Blocks = require('../block/block.js');
-        module.exports = factory(Utils, Blocks);
+        const Projectiles = require('../block/projectile.js');
+        module.exports = factory(Utils, Blocks, Projectiles);
     } else {
         // Browser globals (root is window)
-        root.Maps = factory(root.Utils, root.Blocks);
+        root.Maps = factory(root.Utils, root.Blocks, root.Projectiles);
     }
-}(typeof self !== 'undefined' ? self : this, function (Utils, Blocks) {
+}(typeof self !== 'undefined' ? self : this, function (Utils, Blocks, Projectiles) {
     class Map {
         constructor(options) {
             this.name = "Map";
@@ -52,6 +53,28 @@
                         this[setting] = options[setting];
                 }
 
+        }
+
+        spawn(block) {
+            if (block.type == "block") {
+                this.blocks.push(new Blocks.Block(
+                    new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z),
+                    new Utils.Vect3(block.vol.x, block.vol.y, block.vol.z),
+                    { imgFile: 'img/tiles/wall_top.png', imgFileSide: 'img/tiles/wall_side.png' }
+                ));
+            } else if (block.type == "bullet") {
+                this.bullets.push(new Projectiles.Bullet(
+                    new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z),
+                    new Utils.Vect2(block.radius, block.height),
+                    block.user,
+                    {
+                        speed: block.speed,
+                        radius: block.radius,
+                        height: block.height,
+                        id: block.id
+                    }
+                ));
+            }
         }
 
         /*
@@ -98,7 +121,9 @@
                 }
             }
 
+            // log list of bullets that have ids
             for (const e of this.bullets) {
+
                 if (e.cleanup && !e.active) {
                     //Remove bullet
                     this.bullets = this.bullets.filter(function (el) { return el != e; });

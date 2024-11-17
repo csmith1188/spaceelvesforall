@@ -7,10 +7,11 @@
 - ~~handle inputs from players~~
 - ~~move player on client~~
 - ~~send position back to user~~
-- fix desync/rubberbanding
+- fix desync/rubberbanding (slow cpu issue?)
 - ~~import items/weapons~~
 - clientside aiming + firing
-- bullets and debris
+- ~~bullets and debris~~
+- bullets not moving / dying server side (duplicate client bullets)
 - characters assigned to correct players
 
 - client side interfaces

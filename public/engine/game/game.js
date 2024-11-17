@@ -101,12 +101,26 @@
                     this.match.draw();
                     this.player.camera.update(this.player); // Update the camera
                 } else {
+                    /*
+                                      _                 _      _
+                      ___ ___ _ _  __| |  _  _ _ __  __| |__ _| |_ ___
+                     (_-</ -_) ' \/ _` | | || | '_ \/ _` / _` |  _/ -_)
+                     /__/\___|_||_\__,_|  \_,_| .__/\__,_\__,_|\__\___|
+                                              |_|
+                    */
                     // get all characters whose HB is not equal to their lastHB
                     let characters = this.match.characters.filter(character => character.HB != character.lastHB);
                     // replace each character in the list with their pack()ed version
                     characters = characters.map(character => character.pack());
+                    // replace each bullet in the list with their pack()ed version
+                    let bullets = this.match.map.bullets.map(bullet => bullet.pack());
                     // send all characters to the client
-                    this.broadcast(this.wss, { characters: characters, time: Date.now() });
+                    this.broadcast(this.wss, {
+                        characters: characters,
+                        bullets: bullets,
+                        time: Date.now()
+                    });
+
                 }
             }
         }

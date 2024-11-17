@@ -207,8 +207,6 @@
       ## ##  ###### #    # #       ####  #    #
     
     */
-    console.log(Items);
-    
 
     class WeaponPickup extends PickUp {
         constructor(id, posVect, volVect, options = {}) {
