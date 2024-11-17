@@ -42,7 +42,8 @@
                 // create a new character for each player
                 for (let i = 0; i < game.players.length; i++) {
                     console.log('Creating character for player', game.players[i].token.username);
-                    this.characters.push(new Characters.Jetbike({ name: game.players[i].token.username, team: i, parent: game.players[i], active: true, cleanup: false, spawnVect: new Utils.Vect3(i * 100 + 100, i * 100 + 100, 0), gfx: 'img/sprites/jetbike' }));
+                    let images = ['img/sprites/jetbike', 'img/sprites/dark1', 'img/sprites/dark2'];
+                    this.characters.push(new Characters.Jetbike({ name: game.players[i].token.username, team: i, parent: game.players[i], active: true, cleanup: false, spawnVect: new Utils.Vect3(i * 100 + 100, i * 100 + 100, 0), gfx: images[i] }));
                 }
                 this.stage = 'startMatch';
             }
@@ -63,7 +64,6 @@
                 for (const chara of this.characters) {
                     chara.step();
                 }
-
                 if (this.map) {
                     for (const block of this.map.blocks) {
                         block.step();

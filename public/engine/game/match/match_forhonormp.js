@@ -51,7 +51,7 @@
                 character.speed.y = 0;
                 character.speed.z = 0;
                 character.hp = character.hp_max;
-                character.inventory = [new Items.Sword()];
+                character.inventory = [new Items.Pistol()];
                 character.item = 0;
                 character.pp = character.pp_max;
                 character.ammo.ballistic = 1;
@@ -117,11 +117,9 @@
         }
 
         setup() {
-            super.setup();
             this.map = new Maps.Map_Deathbox();
             this.name = "For Honor";
             this.description = "A duel to the death.";
-
             // this.reset();
         }
 

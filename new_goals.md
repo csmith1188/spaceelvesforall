@@ -15,7 +15,7 @@
 - ~~characters assigned to correct players~~
 - fix team selector rings, second player sees nuetral first player
 - spawn weapons completely
-- fix bullet size
+- sword shots 2 bullets, 1 visible
 
 - client side interfaces
 - why does it redownload block textures every second?

@@ -221,16 +221,17 @@
                     zaim *= this.projectileSpeed;
                     // Add the user's speed and multiply speed BEFORE spread for satisfying flamer ???
                     // Add bullet to map
-                    game.match.map.bullets.push(
-                        new Projectiles.Bullet(
-                            new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), new Utils.Vect3(4, 4, 0), user, // Position and size
-                            {
-                                speed: new Utils.Vect3(xaim, yaim, 0), //zaim doesn't work
-                                color: user.color,
-                                damage: this.damage,
-                                livetime: 300,
-                                touchSFX: sounds.hit_rifle
-                            }));
+                    if (typeof window === 'undefined')
+                        game.match.map.bullets.push(
+                            new Projectiles.Bullet(
+                                new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), new Utils.Vect3(4, 4, 0), user, // Position and size
+                                {
+                                    speed: new Utils.Vect3(xaim, yaim, 0), //zaim doesn't work
+                                    color: user.color,
+                                    damage: this.damage,
+                                    livetime: 300,
+                                    touchSFX: sounds.hit_rifle
+                                }));
                     // Change bullet runfunc
                     game.match.map.bullets[game.match.map.bullets.length - 1].runFunc.push(
                         function () {
@@ -379,18 +380,19 @@
                         aimX += spreadX;
                         aimY += spreadY;
                         // Add bullets to map
-                        game.match.map.bullets.push(
-                            new Projectiles.Bullet(
-                                new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), new Utils.Vect3(4, 4, 0), user, // Position and size
-                                {
-                                    livetime: 16,
-                                    speed: new Utils.Vect3(aimX, aimY, 0),
-                                    color: user.color,
-                                    damage: 10,
-                                    touchSFX: sounds.hit_flamer
-                                }
-                            )
-                        );
+                        if (typeof window === 'undefined')
+                            game.match.map.bullets.push(
+                                new Projectiles.Bullet(
+                                    new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), new Utils.Vect3(4, 4, 0), user, // Position and size
+                                    {
+                                        livetime: 16,
+                                        speed: new Utils.Vect3(aimX, aimY, 0),
+                                        color: user.color,
+                                        damage: 10,
+                                        touchSFX: sounds.hit_flamer
+                                    }
+                                )
+                            );
                     }
 
                     if (user.parent.controller.type == 'gamepad') user.parent.controller.rumble(100, 0, 0.5);
@@ -484,22 +486,23 @@
                     user.speed.z += aimZ;
 
                     // Add a new missile at this user's position
-                    game.match.map.bullets.push(
-                        new Projectiles.Bullet(
-                            new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), new Utils.Vect3(4, 4, 0), user, // Position and size
-                            {
-                                speed: new Utils.Vect3(aimX, aimY, 0),
-                                parent: user,
-                                color: user.color,
-                                damage: 10,
-                                livetime: 30,
-                                touchSFX: sounds.hit_lance,
-                                opacity: 0,
-                                shadowDraw: false,
-                                force: 1
-                            }
-                        )
-                    );
+                    if (typeof window === 'undefined')
+                        game.match.map.bullets.push(
+                            new Projectiles.Bullet(
+                                new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), new Utils.Vect3(4, 4, 0), user, // Position and size
+                                {
+                                    speed: new Utils.Vect3(aimX, aimY, 0),
+                                    parent: user,
+                                    color: user.color,
+                                    damage: 10,
+                                    livetime: 30,
+                                    touchSFX: sounds.hit_lance,
+                                    opacity: 0,
+                                    shadowDraw: false,
+                                    force: 1
+                                }
+                            )
+                        );
                     // Run this function every frame the bullet is alive
                     game.match.map.bullets[game.match.map.bullets.length - 1].runFunc.push(
                         function () {
@@ -643,115 +646,19 @@
                     aimZ = (aimZ / distance) * 30;
 
                     // Add a new missile at this user's position
-                    game.match.map.bullets.push(
-                        new Projectiles.Bullet(
-                            new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), new Utils.Vect3(4, 4, 0), user, // Position and size
-                            {
-                                speed: new Utils.Vect3(aimX, aimY, 0),
-                                parent: user,
-                                color: user.color,
-                                damage: 10,
-                                livetime: 10,
-                                touchSFX: typeof window !== 'undefined' ? sounds.hit_lance : null,
-                                opacity: 0,
-                                shadowDraw: false,
-                                force: 0.2
-                            }
-                        )
-                    );
-                    // Overwrite the runFunc list with this function
-                    // TODO: Make a new Projectiles.Bullet class for a sword strike
-                    game.match.map.bullets[game.match.map.bullets.length - 1].runFunc = [
-                        function () {
-                            this.HB.pos.x = this.parent.HB.pos.x + aimX;
-                            this.HB.pos.y = this.parent.HB.pos.y + aimY;
-                            this.HB.pos.z = this.parent.HB.pos.z + aimZ;
-
-                            // add a debris block to the map at the player's position with a random speed
-                            let tempx = ((Math.random() * 1) - 0.5) * 2;
-                            let tempy = ((Math.random() * 1) - 0.5) * 2;
-                            let tempz = ((Math.random() * 1) - 0.5) * 2;
-                            let tempC1 = Math.ceil(Math.random() * 255);
-                            let tempC2 = Math.ceil(Math.random() * 255);
-
-                            let compareX = this.HB.pos.x - ((this.parent.HB.pos.x - this.HB.pos.x) / 2);
-                            let compareY = this.HB.pos.y - ((this.parent.HB.pos.y - this.HB.pos.y) / 2);
-
-                            game.match.map.debris.push(
-                                new Blocks.Block(
-                                    new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
-                                    new Utils.Vect3(1, 1, 1),
-                                    {
-                                        speed: new Utils.Vect3(tempx, tempy, tempz),
-                                        HB: new Utils.Cube(new Utils.Vect3(compareX, compareY, this.HB.pos.z + this.HB.height), new Utils.Vect3(2, 2, 2)),
-                                        z: this.HB.pos.z,
-                                        color: [tempC1, tempC1, tempC1],
-                                        colorSide: [tempC2, tempC2, tempC2],
-                                        livetime: 15,
-                                        dying: true,
-                                        shadowDraw: false,
-                                        solid: false,
-                                    }));
-
-                        }.bind(game.match.map.bullets[game.match.map.bullets.length - 1])
-                    ];
-                    // Add custom draw function
-                    game.match.map.bullets[game.match.map.bullets.length - 1].drawFunc.push(
-                        function () {
-                            // Draw a line from the user to the bullet
-                            ctx.beginPath();
-                            ctx.strokeStyle = 'rgba(200,200,200,1)';
-                            ctx.lineWidth = 5;
-                            // find where the user is on the camera
-                            let compareX = game.player.camera.x - this.parent.HB.pos.x;
-                            let compareY = game.player.camera.y - this.parent.HB.pos.y;
-                            ctx.moveTo(
-                                game.window.w / 2 - compareX,
-                                game.window.h / 2 - compareY - this.parent.HB.pos.z - this.parent.HB.height / 2
-                            );
-                            // find where the bullet is on the camera
-                            let targetX = game.player.camera.x - this.HB.pos.x;
-                            let targetY = game.player.camera.y - this.HB.pos.y;
-                            // Compare the user and bullet to find angle
-                            targetX = compareX - targetX;
-                            targetY = compareY - targetY;
-                            let distance = Math.sqrt((targetX ** 2) + (targetY ** 2));
-                            targetX = (targetX / distance) * -60;
-                            targetY = (targetY / distance) * -60;
-                            // Draw line from user to target
-                            ctx.lineTo(
-                                game.window.w / 2 - compareX - targetX,
-                                game.window.h / 2 - compareY - targetY - this.parent.HB.pos.z - this.parent.HB.height / 2
-                            );
-                            ctx.stroke();
-                        }.bind(game.match.map.bullets[game.match.map.bullets.length - 1])
-                    )
-                    //Change hitSpash
-                    game.match.map.bullets[game.match.map.bullets.length - 1].hitSplash = function () {
-                        for (let parts = 0; parts < 20; parts++) {
-                            let tempx = (Math.random() * 4) - 2;
-                            let tempy = (Math.random() * 4) - 2;
-                            let tempz = (Math.random() * 4) - 2;
-                            let tempC = Math.ceil(Math.random() * 255);
-                            game.match.map.debris.push(
-                                new Blocks.Block(
-                                    new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
-                                    new Utils.Vect3(1, 1, 1),
-                                    {
-                                        speed: new Utils.Vect3(tempx + (this.speed.x * 0.25), tempy + (this.speed.y * 0.25), tempz + (this.speed.z * 0.25)),
-                                        HB: new Utils.Cube(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Utils.Vect3(6, 3, 1)),
-                                        z: this.HB.pos.z,
-                                        color: [tempC, tempC, tempC],
-                                        livetime: 20,
-                                        dying: true,
-                                        shadowDraw: false,
-                                        solid: false
-                                    }));
-                        }
-                    }.bind(game.match.map.bullets[game.match.map.bullets.length - 1])
-                    game.match.map.bullets[game.match.map.bullets.length - 1].HB.radius = user.HB.radius + 10;
-
-
+                    if (typeof window === 'undefined') {
+                        game.match.map.bullets.push(
+                            new Projectiles.Slash(
+                                new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), new Utils.Vect3(4, 4, 0),
+                                user,
+                                {
+                                    speed: new Utils.Vect3(aimX, aimY, 0),
+                                    parent: user,
+                                    color: user.color
+                                }
+                            )
+                        );
+                    }
                 } else {
                     if (this.owner && typeof window !== 'undefined')
                         if (!user.muted)

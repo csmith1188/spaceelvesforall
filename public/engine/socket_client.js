@@ -62,13 +62,13 @@ gameWSS.addEventListener('message', (event) => {
                     c.serverPos.y = character.pos.y;
                     c.serverPos.z = character.pos.z;
                     c.serverPos.time = message.time;
+                    c.id = character.id;
                 }
             }
         }
 
         if (message.bullets) {
             for (let bullet of message.bullets) {
-
                 let b = game.match.map.bullets.find(b => b.id === bullet.id);
                 if (b) {
                     //if the bullet is a cube, set the bullet's pos and volume
@@ -92,7 +92,7 @@ gameWSS.addEventListener('message', (event) => {
                     b.serverPos.time = message.time;
                 } else {
                     //if the bullet is not in the game, add it
-                    game.match.map.spawn({ type: "bullet", ...bullet });
+                    game.match.map.spawn(bullet);
                 }
                 // remove bullets not in the message
                 // game.match.map.bullets = game.match.map.bullets.filter(b => bullet.id === b.id);

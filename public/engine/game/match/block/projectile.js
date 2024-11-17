@@ -64,7 +64,7 @@
                     let tempy = ((Math.random() * 1) - 0.5) * 2;
                     let tempz = ((Math.random() * 1) - 0.5) * 2;
                     if (game.match.ticks % 4 == 0) game.match.map.debris.push(
-                        new Block(
+                        new Utils.Block(
                             new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
                             new Utils.Vect3(1, 1, 1),
                             {
@@ -88,24 +88,25 @@
 
         step() {
             if (this.active && this.livetime != 0) {
-                // if (typeof window !== 'undefined') {
-                //     // let interpolationFactor = Math.min(((Date.now() - this.serverPos.time) / 1000) * 10, 1); // Adjust the factor as needed
-                //     let interpolationFactor = 0.5;
-                //     this.HB.pos.x += (this.serverPos.pos.x - this.HB.pos.x) * interpolationFactor * game.time.delta;
-                //     this.HB.pos.y += (this.serverPos.pos.y - this.HB.pos.y) * interpolationFactor * game.time.delta;
-                //     this.HB.pos.z += (this.serverPos.pos.z - this.HB.pos.z) * interpolationFactor * game.time.delta;
-                // }
+                if (typeof window !== 'undefined') {
+                    // let interpolationFactor = Math.min(((Date.now() - this.serverPos.time) / 1000) * 10, 1); // Adjust the factor as needed
+                    let interpolationFactor = 0.5;
+                    this.HB.pos.x += (this.serverPos.pos.x - this.HB.pos.x) * interpolationFactor * game.time.delta;
+                    this.HB.pos.y += (this.serverPos.pos.y - this.HB.pos.y) * interpolationFactor * game.time.delta;
+                    this.HB.pos.z += (this.serverPos.pos.z - this.HB.pos.z) * interpolationFactor * game.time.delta;
+                }
+
                 // Move
                 this.HB.pos.x += this.speed.x * game.time.delta;
                 this.HB.pos.y += this.speed.y * game.time.delta;
                 this.HB.pos.z += this.speed.z * game.time.delta;
 
                 /*
-                   ___     _ _         _
-                  / __|  _| (_)_ _  __| |___ _ _
-                 | (_| || | | | ' \/ _` / -_) '_|
-                  \___\_, |_|_|_||_\__,_\___|_|
-                      |__/
+                ___     _ _         _
+                / __|  _| (_)_ _  __| |___ _ _
+                | (_| || | | | ' \/ _` / -_) '_|
+                \___\_, |_|_|_||_\__,_\___|_|
+                |__/
                 */
                 for (let c of game.match.characters) {
                     if (c.parent === this.user) //Don't collide with yourself
@@ -138,11 +139,11 @@
                 }
 
                 /*
-                  ___ _         _
-                 | _ ) |___  __| |__ ___
-                 | _ \ / _ \/ _| / /(_-<
-                 |___/_\___/\__|_\_\/__/
-     
+                ___ _         _
+                | _ ) |___  __| |__ ___
+                | _ \ / _ \/ _| / /(_-<
+                |___/_\___/\__|_\_\/__/
+                
                 */
                 for (const c of game.match.map.blocks) { //For each block
                     let side = this.HB.collide(c.HB); //Check for collision
@@ -184,7 +185,7 @@
                 }
 
                 for (const func of this.runFunc) {
-                    func();
+                    func()
                 }
                 this.livetime--;
             } else if (this.livetime == 0) {
@@ -193,5 +194,124 @@
         }
 
     }
-    return { Bullet };
+
+    /*
+    #####
+    #     # #        ##    ####  #    #
+     #       #       #  #  #      #    #
+      #####  #      #    #  ####  ######
+           # #      ######      # #    #
+     #     # #      #    # #    # #    #
+      #####  ###### #    #  ####  #    #
+
+    */
+    class Slash extends Bullet {
+        constructor(posVect, volVect, user, options) {
+            super(posVect, volVect, user, options);
+            this.speed = new Utils.Vect3(user.aimX, user.aimY, 0);
+            this.type = 'slash';
+            this.color = user.color;
+            this.damage = 10;
+            this.livetime = 10;
+            this.touchSFX = typeof window !== 'undefined' ? sounds.hit_lance : null;
+            this.opacity = 0;
+            this.shadowDraw = false;
+            this.force = 0.2
+            if (typeof options === 'object')
+                for (var key of Object.keys(options)) {
+                    this[key] = options[key];
+                }
+            this.HB = new Utils.Cylinder(posVect, volVect.x, volVect.y);
+            this.HB.radius = user.HB.radius + 10;
+
+            this.drawFunc = [
+                () => {
+                    // Draw a line from the user to the bullet
+                    ctx.beginPath();
+                    ctx.strokeStyle = 'rgba(200,200,200,1)';
+                    ctx.lineWidth = 5;
+                    // find where the user is on the camera
+                    let compareX = game.player.camera.x - this.user.HB.pos.x;
+                    let compareY = game.player.camera.y - this.user.HB.pos.y;
+                    ctx.moveTo(
+                        game.window.w / 2 - compareX,
+                        game.window.h / 2 - compareY - this.user.HB.pos.z - this.user.HB.height / 2
+                    );
+                    // find where the bullet is on the camera
+                    let targetX = game.player.camera.x - this.HB.pos.x;
+                    let targetY = game.player.camera.y - this.HB.pos.y;
+                    // Compare the user and bullet to find angle
+                    targetX = compareX - targetX;
+                    targetY = compareY - targetY;
+                    let distance = Math.sqrt((targetX ** 2) + (targetY ** 2));
+                    targetX = (targetX / distance) * -60;
+                    targetY = (targetY / distance) * -60;
+                    // Draw line from user to target
+                    ctx.lineTo(
+                        game.window.w / 2 - compareX - targetX,
+                        game.window.h / 2 - compareY - targetY - this.user.HB.pos.z - this.user.HB.height / 2
+                    );
+                    ctx.stroke();
+                }
+            ]
+
+            this.hitSplash = () => {
+                for (let parts = 0; parts < 20; parts++) {
+                    let tempx = (Math.random() * 4) - 2;
+                    let tempy = (Math.random() * 4) - 2;
+                    let tempz = (Math.random() * 4) - 2;
+                    let tempC = Math.ceil(Math.random() * 255);
+                    game.match.map.debris.push(
+                        new Blocks.Block(
+                            new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
+                            new Utils.Vect3(1, 1, 1),
+                            {
+                                speed: new Utils.Vect3(tempx + (this.speed.x * 0.25), tempy + (this.speed.y * 0.25), tempz + (this.speed.z * 0.25)),
+                                HB: new Utils.Cube(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Utils.Vect3(6, 3, 1)),
+                                z: this.HB.pos.z,
+                                color: [tempC, tempC, tempC],
+                                livetime: 20,
+                                dying: true,
+                                shadowDraw: false,
+                                solid: false
+                            }));
+                }
+            }
+        }
+
+        step() {
+            super.step();
+            this.HB.pos.x = this.user.HB.pos.x + this.speed.x;
+            this.HB.pos.y = this.user.HB.pos.y + this.speed.y;
+            this.HB.pos.z = this.user.HB.pos.z + this.speed.z;
+
+            // add a debris block to the map at the player's position with a random speed
+            let tempx = ((Math.random() * 1) - 0.5) * 2;
+            let tempy = ((Math.random() * 1) - 0.5) * 2;
+            let tempz = ((Math.random() * 1) - 0.5) * 2;
+            let tempC1 = Math.ceil(Math.random() * 255);
+            let tempC2 = Math.ceil(Math.random() * 255);
+
+            let compareX = this.HB.pos.x - ((this.user.HB.pos.x - this.HB.pos.x) / 2);
+            let compareY = this.HB.pos.y - ((this.user.HB.pos.y - this.HB.pos.y) / 2);
+
+            game.match.map.debris.push(
+                new Blocks.Block(
+                    new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
+                    new Utils.Vect3(1, 1, 1),
+                    {
+                        speed: new Utils.Vect3(tempx, tempy, tempz),
+                        HB: new Utils.Cube(new Utils.Vect3(compareX, compareY, this.HB.pos.z + this.HB.height), new Utils.Vect3(2, 2, 2)),
+                        z: this.HB.pos.z,
+                        color: [tempC1, tempC1, tempC1],
+                        colorSide: [tempC2, tempC2, tempC2],
+                        livetime: 15,
+                        dying: true,
+                        shadowDraw: false,
+                        solid: false,
+                    }));
+        }
+    }
+
+    return { Bullet, Slash };
 }));

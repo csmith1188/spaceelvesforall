@@ -990,6 +990,7 @@
         pack() {
             return {
                 ownerName: this.parent.token.username || this.name,
+                id: this.id,
                 pos: this.HB.pos
             }
         }

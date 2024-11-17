@@ -415,6 +415,7 @@
                 id: this.id,
                 pos: this.HB.pos,
                 speed: this.speed,
+                type: this.type
             }
             if (this.user != null) {
                 pack.user = {
