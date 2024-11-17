@@ -113,9 +113,11 @@
                     let side = this.HB.collide(c.HB); //Check for collision
                     if (side && c.solid && c.team !== this.user.team) {
                         //play hit2 sound
-                        this.touchSFX.currentTime = 0;
-                        if (!this.user.muted)
-                            this.touchSFX.play();
+                        if (typeof window !== 'undefined') {
+                            this.touchSFX.currentTime = 0;
+                            if (!this.user.muted)
+                                this.touchSFX.play();
+                        }
                         if (!c.invulnerable)
                             c.hp -= this.damage;
                         c.speed.x += this.speed.x * this.force;
@@ -124,13 +126,14 @@
                         c.trigger(this, side);
                         this.active = false;
                         this.hitSplash();
-                        // if the c's parent has a camera, shake it
-                        if (c.parent.camera) c.parent.camera.shakeTime = 10;
-                        // if the c's controller has a rumble, rumble it
-                        if (c.parent.controller.type == 'gamepad') c.parent.controller.rumble(100, 1.0, 1.0);
-                        // if the c's controller is a touch controller, rumble it
-                        if (c.parent.controller.type == 'touch' && c.parent.controller.canVibrate) navigator.vibrate(100);
-
+                        if (c === game.match.player) {
+                            // if the c's parent has a camera, shake it
+                            if (c.parent.camera) c.parent.camera.shakeTime = 10;
+                            // if the c's controller has a rumble, rumble it
+                            if (c.parent.controller.type == 'gamepad') c.parent.controller.rumble(100, 1.0, 1.0);
+                            // if the c's controller is a touch controller, rumble it
+                            if (c.parent.controller.type == 'touch' && c.parent.controller.canVibrate) navigator.vibrate(100);
+                        }
                     }
                 }
 

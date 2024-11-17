@@ -226,7 +226,7 @@
                                 const xMulti = 1;
                                 let aimX = this.parent.controller.aimX * xMulti;
                                 let aimY = this.parent.controller.aimY;
-                                let aimZ = 0; 
+                                let aimZ = 0;
                                 // if (game.player.camera._3D) {
                                 //     aimZ = aimY * game.player.camera.angle;
                                 //     aimY = aimY * (1 - game.player.camera.angle);
@@ -594,14 +594,20 @@
         }
 
         unitColor(fullOpaque = 0) {
-            // if (this.team == game.player.character.team) {
-            //     return `rgba(0,255,0, ${Math.max(Number(fullOpaque), game.player.interface.drawFriendlyRing)})`;
-            // } else if (game.player.character.teams.includes(this.team)) {
-            //     return `rgba(255,255,0, ${Math.max(Number(fullOpaque), game.player.interface.drawNeutralRing)})`;
-            // } else {
-            //     return `rgba(255,0,0, ${Math.max(Number(fullOpaque), game.player.interface.drawEnemyRing)})`;
-            // }
-            return `rgba(255,255,0, 100)`;
+            // find the match's character whose owner is the player
+            let chara = game.match.characters.find(c => c.parent == game.player);
+            if (this.team == chara.team) {
+                // return `rgba(0,255,0, ${Math.max(Number(fullOpaque), game.player.interface.drawFriendlyRing)})`;
+                return `rgba(0,255,0,${Math.max(Number(fullOpaque), 0.5)})`;
+            }
+            else if (chara.teams.includes(this.team)) {
+                // return `rgba(255,255,0, ${Math.max(Number(fullOpaque), game.player.interface.drawNeutralRing)})`;
+                return `rgba(255,255,0,${Math.max(Number(fullOpaque), 0.5)})`;
+            }
+            else {
+                // return `rgba(255,0,0, ${Math.max(Number(fullOpaque), game.player.interface.drawEnemyRing)})`;
+                return `rgba(255,0,0,${Math.max(Number(fullOpaque), 0.5)})`;
+            }
         }
 
         /*
