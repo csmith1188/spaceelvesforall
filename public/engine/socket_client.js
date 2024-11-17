@@ -69,41 +69,28 @@ gameWSS.addEventListener('message', (event) => {
         if (message.bullets) {
             for (let bullet of message.bullets) {
 
-                // let b = game.match.map.bullets.find(b => b.id === bullet.id);
-                let b = null;
-                console.log(bullet.id);           
-                for (let mapbullet of game.match.map.bullets) {
-                    console.log(mapbullet.id);
-                    if (mapbullet.id === bullet.id) {
-                        b = mapbullet;
-                        break;
-                    }
-                }
+                let b = game.match.map.bullets.find(b => b.id === bullet.id);
                 if (b) {
-                    
-                    console.log('bullet found');
                     //if the bullet is a cube, set the bullet's pos and volume
-                    if (b.shape === 'cube') {
+                    if (bullet.shape == 'cube') {
                         b.serverPos.pos.x = bullet.pos.x;
                         b.serverPos.pos.y = bullet.pos.y;
                         b.serverPos.pos.z = bullet.pos.z;
                         b.serverVol.vol.x = bullet.vol.x;
-                        b.serverVol.vol.y = bullet.vol.y;
-                        b.serverVol.vol.z = bullet.vol.z;
-                        b.serverVol.speed = bullet.speed;
-                    } else if (b.shape === 'cylinder') {
+                        b.serverPos.vol.y = bullet.vol.y;
+                        b.serverPos.vol.z = bullet.vol.z;
+                        b.serverPos.speed = bullet.speed;
+                    } else if (bullet.shape == 'cylinder') {
                         //if the bullet is a sphere, set the bullet's pos and volume
                         b.serverPos.pos.x = bullet.pos.x;
                         b.serverPos.pos.y = bullet.pos.y;
                         b.serverPos.pos.z = bullet.pos.z;
-                        b.serverVol.radius = bullet.radius;
-                        b.serverVol.height = bullet.height;
-                        b.serverVol.speed = bullet.speed;
+                        b.serverPos.radius = bullet.radius;
+                        b.serverPos.height = bullet.height;
+                        b.serverPos.speed = bullet.speed;
                     }
                     b.serverPos.time = message.time;
                 } else {
-                    console.log('bullet not found');
-                    
                     //if the bullet is not in the game, add it
                     game.match.map.spawn({ type: "bullet", ...bullet });
                 }

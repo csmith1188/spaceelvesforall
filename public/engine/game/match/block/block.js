@@ -400,6 +400,16 @@
             return
         }
 
+        /*
+         ######
+         #     #   ##    ####  #    #
+         #     #  #  #  #    # #   #
+         ######  #    # #      ####
+         #       ###### #      #  #
+         #       #    # #    # #   #
+         #       #    #  ####  #    #
+
+        */
         pack() {
             let pack = {
                 id: this.id,
@@ -414,13 +424,14 @@
                 }
             }
             if (this.HB instanceof Utils.Cube) {
+                    pack.shape = 'cube';
+                    pack.vol = this.HB.vol;
+                } else if (this.HB instanceof Utils.Cylinder) {
                     pack.shape = 'cylinder';
                     pack.radius = this.HB.radius;
                     pack.height = this.HB.height;
-            } else if (this.HB instanceof Utils.Cylinder) {
-                    pack.shape = 'cube';
-                    pack.pos = this.HB.pos;
             }
+            
             return pack;
         }
 

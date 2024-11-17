@@ -55,6 +55,16 @@
 
         }
 
+        /*
+          #####
+         #     # #####    ##   #    # #    #
+         #       #    #  #  #  #    # ##   #
+          #####  #    # #    # #    # # #  #
+               # #####  ###### # ## # #  # #
+         #     # #      #    # ##  ## #   ##
+          #####  #      #    # #    # #    #
+
+        */
         spawn(block) {
             if (block.type == "block") {
                 this.blocks.push(new Blocks.Block(
@@ -123,7 +133,6 @@
 
             // log list of bullets that have ids
             for (const e of this.bullets) {
-
                 if (e.cleanup && !e.active) {
                     //Remove bullet
                     this.bullets = this.bullets.filter(function (el) { return el != e; });

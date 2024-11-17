@@ -124,7 +124,7 @@
                         game.match.map.bullets.push(
                             new Projectiles.Bullet(
                                 new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), // Position
-                                new Utils.Vect3(4, 4, 0), // size
+                                new Utils.Vect2(4, 4), // size
                                 user, // the person firing this bullet
                                 {
                                     speed: new Utils.Vect3(aimX, aimY, 0), //aimZ doesn't work

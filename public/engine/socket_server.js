@@ -66,6 +66,9 @@ function gameHandler(ws, req) {
 
             if (message.controller) {
                 // for each controller input, update the player's controller's button
+                player.controller.aimX = message.aimX;
+                player.controller.aimY = message.aimY;
+                player.controller.aimZ = message.aimZ;
                 player.controller.newState = message.controller;
             }
 

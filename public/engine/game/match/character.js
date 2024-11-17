@@ -226,7 +226,7 @@
                                 const xMulti = 1;
                                 let aimX = this.parent.controller.aimX * xMulti;
                                 let aimY = this.parent.controller.aimY;
-                                let aimZ = 0;
+                                let aimZ = 0; 
                                 // if (game.player.camera._3D) {
                                 //     aimZ = aimY * game.player.camera.angle;
                                 //     aimY = aimY * (1 - game.player.camera.angle);

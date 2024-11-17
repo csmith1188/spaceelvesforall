@@ -83,22 +83,18 @@
                 for (var key of Object.keys(options)) {
                     this[key] = options[key];
                 }
+
         }
 
         step() {
-
             if (this.active && this.livetime != 0) {
-
-                if (typeof window !== 'undefined') {
-                    // let interpolationFactor = Math.min(((Date.now() - this.serverPos.time) / 1000) * 10, 1); // Adjust the factor as needed
-                    let interpolationFactor = 0.5;
-                    // console.log(this.serverPos.pos, this.HB.pos);
-                    
-                    this.HB.pos.x += (this.serverPos.pos.x - this.HB.pos.x) * interpolationFactor * game.time.delta;
-                    this.HB.pos.y += (this.serverPos.pos.y - this.HB.pos.y) * interpolationFactor * game.time.delta;
-                    this.HB.pos.z += (this.serverPos.pos.z - this.HB.pos.z) * interpolationFactor * game.time.delta;
-                }
-
+                // if (typeof window !== 'undefined') {
+                //     // let interpolationFactor = Math.min(((Date.now() - this.serverPos.time) / 1000) * 10, 1); // Adjust the factor as needed
+                //     let interpolationFactor = 0.5;
+                //     this.HB.pos.x += (this.serverPos.pos.x - this.HB.pos.x) * interpolationFactor * game.time.delta;
+                //     this.HB.pos.y += (this.serverPos.pos.y - this.HB.pos.y) * interpolationFactor * game.time.delta;
+                //     this.HB.pos.z += (this.serverPos.pos.z - this.HB.pos.z) * interpolationFactor * game.time.delta;
+                // }
                 // Move
                 this.HB.pos.x += this.speed.x * game.time.delta;
                 this.HB.pos.y += this.speed.y * game.time.delta;
@@ -173,9 +169,11 @@
                                 break;
                         }
                         //play hit sound
-                        this.touchSFX.currentTime = 0;
-                        if (!this.user.muted)
-                            this.touchSFX.play();
+                        if (typeof window !== 'undefined') {
+                            this.touchSFX.currentTime = 0;
+                            if (!this.user.muted)
+                                this.touchSFX.play();
+                        }
                         this.active = false;
                         c.trigger(this, side); //Trigger the block's trigger function
                         this.hitSplash();

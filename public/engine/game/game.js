@@ -86,7 +86,7 @@
                         //if the newState has at least one property
                         if (Object.keys(player.controller.newState).length > 0) {
                             // send newState to server
-                            gameWSS.send(JSON.stringify({ controller: player.controller.newState }));
+                            gameWSS.send(JSON.stringify({ controller: player.controller.newState, aimX: player.controller.aimX, aimY: player.controller.aimY, aimZ: player.controller.aimZ }));
                         }
                     }
                 }
