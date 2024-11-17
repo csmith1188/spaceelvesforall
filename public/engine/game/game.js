@@ -20,7 +20,7 @@
     class Game {
         constructor(options) {
             this.players = [];
-            this.playerLimit = { min: 1, max: 2 };
+            this.playerLimit = { min: 2, max: 2 };
             this.client = false;
             this.match = null;
             this.window = {

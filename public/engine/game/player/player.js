@@ -59,7 +59,7 @@
         }
 
         step() {
-            if (typeof window !== 'undefined' && !this.controller) {
+            if (typeof window !== 'undefined' && !this.controller && game.player == this) {
                 if (Controllers.utils.lastDevice !== null) {
                     // if the lastDevice was keyboard, touch, pad or something else
                     if (Controllers.utils.lastDevice == "keyboard") {

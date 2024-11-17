@@ -12,14 +12,14 @@
 - ~~bullets and debris~~
 - ~~bullets not moving / dying server side (duplicate client bullets)~~
 - ~~fix desync/rubberbanding (slow cpu issue?)~~
-- characters assigned to correct players
+- ~~characters assigned to correct players~~
+- fix team selector rings
 
 - client side interfaces
 - why does it redownload block textures every second?
 - move fire function to items (hold to fire flamer)
 - match await player ready (await controls)
 - fix mouse controls aiming from camera instead character
-- fix team selector rings
 - handle bots
 - player calc and draw distance
 - show score tab
