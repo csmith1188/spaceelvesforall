@@ -16,7 +16,7 @@
     class Match {
         constructor() {
             this.matchType = 'Match';
-            this.playerLimit = { min: 2, max: 2 };
+            this.playerLimit = { min: 1, max: 2 };
             this.characters = [];
             this.paused = false;
             this.runFunc = [];

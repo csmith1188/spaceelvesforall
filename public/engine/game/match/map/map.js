@@ -66,7 +66,6 @@
 
         */
         spawn(block) {
-            console.log(block);
             // find the character that the block belongs to
             let character = game.match.characters.find(c => c.id === block.user.id);
             if (block.type == "block") {

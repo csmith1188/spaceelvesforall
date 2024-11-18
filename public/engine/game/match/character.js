@@ -1014,6 +1014,11 @@
     class Jetbike extends Character {
         constructor(options) {
             super(options);
+            if (typeof options === 'object')
+                for (var key of Object.keys(options)) {
+                    this[key] = options[key];
+                }
+
             this.HB = new Utils.Cylinder(new Utils.Vect3(this.spawnVect.x, this.spawnVect.y, this.spawnVect.z), 29, 37);
             this.airAccel = new Utils.Vect3(0.15, 0.15, 1);
             this.hover = 16;

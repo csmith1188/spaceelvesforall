@@ -41,21 +41,21 @@
             this.map.blocks = this.map.blocks.filter(function (el) { return el.type == 'block'; });
 
             // for each character in the characters array
-            for (let character of this.characters) {
-                character.active = true;
-                character.visible = true;
-                character.HB.pos.x = (this.map.w / 2) - 800;
-                character.HB.pos.y = (this.map.h / 2);
-                character.HB.pos.z = 0;
-                character.speed.x = 0;
-                character.speed.y = 0;
-                character.speed.z = 0;
-                character.hp = character.hp_max;
-                character.inventory = [new Items.Sword()];
-                character.item = 0;
-                character.pp = character.pp_max;
-                character.ammo.ballistic = 1;
-                character.ammo.plasma = 1;
+            for (let i in this.characters) {
+                this.characters[i].active = true;
+                this.characters[i].visible = true;
+                this.characters[i].HB.pos.x = (this.map.w / 2) + (i % 2 ? 800 : -800);
+                this.characters[i].HB.pos.y = (this.map.h / 2);
+                this.characters[i].HB.pos.z = 0;
+                this.characters[i].speed.x = 0;
+                this.characters[i].speed.y = 0;
+                this.characters[i].speed.z = 0;
+                this.characters[i].hp = this.characters[i].hp_max;
+                this.characters[i].inventory = [new Items.Sword()];
+                this.characters[i].item = 0;
+                this.characters[i].pp = this.characters[i].pp_max;
+                this.characters[i].ammo.ballistic = 1;
+                this.characters[i].ammo.plasma = 1;
             }
 
             // Add health pickups to each side fothe map
