@@ -52,12 +52,7 @@
                     }
                     else if (key == 'drawFunc') {
                     } else {
-                        if (key == 'runFunc') {
-                        }
-                        else if (key == 'drawFunc') {
-                        } else {
-                            this[key] = options[key];
-                        }
+                        this[key] = options[key];
                     }
                 }
 

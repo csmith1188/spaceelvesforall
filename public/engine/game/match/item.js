@@ -123,10 +123,11 @@
                     if (typeof window === 'undefined')
                         game.match.map.bullets.push(
                             new Projectiles.Bullet(
-                                new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), // Position
-                                new Utils.Vect2(4, 4), // size
-                                user, // the person firing this bullet
                                 {
+                                    spawnPos: new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), // Position
+                                    radius: 4, // size
+                                    height: 4,
+                                    user: user, // the person firing this bullet
                                     speed: new Utils.Vect3(aimX, aimY, 0), //aimZ doesn't work
                                     color: user.color
                                 }
@@ -224,8 +225,11 @@
                     if (typeof window === 'undefined')
                         game.match.map.bullets.push(
                             new Projectiles.Bullet(
-                                new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), new Utils.Vect3(4, 4, 0), user, // Position and size
                                 {
+                                    spawnPos: new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z),
+                                    radius: 4,
+                                    height: 4,
+                                    user: user, // Position and size
                                     speed: new Utils.Vect3(xaim, yaim, 0), //zaim doesn't work
                                     color: user.color,
                                     damage: this.damage,
@@ -383,8 +387,11 @@
                         if (typeof window === 'undefined')
                             game.match.map.bullets.push(
                                 new Projectiles.Bullet(
-                                    new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), new Utils.Vect3(4, 4, 0), user, // Position and size
                                     {
+                                        spawnPos: new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z),
+                                        radius: 4,
+                                        height: 4,
+                                        user: user, // Position and size
                                         livetime: 16,
                                         speed: new Utils.Vect3(aimX, aimY, 0),
                                         color: user.color,
@@ -489,8 +496,11 @@
                     if (typeof window === 'undefined')
                         game.match.map.bullets.push(
                             new Projectiles.Bullet(
-                                new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), new Utils.Vect3(4, 4, 0), user, // Position and size
                                 {
+                                    spawnPos: new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z),
+                                    radius: 4,
+                                    height: 4,
+                                    user: user, // Position and size
                                     speed: new Utils.Vect3(aimX, aimY, 0),
                                     parent: user,
                                     color: user.color,
@@ -649,9 +659,11 @@
                     if (typeof window === 'undefined') {
                         game.match.map.bullets.push(
                             new Projectiles.Slash(
-                                new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z), new Utils.Vect3(4, 4, 0),
-                                user,
                                 {
+                                    spawnPos: new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z),
+                                    radius: 4,
+                                    height: 4,
+                                    user: user,
                                     speed: new Utils.Vect3(aimX, aimY, 0),
                                     parent: user,
                                     color: user.color

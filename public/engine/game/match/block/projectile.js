@@ -22,10 +22,12 @@
 ###        ###    ###  ########   #####      ########## ########     ###     ########### ########## ########## ########
 */
     class Bullet extends Blocks.Block {
-        constructor(posVect, volVect, user, options) {
-            super(posVect, volVect, options);
-            this.user = user;
-            this.HB = new Utils.Cylinder(new Utils.Vect3(posVect.x, posVect.y, posVect.z), volVect.x, volVect.y);
+        constructor(options) {
+            super(options);
+            this.spawnPos = new Utils.Vect3(0, 0, 0);
+            this.radius = 5;
+            this.height = 5;
+            this.user = {};
             this.dying = true;
             this.livetime = 100;
             this.type = 'bullet';
@@ -81,8 +83,17 @@
             ]
             if (typeof options === 'object')
                 for (var key of Object.keys(options)) {
-                    this[key] = options[key];
+                    if (key == 'runFunc') {
+                    }
+                    else if (key == 'drawFunc') {
+                    } else {
+                        console.log(key);
+                        
+                        this[key] = options[key];
+                    }
                 }
+
+            this.HB = new Utils.Cylinder(new Utils.Vect3(this.spawnPos.x, this.spawnPos.y, this.spawnPos.z), this.radius, this.height);
 
         }
 
@@ -90,7 +101,7 @@
             if (this.active && this.livetime != 0) {
                 if (typeof window !== 'undefined') {
                     // console.log( Math.min(((Date.now() - this.serverPos.time) / 1000) * 1, 1));
-                    
+
                     let interpolationFactor = Math.min(((Date.now() - this.serverPos.time) / 1000) * 1, 1); // Adjust the factor as needed
                     if (isNaN(interpolationFactor)) interpolationFactor = 0.5;
                     // let interpolationFactor = 0.5;
@@ -209,8 +220,8 @@
 
     */
     class Slash extends Bullet {
-        constructor(posVect, volVect, user, options) {
-            super(posVect, volVect, user, options);
+        constructor(options) {
+            super(options);
             this.speed = new Utils.Vect3(user.aimX, user.aimY, 0);
             this.type = 'slash';
             this.color = user.color;
@@ -222,7 +233,12 @@
             this.force = 0.2
             if (typeof options === 'object')
                 for (var key of Object.keys(options)) {
-                    this[key] = options[key];
+                    if (key == 'runFunc') {
+                    }
+                    else if (key == 'drawFunc') {
+                    } else {
+                        this[key] = options[key];
+                    }
                 }
             this.HB = new Utils.Cylinder(posVect, volVect.x, volVect.y);
             this.HB.radius = user.HB.radius + 10;

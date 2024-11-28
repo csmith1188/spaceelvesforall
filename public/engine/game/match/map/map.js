@@ -81,31 +81,33 @@
                         imgFile: 'img/tiles/wall_top.png', imgFileSide: 'img/tiles/wall_side.png'
                     }
                 ));
-            } 
-            // else if (block.type == "bullet") {
-            //     this.bullets.push(new Projectiles.Bullet(
-            //         new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z),
-            //         new Utils.Vect2(block.radius, block.height),
-            //         character || block.user,
-            //         {
-            //             speed: block.speed,
-            //             serverPos: { pos: block.pos, time: block.time },
-            //             id: block.id
-            //         }
-            //     ));
-            // } 
-            // else if (block.type == "slash") {
-            //     this.bullets.push(new Projectiles.Slash(
-            //         new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z),
-            //         new Utils.Vect2(block.radius, block.height),
-            //         character || block.user,
-            //         {
-            //             speed: block.speed,
-            //             serverPos: { pos: block.pos, time: block.time },
-            //             id: block.id
-            //         }
-            //     ));
-            // } 
+            }
+            else if (block.type == "bullet") {
+                this.bullets.push(new Projectiles.Bullet(
+                    {
+                        spawnPos: block.spawnPos,
+                        radius: block.radius,
+                        height: block.height,
+                        user: character || block.user,
+                        speed: block.speed,
+                        serverPos: { pos: block.pos, time: block.time },
+                        id: block.id
+                    }
+                ));
+            }
+            else if (block.type == "slash") {
+                this.bullets.push(new Projectiles.Slash(
+                    {
+                        spawnPos: block.spawnPos,
+                        radius: block.radius,
+                        height: block.height,
+                        user: character || block.user,
+                        speed: block.speed,
+                        serverPos: { pos: block.pos, time: block.time },
+                        id: block.id
+                    }
+                ));
+            }
             else if (block.type == "pickup") {
                 switch (block.subtype) {
                     case "health":
