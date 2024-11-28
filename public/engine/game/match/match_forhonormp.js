@@ -59,44 +59,54 @@
             }
 
             // Add health pickups to each side fothe map
-            this.map.blocks.push(new Powerups.HealthPickup(
-                new Utils.Vect3((this.map.w / 2) - 800, (this.map.h / 2) + 96, 0),
-                new Utils.Vect3(128, 128, 64)));
-            this.map.blocks.push(new Powerups.HealthPickup(
-                new Utils.Vect3((this.map.w / 2) + 800, (this.map.h / 2) - 96, 0),
-                new Utils.Vect3(128, 128, 64)));
+            this.map.blocks.push(new Powerups.HealthPickup({
+                spawnPos: new Utils.Vect3((this.map.w / 2) - 800, (this.map.h / 2) + 96, 0),
+                spawnVol: new Utils.Vect3(128, 128, 64)
+            }));
+            this.map.blocks.push(new Powerups.HealthPickup({
+                spawnPos: new Utils.Vect3((this.map.w / 2) + 800, (this.map.h / 2) - 96, 0),
+                spawnVol: new Utils.Vect3(128, 128, 64)
+            }));
             // add both ammo pickups to top and bottom of map
-            this.map.blocks.push(new Powerups.Ammo_Ballistic(
-                new Utils.Vect3((this.map.w / 2) - 500, (this.map.h / 2) - 400, 0),
-                new Utils.Vect3(128, 128, 64)));
-            this.map.blocks.push(new Powerups.Ammo_Plasma(
-                new Utils.Vect3((this.map.w / 2) + 472, (this.map.h / 2) + 400, 0),
-                new Utils.Vect3(128, 128, 64)));
-            this.map.blocks.push(new Powerups.Ammo_Ballistic(
-                new Utils.Vect3((this.map.w / 2) + 378, (this.map.h / 2) + 400, 0),
-                new Utils.Vect3(128, 128, 64)));
-            this.map.blocks.push(new Powerups.Ammo_Plasma(
-                new Utils.Vect3((this.map.w / 2) - 408, (this.map.h / 2) - 400, 0),
-                new Utils.Vect3(128, 128, 64)));
+            this.map.blocks.push(new Powerups.Ammo_Ballistic({
+                spawnPos: new Utils.Vect3((this.map.w / 2) - 500, (this.map.h / 2) - 400, 0),
+                spawnVol: new Utils.Vect3(128, 128, 64)
+            }));
+            this.map.blocks.push(new Powerups.Ammo_Plasma({
+                spawnPos: new Utils.Vect3((this.map.w / 2) + 472, (this.map.h / 2) + 400, 0),
+                spawnVol: new Utils.Vect3(128, 128, 64)
+            }));
+            this.map.blocks.push(new Powerups.Ammo_Ballistic({
+                spawnPos: new Utils.Vect3((this.map.w / 2) + 378, (this.map.h / 2) + 400, 0),
+                spawnVol: new Utils.Vect3(128, 128, 64)
+            }));
+            this.map.blocks.push(new Powerups.Ammo_Plasma({
+                spawnPos: new Utils.Vect3((this.map.w / 2) - 408, (this.map.h / 2) - 400, 0),
+                spawnVol: new Utils.Vect3(128, 128, 64)
+            }));
 
 
             // add weapons to the center of the map
-            this.map.blocks.push(new Powerups.WeaponPickup(
-                new Utils.Vect3((this.map.w / 2), (this.map.h / 2), 0),
-                new Utils.Vect3(0, 0, 0),
-                { weapon: 'pistol', pickupDelay: 0 }));
-            this.map.blocks.push(new Powerups.WeaponPickup(
-                new Utils.Vect3((this.map.w / 2), (this.map.h / 2), 0),
-                new Utils.Vect3(0, 0, 0),
-                { weapon: 'lance', pickupDelay: 0 }));
-            this.map.blocks.push(new Powerups.WeaponPickup(
-                new Utils.Vect3((this.map.w / 2), (this.map.h / 2), 0),
-                new Utils.Vect3(0, 0, 0),
-                { weapon: 'rifle', pickupDelay: 0 }));
-            this.map.blocks.push(new Powerups.WeaponPickup(
-                new Utils.Vect3((this.map.w / 2), (this.map.h / 2) + 0, 0),
-                new Utils.Vect3(0, 0, 0),
-                { weapon: 'flamer', pickupDelay: 0 }));
+            this.map.blocks.push(new Powerups.WeaponPickup({
+                spawnPos: new Utils.Vect3((this.map.w / 2), (this.map.h / 2), 0),
+                spawnVol: new Utils.Vect3(0, 0, 0),
+                weapon: 'pistol', pickupDelay: 0
+            }));
+            this.map.blocks.push(new Powerups.WeaponPickup({
+                spawnPos: new Utils.Vect3((this.map.w / 2), (this.map.h / 2), 0),
+                spawnVol: new Utils.Vect3(0, 0, 0),
+                weapon: 'lance', pickupDelay: 0
+            }));
+            this.map.blocks.push(new Powerups.WeaponPickup({
+                spawnPos: new Utils.Vect3((this.map.w / 2), (this.map.h / 2), 0),
+                spawnVol: new Utils.Vect3(0, 0, 0),
+                weapon: 'rifle', pickupDelay: 0
+            }));
+            this.map.blocks.push(new Powerups.WeaponPickup({
+                spawnPos: new Utils.Vect3((this.map.w / 2), (this.map.h / 2) + 0, 0),
+                spawnVol: new Utils.Vect3(0, 0, 0),
+                weapon: 'flamer', pickupDelay: 0
+            }));
 
             // for every block in the blocks array
             // if the block's type is not 'block'
@@ -107,8 +117,8 @@
                     block.sineOffset = blockCounter++;
                     block.runFunc.push(
                         function (bc) {
-                            this.HB.pos.x = this.spawn.x + Utils.sineAnimate(100, 0.025, (this.sineOffset * 60));
-                            this.HB.pos.y = this.spawn.y + Utils.sineAnimate(100, 0.025, (this.sineOffset * 60) + 60);
+                            this.HB.pos.x = this.HB.pos.x + Utils.sineAnimate(100, 0.025, (this.sineOffset * 60));
+                            this.HB.pos.y = this.HB.pos.y + Utils.sineAnimate(100, 0.025, (this.sineOffset * 60) + 60);
                         }.bind(block)
                     );
                 }
@@ -133,7 +143,7 @@
         step() {
             super.step();
 
-            // this.characters.push(new Characters.Jetbike({ name: game.player.token.username, team: i, parent: game.players[i], active: true, cleanup: false, spawnVect: new Utils.Vect3((this.map.w / 2) - 800, (this.map.h / 2), 10), gfx: 'img/sprites/jetbike' }));
+            // this.characters.push(new Characters.Jetbike({ name: game.player.token.username, team: i, parent: game.players[i], active: true, cleanup: false, spawnPos: new Utils.Vect3((this.map.w / 2) - 800, (this.map.h / 2), 10), gfx: 'img/sprites/jetbike' }));
             // game.player.interface = new Interface_LocalMP(game.player, 0, 0);
 
 

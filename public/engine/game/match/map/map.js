@@ -67,60 +67,65 @@
         */
         spawn(block) {
             // find the character that the block belongs to
+            block.spawnPos = new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z);
+            if (block.type == "cube")
+                block.spawnVol = new Utils.Vect3(block.vol.x, block.vol.y, block.vol.z);
+            delete block.pos;
+            delete block.vol;
             let character = game.match.characters.find(c => c.id === block.user.id);
             if (block.type == "block") {
                 this.blocks.push(new Blocks.Block(
-                    new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z),
-                    new Utils.Vect3(block.vol.x, block.vol.y, block.vol.z),
-                    { imgFile: 'img/tiles/wall_top.png', imgFileSide: 'img/tiles/wall_side.png' }
-                ));
-            } else if (block.type == "bullet") {
-                this.bullets.push(new Projectiles.Bullet(
-                    new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z),
-                    new Utils.Vect2(block.radius, block.height),
-                    character || block.user,
                     {
-                        speed: block.speed,
-                        serverPos: { pos: block.pos, time: block.time },
-                        id: block.id
+                        spawnPos: block.spawnPos,
+                        spawnVol: block.spawnVol,
+                        imgFile: 'img/tiles/wall_top.png', imgFileSide: 'img/tiles/wall_side.png'
                     }
                 ));
-            } else if (block.type == "slash") {
-                this.bullets.push(new Projectiles.Slash(
-                    new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z),
-                    new Utils.Vect2(block.radius, block.height),
-                    character || block.user,
-                    {
-                        speed: block.speed,
-                        serverPos: { pos: block.pos, time: block.time },
-                        id: block.id
-                    }
-                ));
-            } else if (block.type == "pickup") {
-                let pos = new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z);
-                let vol = new Utils.Vect3(block.vol.x, block.vol.y, block.vol.z);
+            } 
+            // else if (block.type == "bullet") {
+            //     this.bullets.push(new Projectiles.Bullet(
+            //         new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z),
+            //         new Utils.Vect2(block.radius, block.height),
+            //         character || block.user,
+            //         {
+            //             speed: block.speed,
+            //             serverPos: { pos: block.pos, time: block.time },
+            //             id: block.id
+            //         }
+            //     ));
+            // } 
+            // else if (block.type == "slash") {
+            //     this.bullets.push(new Projectiles.Slash(
+            //         new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z),
+            //         new Utils.Vect2(block.radius, block.height),
+            //         character || block.user,
+            //         {
+            //             speed: block.speed,
+            //             serverPos: { pos: block.pos, time: block.time },
+            //             id: block.id
+            //         }
+            //     ));
+            // } 
+            else if (block.type == "pickup") {
                 switch (block.subtype) {
                     case "health":
-                        this.blocks.push(new Powerups.HealthPickup(pos, vol, { id: block.id }));
+                        this.blocks.push(new Powerups.HealthPickup(block));
                         break;
                     case "ammo_ballistic":
-                        this.blocks.push(new Powerups.Ammo_Ballistic(pos, vol, { id: block.id }));
+                        this.blocks.push(new Powerups.Ammo_Ballistic(block));
                         break;
                     case "ammo_plasma":
-                        this.blocks.push(new Powerups.Ammo_Plasma(pos, vol, { id: block.id }));
+                        this.blocks.push(new Powerups.Ammo_Plasma(block));
                         break;
                     default:
-                        this.blocks.push(new Powerups.HealthPickup(pos, vol, { id: block.id }));
+                        this.blocks.push(new Powerups.HealthPickup(block));
                         break;
                 }
             } else if (block.type == "weapon") {
-                let pos = new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z);
-                let vol = new Utils.Vect3(block.vol.x, block.vol.y, block.vol.z);
-                this.blocks.push(new Powerups.WeaponPickup(pos, vol, { id: block.id, weapon: block.weapon || "pistol" }));
+                this.blocks.push(new Powerups.WeaponPickup(block));
             } else if (block.type == "character") {
-                block.spawnVect = new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z);
                 delete block.pos;
-                block.lastHB = block.spawnVect;
+                block.lastHB = block.spawnPos;
                 block.parent = game.players.find(p => p.token.id === block.parent.token.id);
                 game.match.characters.push(new Characters.Jetbike(block));
             }
@@ -454,54 +459,64 @@
 
             let opts = { imgFile: 'img/tiles/wall_top.png', imgFileSide: 'img/tiles/wall_side.png' }
 
-            this.blocks.push(new Blocks.Block(
-                new Utils.Vect3(mapCX - 700, mapCY + 30, 0),
-                new Utils.Vect3(this.tileSize, 200, 128),
-                opts))
-            this.blocks.push(new Blocks.Block(
-                new Utils.Vect3(mapCX + 700, mapCY - 230, 0),
-                new Utils.Vect3(this.tileSize, 200, 128),
-                opts))
+            this.blocks.push(new Blocks.Block({
+                spawnPos: new Utils.Vect3(mapCX - 700, mapCY + 30, 0),
+                spawnVol: new Utils.Vect3(this.tileSize, 200, 128),
+                ...opts
+            }))
+            this.blocks.push(new Blocks.Block({
+                spawnPos: new Utils.Vect3(mapCX + 700, mapCY - 230, 0),
+                spawnVol: new Utils.Vect3(this.tileSize, 200, 128),
+                ...opts
+            }))
             // horizontal wall in top left quadrant of map
-            this.blocks.push(new Blocks.Block(
-                new Utils.Vect3(mapCX - 500, mapCY - 230, 0),
-                new Utils.Vect3(500, this.tileSize, 128),
-                opts));
+            this.blocks.push(new Blocks.Block({
+                spawnPos: new Utils.Vect3(mapCX - 500, mapCY - 230, 0),
+                spawnVol: new Utils.Vect3(500, this.tileSize, 128),
+                ...opts
+            }));
             // horizontal wall in bottom right quadrant of map
-            this.blocks.push(new Blocks.Block(
-                new Utils.Vect3(mapCX, mapCY + 230, 0),
-                new Utils.Vect3(500, this.tileSize, 128),
-                opts));
+            this.blocks.push(new Blocks.Block({
+                spawnPos: new Utils.Vect3(mapCX, mapCY + 230, 0),
+                spawnVol: new Utils.Vect3(500, this.tileSize, 128),
+                ...opts
+            }));
             // square short wall in bottom left quadrant of map
-            this.blocks.push(new Blocks.Block(
-                new Utils.Vect3(mapCX - 400, mapCY + 230, 0),
-                new Utils.Vect3(this.tileSize * 2, this.tileSize * 2, this.tileSize),
-                opts));
+            this.blocks.push(new Blocks.Block({
+                spawnPos: new Utils.Vect3(mapCX - 400, mapCY + 230, 0),
+                spawnVol: new Utils.Vect3(this.tileSize * 2, this.tileSize * 2, this.tileSize),
+                ...opts
+            }));
             // square short wall in top right quadrant of map
-            this.blocks.push(new Blocks.Block(
-                new Utils.Vect3(mapCX + 400 - (this.tileSize * 2), mapCY - 230 - (this.tileSize), 0),
-                new Utils.Vect3(this.tileSize * 2, this.tileSize * 2, this.tileSize),
-                opts));
+            this.blocks.push(new Blocks.Block({
+                spawnPos: new Utils.Vect3(mapCX + 400 - (this.tileSize * 2), mapCY - 230 - (this.tileSize), 0),
+                spawnVol: new Utils.Vect3(this.tileSize * 2, this.tileSize * 2, this.tileSize),
+                ...opts
+            }));
             // push into the blocks array a block across the bottom of the map
-            this.blocks.push(new Blocks.Block(
-                new Utils.Vect3(0, this.h, 0),
-                new Utils.Vect3(this.w, this.tileSize, this.tileSize),
-                opts))
+            this.blocks.push(new Blocks.Block({
+                spawnPos: new Utils.Vect3(0, this.h, 0),
+                spawnVol: new Utils.Vect3(this.w, this.tileSize, this.tileSize),
+                ...opts
+            }))
             // push into the blocks array a block across the top of the map
-            this.blocks.push(new Blocks.Block(
-                new Utils.Vect3(0, -this.tileSize, 0),
-                new Utils.Vect3(this.w, this.tileSize, this.tileSize),
-                opts))
+            this.blocks.push(new Blocks.Block({
+                spawnPos: new Utils.Vect3(0, -this.tileSize, 0),
+                spawnVol: new Utils.Vect3(this.w, this.tileSize, this.tileSize),
+                ...opts
+            }))
             // push into the blocks array a block across the left of the map
-            this.blocks.push(new Blocks.Block(
-                new Utils.Vect3(0, 0, 0),
-                new Utils.Vect3(this.tileSize, this.h, this.tileSize),
-                opts))
+            this.blocks.push(new Blocks.Block({
+                spawnPos: new Utils.Vect3(0, 0, 0),
+                spawnVol: new Utils.Vect3(this.tileSize, this.h, this.tileSize),
+                ...opts
+            }))
             // push into the blocks array a block across the right of the map
-            this.blocks.push(new Blocks.Block(
-                new Utils.Vect3(this.w - this.tileSize, 0, 0),
-                new Utils.Vect3(this.tileSize, this.h, this.tileSize),
-                opts))
+            this.blocks.push(new Blocks.Block({
+                spawnPos: new Utils.Vect3(this.w - this.tileSize, 0, 0),
+                spawnVol: new Utils.Vect3(this.tileSize, this.h, this.tileSize),
+                ...opts
+            }))
 
             // this.buildNavMesh();
 

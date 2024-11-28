@@ -16,9 +16,11 @@
 - ~~sword shots 2 bullets, 1 visible~~
 - sword/bullet doesn't spawn client-side if instant hit
 - ~~request full pack for first time loading character/etc.~~
-- spawn weapons completely / correct spot
+- ~~spawn weapons completely / correct spot~~
+- Create HB generator util
 - fix team selector rings, second player sees nuetral first player
 - why does it redownload block textures every second?
+- pass fullpack for powerups/weapons, including runFunc and drawFunc
 
 - client side interfaces
 - move fire function to items (hold to fire flamer)

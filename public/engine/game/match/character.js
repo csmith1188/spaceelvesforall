@@ -26,7 +26,7 @@
     class Character {
         constructor(options) {
             this.id = Utils.uuidGen(4);
-            this.spawnVect = new Utils.Vect3(0, 0, 0);
+            this.spawnPos = new Utils.Vect3(0, 0, 0);
             this.name = '';
             this.parent = {};
             this.active = true;
@@ -136,7 +136,7 @@
                 }
 
             // Hitbox must be built after options are applied
-            this.HB = new Utils.Cylinder(new Utils.Vect3(this.spawnVect.x, this.spawnVect.y, this.spawnVect.z), 8, 32);
+            this.HB = new Utils.Cylinder(new Utils.Vect3(this.spawnPos.x, this.spawnPos.y, this.spawnPos.z), 8, 32);
             this.lastHB = this.HB;
             this.leftgfx = this.gfx + '_l'; // Set this after options so you only have to set gfx
             if (typeof window !== 'undefined') {
@@ -566,7 +566,7 @@
                     // this.speed.z *= -0.5
                     if (this.hover > 0) {
                         if (typeof window !== 'undefined') {
-                            sounds.groundhit.currentTime = 0;
+                            // sounds.groundhit.currentTime = 0;
                             if (!this.muted) sounds.groundhit.play();
                         }
                     }
@@ -1060,7 +1060,7 @@
                     this[key] = options[key];
                 }
 
-            this.HB = new Utils.Cylinder(new Utils.Vect3(this.spawnVect.x, this.spawnVect.y, this.spawnVect.z), 29, 37);
+            this.HB = new Utils.Cylinder(new Utils.Vect3(this.spawnPos.x, this.spawnPos.y, this.spawnPos.z), 29, 37);
             this.airAccel = new Utils.Vect3(0.15, 0.15, 1);
             this.hover = 16;
             this.zMod = () => {

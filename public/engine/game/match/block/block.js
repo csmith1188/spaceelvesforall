@@ -13,21 +13,21 @@
 }(typeof self !== 'undefined' ? self : this, function (Utils) {
 
     /*
-          :::::::::  :::        ::::::::   ::::::::  :::    :::
-         :+:    :+: :+:       :+:    :+: :+:    :+: :+:   :+:
-        +:+    +:+ +:+       +:+    +:+ +:+        +:+  +:+
-       +#++:++#+  +#+       +#+    +:+ +#+        +#++:++
-      +#+    +#+ +#+       +#+    +#+ +#+        +#+  +#+
-     #+#    #+# #+#       #+#    #+# #+#    #+# #+#   #+#
+    :::::::::  :::        ::::::::   ::::::::  :::    :::
+    :+:    :+: :+:       :+:    :+: :+:    :+: :+:   :+:
+    +:+    +:+ +:+       +:+    +:+ +:+        +:+  +:+
+    +#++:++#+  +#+       +#+    +:+ +#+        +#++:++
+    +#+    +#+ +#+       +#+    +#+ +#+        +#+  +#+
+    #+#    #+# #+#       #+#    #+# #+#    #+# #+#   #+#
     #########  ########## ########   ########  ###    ###
     */
 
     class Block {
-        constructor(posVect, volVect, options) {
+        constructor(options) {
             // Position
             this.id = Utils.uuidGen(4);
-            this.spawn = new Utils.Vect3(posVect.x, posVect.y, posVect.z)
-            this.HB = new Utils.Cube(new Utils.Vect3(posVect.x, posVect.y, posVect.z), new Utils.Vect3(volVect.x, volVect.y, volVect.z))
+            this.spawnPos = new Utils.Vect3(0, 0, 0);
+            this.spawnVol = new Utils.Vect3(32, 32, 32);
             this.aim = new Utils.Vect3(0, 0, 0);
             this.angle = new Utils.Vect3(0, 0, 0);
             this.speed = new Utils.Vect3(0, 0, 0);
@@ -77,20 +77,33 @@
             this.shadowDraw = false;
             this.drawFunc = [];
             // Options
-            if (typeof options === 'object')
+            if (typeof options === 'object') {
                 for (var key of Object.keys(options)) {
-                    this[key] = options[key];
+                    if (key == 'runFunc') {
+                        this[key] = [];
+                        this.runFunc = options[key].map(fnStr => {
+                            return new Function(`return (${fnStr});`)(); // Create function from string
+                        });
+                    }
+                    else if (key == 'drawFunc') {
+                    } else {
+                        this[key] = options[key];
+                    }
                 }
+            }
+
+            this.HB = new Utils.Cube(new Utils.Vect3(this.spawnPos.x, this.spawnPos.y, this.spawnPos.z), new Utils.Vect3(this.spawnVol.x, this.spawnVol.y, this.spawnVol.z))
+
             if (typeof window !== 'undefined') this.img.src = this.imgFile;
         }
 
         step() {
             /*
-                                              _
-              _ __  _____ _____ _ __  ___ _ _| |_
-             | '  \/ _ \ V / -_) '  \/ -_) ' \  _|
-             |_|_|_\___/\_/\___|_|_|_\___|_||_\__|
-    
+            _
+            _ __  _____ _____ _ __  ___ _ _| |_
+            | '  \/ _ \ V / -_) '  \/ -_) ' \  _|
+            |_|_|_\___/\_/\___|_|_|_\___|_||_\__|
+            
             */
 
             if (this.livetime != 0) {
@@ -425,14 +438,14 @@
                 }
             }
             if (this.HB instanceof Utils.Cube) {
-                    pack.shape = 'cube';
-                    pack.vol = this.HB.vol;
-                } else if (this.HB instanceof Utils.Cylinder) {
-                    pack.shape = 'cylinder';
-                    pack.radius = this.HB.radius;
-                    pack.height = this.HB.height;
+                pack.shape = 'cube';
+                pack.vol = this.HB.vol;
+            } else if (this.HB instanceof Utils.Cylinder) {
+                pack.shape = 'cylinder';
+                pack.radius = this.HB.radius;
+                pack.height = this.HB.height;
             }
-            
+
             return pack;
         }
 

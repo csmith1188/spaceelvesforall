@@ -122,6 +122,8 @@ gameWSS.addEventListener('message', (event) => {
                 } else {
                     game.match.map.spawn({ type: "pickup", ...powerup });
                 }
+                // remove powerups not in the message
+                // game.match.map.blocks = game.match.map.blocks.filter(p => powerup.id === p.id && p.type === 'pickup');
             }
         }
 

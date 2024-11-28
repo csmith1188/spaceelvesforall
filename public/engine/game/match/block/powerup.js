@@ -34,24 +34,36 @@
     
     */
     class PickUp extends Blocks.Block {
-        constructor(id, posVect, volVect, options) {
-            super(id, posVect, volVect, options);
-            this.HB = new Utils.Cube(new Utils.Vect3(posVect.x, posVect.y, posVect.z + 16), new Utils.Vect3(32, 32, 32));
+        constructor(options) {
+            super(options);
             this.type = 'pickup';
             this.subtype = 'pickup';
             if (typeof window !== 'undefined') this.touchSFX = sounds.pickup_ammo;
             this.solid = false;
             this.shadowDraw = true;
             this.runFunc = [
-                (actor, side) => {
+                () => {
                     this.HB.pos.z = Utils.sineAnimate(5, 0.05) + 10;
                 }
             ]
             if (typeof options === 'object')
                 for (var key of Object.keys(options)) {
-                    this[key] = options[key];
+                    if (key == 'runFunc') {
+                    }
+                    else if (key == 'drawFunc') {
+                    } else {
+                        if (key == 'runFunc') {
+                        }
+                        else if (key == 'drawFunc') {
+                        } else {
+                            this[key] = options[key];
+                        }
+                    }
                 }
-            if (typeof window !== 'undefined') this.img.src = this.imgFile;
+
+            // this.HB = new Utils.Cube(new Utils.Vect3(spawnPos.x, spawnPos.y, spawnPos.z + 16), new Utils.Vect3(32, 32, 32));
+
+            // if (typeof window !== 'undefined') this.img.src = this.imgFile;
 
         }
 
@@ -83,9 +95,17 @@
             // // add it to the pack
             // for (let key in this) {
             //     if (this[key] !== PickUp.prototype[key]) {
-            //         pack[key] = this[key];
+            //         if (key == 'runFunc') {
+            //             let noNatives = this[key].filter(func => !func.toString().includes('[native code]'));
+            //             pack[key] = noNatives.map(func => func.toString());
+            //         }
+            //         else
+            //             pack[key] = this[key];
             //     }
             // }
+
+            // let noNatives = this.runFunc.filter(func => !func.toString().includes('[native code]'));
+            // pack.runFunc = noNatives.map(func => func.toString());
 
             return pack;
         }
@@ -115,8 +135,8 @@
     
     */
     class Ammo_Ballistic extends PickUp {
-        constructor(id, posVect, volVect, options) {
-            super(id, posVect, volVect, options);
+        constructor(options) {
+            super(options);
             this.type = 'pickup';
             this.subtype = 'ammo_ballistic';
             this.imgFile = 'img/sprites/pickups/ammo_ballistic_top.png';
@@ -141,7 +161,12 @@
             });
             if (typeof options === 'object')
                 for (var key of Object.keys(options)) {
-                    this[key] = options[key];
+                    if (key == 'runFunc') {
+                    }
+                    else if (key == 'drawFunc') {
+                    } else {
+                        this[key] = options[key];
+                    }
                 }
             if (typeof window !== 'undefined') {
                 this.img.src = this.imgFile;
@@ -161,8 +186,8 @@
     
     */
     class Ammo_Plasma extends PickUp {
-        constructor(id, posVect, volVect, options) {
-            super(id, posVect, volVect, options);
+        constructor(options) {
+            super(options);
             this.type = 'pickup';
             this.subtype = 'ammo_plasma';
             this.imgFile = 'img/sprites/pickups/ammo_plasma_top.png';
@@ -187,7 +212,12 @@
             });
             if (typeof options === 'object')
                 for (var key of Object.keys(options)) {
-                    this[key] = options[key];
+                    if (key == 'runFunc') {
+                    }
+                    else if (key == 'drawFunc') {
+                    } else {
+                        this[key] = options[key];
+                    }
                 }
             if (typeof window !== 'undefined') {
                 this.img.src = this.imgFile;
@@ -207,8 +237,8 @@
     
     */
     class HealthPickup extends PickUp {
-        constructor(id, posVect, volVect, options) {
-            super(id, posVect, volVect, options);
+        constructor(options) {
+            super(options);
             this.type = 'pickup';
             this.subtype = 'health';
             this.imgFile = 'img/sprites/pickups/health_top.png';
@@ -235,7 +265,12 @@
             });
             if (typeof options === 'object')
                 for (var key of Object.keys(options)) {
-                    this[key] = options[key];
+                    if (key == 'runFunc') {
+                    }
+                    else if (key == 'drawFunc') {
+                    } else {
+                        this[key] = options[key];
+                    }
                 }
             if (typeof window !== 'undefined') {
                 this.img.src = this.imgFile;
@@ -256,8 +291,8 @@
     */
 
     class WeaponPickup extends PickUp {
-        constructor(id, posVect, volVect, options = {}) {
-            super(id, posVect, volVect, options);
+        constructor(options) {
+            super(options);
             this.type = 'weapon';
             this.weapon = 'pistol'
             this.item = new Items.Pistol();
@@ -294,7 +329,12 @@
 
             if (typeof options === 'object')
                 for (var key of Object.keys(options)) {
-                    this[key] = options[key];
+                    if (key == 'runFunc') {
+                    }
+                    else if (key == 'drawFunc') {
+                    } else {
+                        this[key] = options[key];
+                    }
                 }
 
             if (this.weapon == 'pistol') {
