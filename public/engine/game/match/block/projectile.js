@@ -89,8 +89,11 @@
         step() {
             if (this.active && this.livetime != 0) {
                 if (typeof window !== 'undefined') {
-                    // let interpolationFactor = Math.min(((Date.now() - this.serverPos.time) / 1000) * 10, 1); // Adjust the factor as needed
-                    let interpolationFactor = 0.5;
+                    // console.log( Math.min(((Date.now() - this.serverPos.time) / 1000) * 1, 1));
+                    
+                    let interpolationFactor = Math.min(((Date.now() - this.serverPos.time) / 1000) * 1, 1); // Adjust the factor as needed
+                    if (isNaN(interpolationFactor)) interpolationFactor = 0.5;
+                    // let interpolationFactor = 0.5;
                     this.HB.pos.x += (this.serverPos.pos.x - this.HB.pos.x) * interpolationFactor * game.time.delta;
                     this.HB.pos.y += (this.serverPos.pos.y - this.HB.pos.y) * interpolationFactor * game.time.delta;
                     this.HB.pos.z += (this.serverPos.pos.z - this.HB.pos.z) * interpolationFactor * game.time.delta;

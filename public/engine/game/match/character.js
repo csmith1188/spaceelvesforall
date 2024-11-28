@@ -92,7 +92,7 @@
             */
             this.item = 0;
             this.inventory = [];
-            this.inventory = [new Items.Sword()];
+            this.inventory = [new Items.Pistol()];
             // this.inventory = [new Items.Pistol()];
             this.inventory[0].owner = this.parent;
             this.ammo = {
@@ -120,6 +120,8 @@
             this.faceCamera = true;
             this.shadowDraw = true;
             this.muted = false;
+            
+            this.runFunc = [];
 
             /*
                 ___       _   _
@@ -140,7 +142,9 @@
             if (typeof window !== 'undefined') {
                 this.img.src = this.gfx + '.png'
             }
-            this.runFunc = [];
+
+            // this.parent = game.players.find(player => player.token.id === this.parent.token.id);
+            
         }
 
         /*
@@ -500,8 +504,8 @@
                 this.lastHB = new Utils.Cylinder(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), this.HB.radius, this.HB.height);
 
                 if (typeof window !== 'undefined') {
-                    // let interpolationFactor = Math.min(((Date.now() - this.serverPos.time) / 1000) * 10, 1); // Adjust the factor as needed
-                    let interpolationFactor = 0.5;
+                    let interpolationFactor = Math.min(((Date.now() - this.serverPos.time) / 1000) * 1, 1); // Adjust the factor as needed
+                    if (isNaN(interpolationFactor)) interpolationFactor = 0.5;
                     this.HB.pos.x += (this.serverPos.x - this.HB.pos.x) * interpolationFactor * game.time.delta;
                     this.HB.pos.y += (this.serverPos.y - this.HB.pos.y) * interpolationFactor * game.time.delta;
                     this.HB.pos.z += (this.serverPos.z - this.HB.pos.z) * interpolationFactor * game.time.delta;
@@ -989,7 +993,10 @@
 
         pack() {
             return {
+                type: 'character',
                 ownerName: this.parent.token.username || this.name,
+                parent: this.parent.pack(),
+                team: this.team,
                 id: this.id,
                 pos: this.HB.pos,
                 speed: this.speed,

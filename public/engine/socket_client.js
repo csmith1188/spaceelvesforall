@@ -56,7 +56,7 @@ gameWSS.addEventListener('message', (event) => {
 
         if (message.characters) {
             for (let character of message.characters) {
-                let c = game.match.characters.find(c => c.parent.token.username === character.ownerName);
+                let c = game.match.characters.find(c => c.id === character.id);
                 if (c) {
                     c.serverPos.x = character.pos.x;
                     c.serverPos.y = character.pos.y;
@@ -66,7 +66,11 @@ gameWSS.addEventListener('message', (event) => {
                     c.hp = character.hp;
                     c.pp = character.pp;
                     c.ammo = character.ammo;
+                } else {
+                    game.match.map.spawn(character);
                 }
+                // remove characters not in the message
+                game.match.characters = game.match.characters.filter(c => character.id === c.id);
             }
         }
 

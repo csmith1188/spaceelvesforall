@@ -35,6 +35,8 @@
             if (this.target) {
                 this.x = this.target.HB.pos.x;
                 this.y = this.target.HB.pos.y;
+            } else {
+                console.log('Camera.update: target not found');
             }
             /*
             // Move camera to next sensible target when player character is inactive or missing

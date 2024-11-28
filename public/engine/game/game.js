@@ -110,27 +110,30 @@
                                               |_|
                     */
                     // get all characters whose HB is not equal to their lastHB
-                    let characters = this.match.characters.filter(character => character.HB != character.lastHB);
-                    // replace each character in the list with their pack()ed version
-                    characters = characters.map(character => character.pack());
-                    // replace each bullet in the list with their pack()ed version
-                    let bullets = this.match.map.bullets.map(bullet => bullet.pack());
-                    // get all blocks in the list whose type is pickup
-                    let powerups = this.match.map.blocks.filter(block => block.type == 'pickup');
-                    // replace each powerup in the list with their pack()ed version
-                    powerups = powerups.map(powerup => powerup.pack());
-                    // get all blocks in the list whose type is weapon
-                    let weapons = this.match.map.blocks.filter(block => block.type == 'weapon');
-                    // replace each weapon in the list with their pack()ed version
-                    weapons = weapons.map(weapon => weapon.pack());
-                    // send all characters to the client
-                    this.broadcast(this.wss, {
-                        characters: characters,
-                        bullets: bullets,
-                        powerups: powerups,
-                        weapons: weapons,
-                        time: Date.now()
-                    });
+                    if (this.time.ticks % 3 == 0) {
+                        let characters = this.match.characters.filter(character => character.HB != character.lastHB);
+                        characters = this.match.characters.filter(character => character.active);
+                        // replace each character in the list with their pack()ed version
+                        characters = characters.map(character => character.pack());
+                        // replace each bullet in the list with their pack()ed version
+                        let bullets = this.match.map.bullets.map(bullet => bullet.pack());
+                        // get all blocks in the list whose type is pickup
+                        let powerups = this.match.map.blocks.filter(block => block.type == 'pickup');
+                        // replace each powerup in the list with their pack()ed version
+                        powerups = powerups.map(powerup => powerup.pack());
+                        // get all blocks in the list whose type is weapon
+                        let weapons = this.match.map.blocks.filter(block => block.type == 'weapon');
+                        // replace each weapon in the list with their pack()ed version
+                        weapons = weapons.map(weapon => weapon.pack());
+                        // send all characters to the client
+                        this.broadcast(this.wss, {
+                            characters: characters,
+                            bullets: bullets,
+                            powerups: powerups,
+                            weapons: weapons,
+                            time: Date.now()
+                        });
+                    }
 
                 }
             }
@@ -154,7 +157,7 @@
                 }
             } catch (error) {
                 console.log(error);
-                
+
             }
         }
 

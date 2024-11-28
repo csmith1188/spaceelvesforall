@@ -13,9 +13,11 @@
 - ~~bullets not moving / dying server side (duplicate client bullets)~~
 - ~~fix desync/rubberbanding (slow cpu issue?)~~
 - ~~characters assigned to correct players~~
-- fix team selector rings, second player sees nuetral first player
+- ~~sword shots 2 bullets, 1 visible~~
+- sword/bullet doesn't spawn client-side if instant hit
+- request full pack for first time loading character/etc.
 - spawn weapons completely
-- sword shots 2 bullets, 1 visible
+- fix team selector rings, second player sees nuetral first player
 
 - client side interfaces
 - why does it redownload block textures every second?
