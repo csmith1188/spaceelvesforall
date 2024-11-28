@@ -67,11 +67,16 @@ gameWSS.addEventListener('message', (event) => {
                     c.pp = character.pp;
                     c.ammo = character.ammo;
                 } else {
-                    game.match.map.spawn(character);
+                    gameWSS.send(JSON.stringify({ getCharacter: character.id }));
                 }
                 // remove characters not in the message
                 game.match.characters = game.match.characters.filter(c => character.id === c.id);
             }
+        }
+
+        if (message.character) {
+            let c = game.match.characters.find(c => c.id === character.id);
+            if (!c) game.match.map.spawn(message.character);
         }
 
         if (message.bullets) {
@@ -102,7 +107,7 @@ gameWSS.addEventListener('message', (event) => {
                     game.match.map.spawn(bullet);
                 }
                 // remove bullets not in the message
-                // game.match.map.bullets = game.match.map.bullets.filter(b => bullet.id === b.id);
+                game.match.map.bullets = game.match.map.bullets.filter(b => bullet.id === b.id);
             }
         }
 

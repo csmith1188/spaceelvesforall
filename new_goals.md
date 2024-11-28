@@ -15,20 +15,21 @@
 - ~~characters assigned to correct players~~
 - ~~sword shots 2 bullets, 1 visible~~
 - sword/bullet doesn't spawn client-side if instant hit
-- request full pack for first time loading character/etc.
-- spawn weapons completely
+- ~~request full pack for first time loading character/etc.~~
+- spawn weapons completely / correct spot
 - fix team selector rings, second player sees nuetral first player
+- why does it redownload block textures every second?
 
 - client side interfaces
-- why does it redownload block textures every second?
 - move fire function to items (hold to fire flamer)
 - match await player ready (await controls)
-- fix mouse controls aiming from camera instead character
+- (reconsider this) fix mouse controls aiming from camera instead character
 - handle bots
 - player calc and draw distance
+- camera zoom
 - show score tab
 - restore full camera functionality
-- offline mode
+- offline mode (consider running server in electron app)
 
 - deathmatch mode
 - soccer mode

@@ -74,6 +74,11 @@ function gameHandler(ws, req) {
                 player.controller.newState = message.controller;
             }
 
+            if (message.getCharacter) {
+                let character = game.match.characters.find(character => character.id == message.getCharacter);
+                if (character) ws.send(JSON.stringify({ character: character.fullPack() }));
+            }
+
         } catch (error) {
             console.error(error);
         }

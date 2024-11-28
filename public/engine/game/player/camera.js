@@ -18,6 +18,7 @@
             this.y = 0;
             this.target;
             this.radius = 800;
+            this.zoom = 1;
             this.angle = 1;
             this._3D = 0;
             this.shakeTime = 0;

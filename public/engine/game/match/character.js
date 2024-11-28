@@ -137,7 +137,7 @@
 
             // Hitbox must be built after options are applied
             this.HB = new Utils.Cylinder(new Utils.Vect3(this.spawnVect.x, this.spawnVect.y, this.spawnVect.z), 8, 32);
-            this.lastHB = new Utils.Cylinder(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), this.HB.radius, this.HB.height);
+            this.lastHB = this.HB;
             this.leftgfx = this.gfx + '_l'; // Set this after options so you only have to set gfx
             if (typeof window !== 'undefined') {
                 this.img.src = this.gfx + '.png'
@@ -994,8 +994,6 @@
         pack() {
             return {
                 type: 'character',
-                ownerName: this.parent.token.username || this.name,
-                parent: this.parent.pack(),
                 team: this.team,
                 id: this.id,
                 pos: this.HB.pos,
@@ -1003,6 +1001,42 @@
                 hp: this.hp,
                 pp: this.pp,
                 ammo: this.ammo
+            }
+        }
+
+        fullPack() {
+            return {
+                type: 'character',
+                team: this.team,
+                id: this.id,
+                pos: this.HB.pos,
+                speed: this.speed,
+                hp: this.hp,
+                pp: this.pp,
+                ammo: this.ammo,
+                name: this.name,
+                gfx: this.gfx,
+                leftgfx: this.leftgfx,
+                faceCamera: this.faceCamera,
+                zMod: this.zMod,
+                hover: this.hover,
+                bouyancy: this.bouyancy,
+                floor: this.floor,
+                speedLimit: this.speedLimit,
+                airAccel: this.airAccel,
+                reflection: this.reflection,
+                hp_max: this.hp_max,
+                pp_max: this.pp_max,
+                item: this.item,
+                // inventory: this.inventory,
+                active: this.active,
+                visible: this.visible,
+                muted: this.muted,
+                deathSFX: this.deathSFX,
+                runFunc: this.runFunc,
+                parent: this.parent.pack(),
+                serverPos: this.serverPos,
+                lastHB: this.lastHB
             }
         }
 

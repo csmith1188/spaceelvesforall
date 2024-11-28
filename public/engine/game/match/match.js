@@ -45,9 +45,7 @@
                         console.log('Creating character for player', game.players[i].token.username);
                         let images = ['img/sprites/jetbike', 'img/sprites/dark1', 'img/sprites/dark2'];
                         this.characters.push(new Characters.Jetbike({ name: game.players[i].token.username, team: i, parent: game.players[i], active: true, cleanup: false, spawnVect: new Utils.Vect3(i * 100 + 100, i * 100 + 100, 0), gfx: images[i] }));
-                        //log last character
-                        console.log(this.characters[this.characters.length - 1].id);
-                        
+
                     }
                 }
                 this.stage = 'startMatch';
@@ -105,22 +103,17 @@
 
                 this.map.draw();
 
-                for (const block of this.map.blocks) {
-                    block.draw();
+                // Combine blocks, bullets, debris, and characters
+                let entities = [...this.map.blocks, ...this.map.bullets, ...this.map.debris, ...this.characters];
+
+                // Sort entities by their HB's pos y
+                entities.sort((a, b) => a.HB.pos.y - b.HB.pos.y);
+
+                // Draw sorted entities
+                for (const entity of entities) {
+                    entity.draw();
                 }
 
-                for (const bullet of this.map.bullets) {
-                    bullet.draw();
-                }
-
-                for (const debris of this.map.debris) {
-                    debris.draw();
-                }
-
-            }
-
-            for (const chara of this.characters) {
-                chara.draw();
             }
 
         }

@@ -118,9 +118,11 @@
                 let vol = new Utils.Vect3(block.vol.x, block.vol.y, block.vol.z);
                 this.blocks.push(new Powerups.WeaponPickup(pos, vol, { id: block.id, weapon: block.weapon || "pistol" }));
             } else if (block.type == "character") {
-                let pos = new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z);
-                let player = game.players.find(p => p.token.id === block.parent.token.id);
-                game.match.characters.push(new Characters.Jetbike({ spawnVect: pos, id: block.id, parent: player, team: block.team}));
+                block.spawnVect = new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z);
+                delete block.pos;
+                block.lastHB = block.spawnVect;
+                block.parent = game.players.find(p => p.token.id === block.parent.token.id);
+                game.match.characters.push(new Characters.Jetbike(block));
             }
         }
 
