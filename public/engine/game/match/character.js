@@ -92,7 +92,7 @@
             */
             this.item = 0;
             this.inventory = [];
-            this.inventory = [new Items.Pistol()];
+            this.inventory = [new Items.Sword()];
             // this.inventory = [new Items.Pistol()];
             this.inventory[0].owner = this.parent;
             this.ammo = {

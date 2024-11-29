@@ -220,9 +220,9 @@
     class Slash extends Bullet {
         constructor(options) {
             super(options);
-            this.speed = new Utils.Vect3(user.aimX, user.aimY, 0);
+            this.speed = new Utils.Vect3(this.user.aimX, this.user.aimY, 0);
             this.type = 'slash';
-            this.color = user.color;
+            this.color = this.user.color;
             this.damage = 10;
             this.livetime = 10;
             this.touchSFX = typeof window !== 'undefined' ? sounds.hit_lance : null;
@@ -238,8 +238,8 @@
                         this[key] = options[key];
                     }
                 }
-            this.HB = new Utils.Cylinder(posVect, volVect.x, volVect.y);
-            this.HB.radius = user.HB.radius + 10;
+            this.HB = new Utils.Cylinder(this.spawnPos, this.spawnVol.x, this.spawnVol.y);
+            this.HB.radius = this.user.HB.radius + 10;
 
             this.drawFunc = [
                 () => {
