@@ -73,8 +73,6 @@
                     }
 
                     for (const bullet of this.map.bullets) {
-                        console.log(bullet);
-                        
                         bullet.step();
                     }
 

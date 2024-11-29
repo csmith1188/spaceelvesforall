@@ -87,8 +87,6 @@
                     }
                     else if (key == 'drawFunc') {
                     } else {
-                        console.log(key);
-                        
                         this[key] = options[key];
                     }
                 }

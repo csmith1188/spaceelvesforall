@@ -70,8 +70,9 @@
             block.spawnPos = new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z);
             if (block.type == "cube")
                 block.spawnVol = new Utils.Vect3(block.vol.x, block.vol.y, block.vol.z);
-            delete block.pos;
-            delete block.vol;
+            // block.serverPos = { pos: block.pos, time: block.time };
+            // delete block.pos;
+            // delete block.vol;
             let character = game.match.characters.find(c => c.id === block.user.id);
             if (block.type == "block") {
                 this.blocks.push(new Blocks.Block(

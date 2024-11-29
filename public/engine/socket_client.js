@@ -103,6 +103,7 @@ gameWSS.addEventListener('message', (event) => {
                     }
                     b.serverPos.time = message.time;
                 } else {
+                    bullet.serverPos = { pos: { x: bullet.pos.x, y: bullet.pos.y, z: bullet.pos.z }, time: message.time };
                     //if the bullet is not in the game, add it
                     game.match.map.spawn(bullet);
                 }
