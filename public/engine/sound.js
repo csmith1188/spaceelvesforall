@@ -7,7 +7,7 @@
         module.exports = factory();
     } else {
         // Browser globals (root is window)
-        root.sounds = factory();  
+        root.sounds = factory();
     }
 }(typeof self !== 'undefined' ? self : this, function () {
 
@@ -32,6 +32,28 @@
         'groundhit': new Audio('sfx/hit01.wav'),
         'death': new Audio('sfx/hit05.wav'),
         'goal': new Audio('sfx/powerup06.wav'),
+        'prop': [
+            new Audio('sfx/prop_00.wav'),
+            new Audio('sfx/prop_01.wav'),
+            new Audio('sfx/prop_02.wav'),
+            new Audio('sfx/prop_03.wav'),
+            new Audio('sfx/prop_04.wav'),
+            new Audio('sfx/prop_05.wav'),
+            new Audio('sfx/prop_06.wav'),
+            new Audio('sfx/prop_07.wav'),
+            new Audio('sfx/prop_08.wav'),
+            new Audio('sfx/prop_09.wav'),
+            new Audio('sfx/prop_10.wav'),
+            new Audio('sfx/prop_11.wav'),
+            new Audio('sfx/prop_12.wav'),
+            new Audio('sfx/prop_13.wav'),
+            new Audio('sfx/prop_14.wav'),
+            new Audio('sfx/prop_15.wav'),
+            new Audio('sfx/prop_16.wav'),
+            new Audio('sfx/prop_17.wav'),
+            new Audio('sfx/prop_18.wav'),
+            new Audio('sfx/prop_19.wav')
+        ]
     }
     return sounds;
 }));

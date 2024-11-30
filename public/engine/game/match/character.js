@@ -122,7 +122,7 @@
             this.faceCamera = true;
             this.shadowDraw = true;
             this.muted = false;
-            
+
             this.runFunc = [];
 
             /*
@@ -146,7 +146,7 @@
             }
 
             // this.parent = game.players.find(player => player.token.id === this.parent.token.id);
-            
+
         }
 
         /*
@@ -516,7 +516,6 @@
                 this.HB.pos.x += this.speed.x * game.time.delta;
                 this.HB.pos.y += this.speed.y * game.time.delta;
                 this.HB.pos.z += this.speed.z * game.time.delta;
-
 
                 /*
                    ___       _          __   ___                   _
@@ -1066,8 +1065,26 @@
             this.HB = Utils.generateHB(this);
             this.airAccel = new Utils.Vect3(0.15, 0.15, 1);
             this.hover = 16;
+            this.lastCombinedSpeed = 0;
             this.zMod = () => {
                 return Utils.sineAnimate(1, 0.1);
+            }
+        }
+
+        step() {
+            super.step();
+            if (typeof window !== 'undefined') {
+                const combinedSpeed = Math.sqrt(this.speed.x ** 2 + this.speed.y ** 2);
+                const freq = Math.min(Math.floor(combinedSpeed / 0.6), 19);
+                const lastFreq = Math.min(Math.floor(this.lastCombinedSpeed / 0.6), 19);
+                if (freq !== lastFreq) {
+                    sounds.prop[lastFreq].pause();
+                    sounds.prop[lastFreq].currentTime = 0;
+                }
+                if (sounds.prop[freq].currentTime > (game.time.tickRate * game.time.delta) / 1000)
+                    sounds.prop[freq].currentTime = 0;
+                sounds.prop[freq].volume = 0.2;
+                sounds.prop[freq].play();
             }
         }
     }
