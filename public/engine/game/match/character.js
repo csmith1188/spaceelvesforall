@@ -27,6 +27,8 @@
         constructor(options) {
             this.id = Utils.uuidGen(4);
             this.spawnPos = new Utils.Vect3(0, 0, 0);
+            this.radius = 8;
+            this.height = 32;
             this.name = '';
             this.parent = {};
             this.active = true;
@@ -136,7 +138,7 @@
                 }
 
             // Hitbox must be built after options are applied
-            this.HB = new Utils.Cylinder(new Utils.Vect3(this.spawnPos.x, this.spawnPos.y, this.spawnPos.z), 8, 32);
+            this.HB = Utils.generateHB(this);
             this.lastHB = this.HB;
             this.leftgfx = this.gfx + '_l'; // Set this after options so you only have to set gfx
             if (typeof window !== 'undefined') {
@@ -1055,12 +1057,13 @@
     class Jetbike extends Character {
         constructor(options) {
             super(options);
+            this.radius = 29;
+            this.height = 37;
             if (typeof options === 'object')
                 for (var key of Object.keys(options)) {
                     this[key] = options[key];
                 }
-
-            this.HB = new Utils.Cylinder(new Utils.Vect3(this.spawnPos.x, this.spawnPos.y, this.spawnPos.z), 29, 37);
+            this.HB = Utils.generateHB(this);
             this.airAccel = new Utils.Vect3(0.15, 0.15, 1);
             this.hover = 16;
             this.zMod = () => {

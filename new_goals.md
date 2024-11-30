@@ -17,7 +17,7 @@
 - sword/bullet doesn't spawn client-side if instant hit
 - ~~request full pack for first time loading character/etc.~~
 - ~~spawn weapons completely / correct spot~~
-- Create HB generator util
+- ~~Create HB generator util~~
 - Add all spawns from the server to an update list
 - fix team selector rings, second player sees nuetral first player
 - why does it redownload block textures every second?

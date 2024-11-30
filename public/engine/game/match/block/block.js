@@ -92,7 +92,7 @@
                 }
             }
 
-            this.HB = new Utils.Cube(new Utils.Vect3(this.spawnPos.x, this.spawnPos.y, this.spawnPos.z), new Utils.Vect3(this.spawnVol.x, this.spawnVol.y, this.spawnVol.z))
+            this.HB = Utils.generateHB(this);
 
             if (typeof window !== 'undefined') this.img.src = this.imgFile;
         }

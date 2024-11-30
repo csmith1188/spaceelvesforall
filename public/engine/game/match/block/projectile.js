@@ -25,6 +25,7 @@
         constructor(options) {
             super(options);
             this.spawnPos = new Utils.Vect3(0, 0, 0);
+            delete this.spawnVol;
             this.radius = 5;
             this.height = 5;
             this.user = {};
@@ -91,7 +92,7 @@
                     }
                 }
 
-            this.HB = new Utils.Cylinder(new Utils.Vect3(this.spawnPos.x, this.spawnPos.y, this.spawnPos.z), this.radius, this.height);
+            this.HB = Utils.generateHB(this);
 
         }
 
@@ -238,8 +239,8 @@
                         this[key] = options[key];
                     }
                 }
-            this.HB = new Utils.Cylinder(this.spawnPos, this.spawnVol.x, this.spawnVol.y);
             this.HB.radius = this.user.HB.radius + 10;
+            this.HB = Utils.generateHB(this);
 
             this.drawFunc = [
                 () => {

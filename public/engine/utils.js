@@ -323,6 +323,15 @@
         }
     }
 
+    function generateHB(volume) {
+        // if the volVect is a Vect2 object, it's a cylinder
+        if (volume.spawnVol) {
+            return new Cube(new Vect3(volume.spawnPos.x, volume.spawnPos.y, volume.spawnPos.z), new Vect3(volume.spawnVol.x, volume.spawnVol.y, volume.spawnVol.z));
+        } else {
+            return new Cylinder(new Vect3(volume.spawnPos.x, volume.spawnPos.y, volume.spawnPos.z), volume.radius, volume.height);
+        }
+    }
+
     /**
      * Performs a sine animation.
      * @param {number} amp - The amplitude of the sine wave.
@@ -372,5 +381,5 @@
         return result;
     }
 
-    return { Vect2, Vect3, Rect, Cube, Cylinder, sineAnimate, easeout, easeinout, uuidGen };
+    return { Vect2, Vect3, Rect, Cube, Cylinder, generateHB, sineAnimate, easeout, easeinout, uuidGen };
 }));
