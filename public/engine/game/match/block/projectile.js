@@ -226,7 +226,7 @@
             this.color = this.user.color;
             this.damage = 10;
             this.livetime = 10;
-            this.touchSFX = typeof window !== 'undefined' ? sounds.hit_lance : null;
+            this.touchSFX = typeof window !== 'undefined' ? Sounds.hit_lance : null;
             this.opacity = 0;
             this.shadowDraw = false;
             this.force = 0.2

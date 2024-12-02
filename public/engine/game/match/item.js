@@ -62,9 +62,9 @@
             this.name = 'Plutonian Pistol';
             this.weapon = 'pistol';
             if (typeof window !== 'undefined') {
-                this.shootSFX = sounds.shoot_pistol;
-                this.reload_empty = sounds.reload_empty;
-                this.reload_done = sounds.reload_done;
+                this.shootSFX = Sounds.shoot_pistol;
+                this.reload_empty = Sounds.reload_empty;
+                this.reload_done = Sounds.reload_done;
                 this.icon = new Image();
                 this.icon.src = 'img/sprites/inventory/pistol_active.png';
                 this.iconInactive = new Image();
@@ -170,8 +170,8 @@
             this.weapon = 'rifle';
             if (typeof window !== 'undefined') {
                 this.shootSFX = new Audio('sfx/rifle_shoot.wav');
-                this.reload_empty = sounds.reload_empty;
-                this.reload_done = sounds.reload_done;
+                this.reload_empty = Sounds.reload_empty;
+                this.reload_done = Sounds.reload_done;
                 this.icon = new Image();
                 this.icon.src = 'img/sprites/inventory/rifle_active.png';
                 this.iconInactive = new Image();
@@ -234,53 +234,54 @@
                                     color: user.color,
                                     damage: this.damage,
                                     livetime: 300,
-                                    touchSFX: sounds.hit_rifle
+                                    touchSFX: Utils.isClient() ? Sounds.hit_rifle : null
                                 }));
                     // Change bullet runfunc
-                    game.match.map.bullets[game.match.map.bullets.length - 1].runFunc.push(
-                        function () {
-                            let tempx = ((Math.random() * 1) - 0.5) * 2;
-                            let tempy = ((Math.random() * 1) - 0.5) * 2;
-                            let tempz = ((Math.random() * 1) - 0.5) * 2;
-                            game.match.map.debris.push(
-                                new Block(
-                                    new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
-                                    new Utils.Vect3(1, 1, 1),
-                                    {
-                                        speed: new Utils.Vect3(tempx, tempy, tempz),
-                                        HB: new Cube(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Utils.Vect3(4, 4, 4)),
-                                        z: this.HB.pos.z,
-                                        color: [220, 220, 200],
-                                        livetime: 15,
-                                        dying: true,
-                                        shadowDraw: false,
-                                        solid: false,
-                                    }));
-                        }.bind(game.match.map.bullets[game.match.map.bullets.length - 1])
-                    );
+                    // game.match.map.bullets[game.match.map.bullets.length - 1].runFunc.push(
+                    //     function () {
+                    //         let tempx = ((Math.random() * 1) - 0.5) * 2;
+                    //         let tempy = ((Math.random() * 1) - 0.5) * 2;
+                    //         let tempz = ((Math.random() * 1) - 0.5) * 2;
+                    //         game.match.map.debris.push(
+                    //             new Block(
+                    //                 new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
+                    //                 new Utils.Vect3(1, 1, 1),
+                    //                 {
+                    //                     speed: new Utils.Vect3(tempx, tempy, tempz),
+                    //                     HB: new Cube(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Utils.Vect3(4, 4, 4)),
+                    //                     z: this.HB.pos.z,
+                    //                     color: [220, 220, 200],
+                    //                     livetime: 15,
+                    //                     dying: true,
+                    //                     shadowDraw: false,
+                    //                     solid: false,
+                    //                 }));
+                    //     }.bind(game.match.map.bullets[game.match.map.bullets.length - 1])
+                    // );
                     //Change hitSpash
-                    game.match.map.bullets[game.match.map.bullets.length - 1].hitSplash = function () {
-                        for (let parts = 0; parts < 20; parts++) {
-                            let tempx = (Math.random() * 4) - 2;
-                            let tempy = (Math.random() * 4) - 2;
-                            let tempz = (Math.random() * 4) - 2;
-                            let tempC = Math.ceil(Math.random() * 255);
-                            game.match.map.debris.push(
-                                new Block(
-                                    new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
-                                    new Utils.Vect3(1, 1, 1),
-                                    {
-                                        speed: new Utils.Vect3(tempx + (this.speed.x * 0.25), tempy + (this.speed.y * 0.25), tempz + (this.speed.z * 0.25)),
-                                        HB: new Cube(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Utils.Vect3(6, 3, 1)),
-                                        z: this.HB.pos.z,
-                                        color: [0, tempC, 255],
-                                        livetime: 20,
-                                        dying: true,
-                                        shadowDraw: false,
-                                        solid: false
-                                    }));
-                        }
-                    }.bind(game.match.map.bullets[game.match.map.bullets.length - 1])
+                    // game.match.map.bullets[game.match.map.bullets.length - 1].hitSplash = function () {
+                    //     for (let parts = 0; parts < 20; parts++) {
+                    //         let tempx = (Math.random() * 4) - 2;
+                    //         let tempy = (Math.random() * 4) - 2;
+                    //         let tempz = (Math.random() * 4) - 2;
+                    //         let tempC = Math.ceil(Math.random() * 255);
+                    //         game.match.map.debris.push(
+                    //             new Blocks.Block(
+                    //                 new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
+                    //                 new Utils.Vect3(1, 1, 1),
+                    //                 {
+                    //                     speed: new Utils.Vect3(tempx + (this.speed.x * 0.25), tempy + (this.speed.y * 0.25), tempz + (this.speed.z * 0.25)),
+                    //                     spawnVol: new Utils.Vect3(6, 3, 1),
+                    //                     HB: new Cube(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Utils.Vect3(6, 3, 1)),
+                    //                     z: this.HB.pos.z,
+                    //                     color: [0, tempC, 255],
+                    //                     livetime: 20,
+                    //                     dying: true,
+                    //                     shadowDraw: false,
+                    //                     solid: false
+                    //                 }));
+                    //     }
+                    // }.bind(game.match.map.bullets[game.match.map.bullets.length - 1])
 
                     // Push player back by the negative of the aim vector
                     user.speed.x -= (aimX / distance) * 10;
@@ -327,9 +328,9 @@
             this.name = 'Venusian Lotus';
             this.weapon = 'flamer';
             if (typeof window !== 'undefined') {
-                this.shootSFX = sounds.shoot_flamer;
-                this.reload_empty = sounds.reload_empty;
-                this.reload_done = sounds.reload_done;
+                this.shootSFX = Sounds.shoot_flamer;
+                this.reload_empty = Sounds.reload_empty;
+                this.reload_done = Sounds.reload_done;
                 this.icon = new Image();
                 this.icon.src = 'img/sprites/inventory/flamer_active.png';
                 this.iconInactive = new Image();
@@ -364,7 +365,7 @@
                         this.shootSFX.currentTime = 0;
                         if (!user.muted) this.shootSFX.play(); // play shoot sound
                     }
-                    if (!user.muted)
+                    if (!user.muted && Utils.isClient())
                         this.shootSFX.play(); // play shoot sound
                     for (let i = 0; i < 5; i++) {
 
@@ -396,7 +397,7 @@
                                         speed: new Utils.Vect3(aimX, aimY, 0),
                                         color: user.color,
                                         damage: 10,
-                                        touchSFX: sounds.hit_flamer
+                                        touchSFX: Utils.isClient() ? Sounds.hit_flamer : null
                                     }
                                 )
                             );
@@ -440,9 +441,9 @@
             this.name = 'Martian Lance';
             this.weapon = 'lance';
             if (typeof window !== 'undefined') {
-                this.shootSFX = sounds.shoot_lance;
-                this.reload_empty = sounds.reload_empty;
-                this.reload_done = sounds.reload_done;
+                this.shootSFX = Sounds.shoot_lance;
+                this.reload_empty = Sounds.reload_empty;
+                this.reload_done = Sounds.reload_done;
                 this.icon = new Image();
                 this.icon.src = 'img/sprites/inventory/lance_active.png';
                 this.iconInactive = new Image();
@@ -506,73 +507,73 @@
                                     color: user.color,
                                     damage: 10,
                                     livetime: 30,
-                                    touchSFX: sounds.hit_lance,
+                                    touchSFX: Utils.isClient() ? Sounds.hit_lance : null,
                                     opacity: 0,
                                     shadowDraw: false,
                                     force: 1
                                 }
                             )
                         );
-                    // Run this function every frame the bullet is alive
-                    game.match.map.bullets[game.match.map.bullets.length - 1].runFunc.push(
-                        function () {
-                            // Match the user's position
-                            this.HB.pos.x = this.parent.HB.pos.x;
-                            this.HB.pos.y = this.parent.HB.pos.y;
-                            this.HB.pos.z = this.parent.HB.pos.z;
-                            // this damage is equal to the true speed of the player
-                            this.damage = Math.sqrt(Math.abs(this.parent.speed.x) ** 2 + Math.abs(this.parent.speed.y) ** 2 + Math.abs(this.parent.speed.z) ** 2);
-                            // multiply damage
-                            this.damage *= 2;
-                            // add a debris block to the map at the player's position with a random speed
-                            let tempx = ((Math.random() * 1) - 0.5) * 10;
-                            let tempy = ((Math.random() * 1) - 0.5) * 10;
-                            let tempz = ((Math.random() * 1) - 0.5) * 10;
-                            let tempC1 = Math.ceil(Math.random() * 255);
-                            let tempC2 = Math.ceil(Math.random() * 255);
-                            // add a debris block to the map at the player's position with a random speed
-                            game.match.map.debris.push(
-                                new Block(
-                                    new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
-                                    new Utils.Vect3(1, 1, 1),
-                                    {
-                                        speed: new Utils.Vect3(tempx, tempy, tempz),
-                                        HB: new Cube(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Utils.Vect3(4, 4, 4)),
-                                        z: this.HB.pos.z,
-                                        color: [tempC1, 0, tempC2],
-                                        colorSide: [tempC2, 0, tempC1],
-                                        livetime: 15,
-                                        dying: true,
-                                        shadowDraw: false,
-                                        solid: false,
-                                    }));
+                    // // Run this function every frame the bullet is alive
+                    // game.match.map.bullets[game.match.map.bullets.length - 1].runFunc.push(
+                    //     function () {
+                    //         // Match the user's position
+                    //         this.HB.pos.x = this.parent.HB.pos.x;
+                    //         this.HB.pos.y = this.parent.HB.pos.y;
+                    //         this.HB.pos.z = this.parent.HB.pos.z;
+                    //         // this damage is equal to the true speed of the player
+                    //         this.damage = Math.sqrt(Math.abs(this.parent.speed.x) ** 2 + Math.abs(this.parent.speed.y) ** 2 + Math.abs(this.parent.speed.z) ** 2);
+                    //         // multiply damage
+                    //         this.damage *= 2;
+                    //         // add a debris block to the map at the player's position with a random speed
+                    //         let tempx = ((Math.random() * 1) - 0.5) * 10;
+                    //         let tempy = ((Math.random() * 1) - 0.5) * 10;
+                    //         let tempz = ((Math.random() * 1) - 0.5) * 10;
+                    //         let tempC1 = Math.ceil(Math.random() * 255);
+                    //         let tempC2 = Math.ceil(Math.random() * 255);
+                    //         // add a debris block to the map at the player's position with a random speed
+                    //         game.match.map.debris.push(
+                    //             new Block(
+                    //                 new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
+                    //                 new Utils.Vect3(1, 1, 1),
+                    //                 {
+                    //                     speed: new Utils.Vect3(tempx, tempy, tempz),
+                    //                     HB: new Cube(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Utils.Vect3(4, 4, 4)),
+                    //                     z: this.HB.pos.z,
+                    //                     color: [tempC1, 0, tempC2],
+                    //                     colorSide: [tempC2, 0, tempC1],
+                    //                     livetime: 15,
+                    //                     dying: true,
+                    //                     shadowDraw: false,
+                    //                     solid: false,
+                    //                 }));
 
-                        }.bind(game.match.map.bullets[game.match.map.bullets.length - 1])
-                    )
-                    //Change hitSpash
-                    game.match.map.bullets[game.match.map.bullets.length - 1].hitSplash = function () {
-                        for (let parts = 0; parts < 20; parts++) {
-                            let tempx = (Math.random() * 4) - 2;
-                            let tempy = (Math.random() * 4) - 2;
-                            let tempz = (Math.random() * 4) - 2;
-                            let tempC = Math.ceil(Math.random() * 255);
-                            game.match.map.debris.push(
-                                new Block(
-                                    new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
-                                    new Utils.Vect3(1, 1, 1),
-                                    {
-                                        speed: new Utils.Vect3(tempx + (this.speed.x * 0.25), tempy + (this.speed.y * 0.25), tempz + (this.speed.z * 0.25)),
-                                        HB: new Cube(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Utils.Vect3(6, 3, 1)),
-                                        z: this.HB.pos.z,
-                                        color: [255, tempC, 0],
-                                        livetime: 20,
-                                        dying: true,
-                                        shadowDraw: false,
-                                        solid: false
-                                    }));
-                        }
-                    }.bind(game.match.map.bullets[game.match.map.bullets.length - 1])
-                    game.match.map.bullets[game.match.map.bullets.length - 1].HB.radius = user.HB.radius + 10;
+                    //     }.bind(game.match.map.bullets[game.match.map.bullets.length - 1])
+                    // )
+                    // //Change hitSpash
+                    // game.match.map.bullets[game.match.map.bullets.length - 1].hitSplash = function () {
+                    //     for (let parts = 0; parts < 20; parts++) {
+                    //         let tempx = (Math.random() * 4) - 2;
+                    //         let tempy = (Math.random() * 4) - 2;
+                    //         let tempz = (Math.random() * 4) - 2;
+                    //         let tempC = Math.ceil(Math.random() * 255);
+                    //         game.match.map.debris.push(
+                    //             new Block(
+                    //                 new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
+                    //                 new Utils.Vect3(1, 1, 1),
+                    //                 {
+                    //                     speed: new Utils.Vect3(tempx + (this.speed.x * 0.25), tempy + (this.speed.y * 0.25), tempz + (this.speed.z * 0.25)),
+                    //                     HB: new Cube(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Utils.Vect3(6, 3, 1)),
+                    //                     z: this.HB.pos.z,
+                    //                     color: [255, tempC, 0],
+                    //                     livetime: 20,
+                    //                     dying: true,
+                    //                     shadowDraw: false,
+                    //                     solid: false
+                    //                 }));
+                    //     }
+                    // }.bind(game.match.map.bullets[game.match.map.bullets.length - 1])
+                    // game.match.map.bullets[game.match.map.bullets.length - 1].HB.radius = user.HB.radius + 10;
 
                     // If the user has a gamepad, rumble
                     if (user.parent.controller.type == 'gamepad') user.parent.controller.rumble(100, 1.0, 0);
@@ -611,9 +612,9 @@
             this.name = 'Saturnian Scimitar';
             this.weapon = 'sword';
             if (typeof window !== 'undefined') {
-                this.shootSFX = sounds.shoot_sword;
-                this.reload_empty = sounds.reload_empty;
-                this.reload_done = sounds.reload_done;
+                this.shootSFX = Sounds.shoot_sword;
+                this.reload_empty = Sounds.reload_empty;
+                this.reload_done = Sounds.reload_done;
                 this.icon = new Image();
                 this.icon.src = 'img/sprites/inventory/sword_active.png';
                 this.iconInactive = new Image();

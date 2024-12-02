@@ -381,5 +381,9 @@
         return result;
     }
 
-    return { Vect2, Vect3, Rect, Cube, Cylinder, generateHB, sineAnimate, easeout, easeinout, uuidGen };
+    function isClient() {
+        return typeof window !== 'undefined';
+    }
+
+    return { Vect2, Vect3, Rect, Cube, Cylinder, generateHB, sineAnimate, easeout, easeinout, uuidGen, isClient };
 }));

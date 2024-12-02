@@ -19,7 +19,12 @@
 - ~~spawn weapons completely / correct spot~~
 - ~~Create HB generator util~~
 - ~~client side hud~~
-- pickup weapons
+- ~~pickup weapons~~
+- lance and flamer bullets
+- do new bullets delete current bullets?
+- create bullet classes
+- clientside and spawner for bullet classes
+- create debris and emitters
 - Add all spawns from the server to an update list
 - fix team selector rings, second player sees nuetral first player
 - why does it redownload block textures every second?

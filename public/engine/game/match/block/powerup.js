@@ -38,7 +38,7 @@
             super(options);
             this.type = 'pickup';
             this.subtype = 'pickup';
-            if (typeof window !== 'undefined') this.touchSFX = sounds.pickup_ammo;
+            if (typeof window !== 'undefined') this.touchSFX = Sounds.pickup_ammo;
             this.solid = false;
             this.shadowDraw = true;
             this.runFunc = [
@@ -239,7 +239,7 @@
             this.imgFile = 'img/sprites/pickups/health_top.png';
             this.imgFileSide = 'img/sprites/pickups/health_top.png';
             // this.imgFileSide = 'img/sprites/pickups/health_side.png';
-            if (typeof window !== 'undefined') this.touchSFX = sounds.pickup_health;
+            if (typeof window !== 'undefined') this.touchSFX = Sounds.pickup_health;
             this.color = [0, 255, 0];
             this.colorSide = [128, 255, 128];
             //if health is not full
@@ -294,7 +294,7 @@
             this.ammoMax = 10;
             this.shadowDraw = true;
             this.pickupDelay = ((game.match) ? game.match.time.ticks : 0) + 180;
-            if (typeof window !== 'undefined') this.touchSFX = sounds.pickup_weapon;
+            if (typeof window !== 'undefined') this.touchSFX = Sounds.pickup_weapon;
             this.runFunc = [(actor, side) => {
                 if (actor) {
                     if (this.pickupDelay < game.time.ticks) {
