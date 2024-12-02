@@ -503,17 +503,17 @@
                 ...opts
             }))
             // push into the blocks array a block across the top of the map
-            this.blocks.push(new Blocks.Block({
-                spawnPos: new Utils.Vect3(0, -this.tileSize, 0),
-                spawnVol: new Utils.Vect3(this.w, this.tileSize, this.tileSize),
-                ...opts
-            }))
+            // this.blocks.push(new Blocks.Block({
+            //     spawnPos: new Utils.Vect3(0, -this.tileSize, 0),
+            //     spawnVol: new Utils.Vect3(this.w, this.tileSize, this.tileSize),
+            //     ...opts
+            // }))
             // push into the blocks array a block across the left of the map
-            this.blocks.push(new Blocks.Block({
-                spawnPos: new Utils.Vect3(0, 0, 0),
-                spawnVol: new Utils.Vect3(this.tileSize, this.h, this.tileSize),
-                ...opts
-            }))
+            // this.blocks.push(new Blocks.Block({
+            //     spawnPos: new Utils.Vect3(0, 0, 0),
+            //     spawnVol: new Utils.Vect3(this.tileSize, this.h, this.tileSize),
+            //     ...opts
+            // }))
             // push into the blocks array a block across the right of the map
             this.blocks.push(new Blocks.Block({
                 spawnPos: new Utils.Vect3(this.w - this.tileSize, 0, 0),

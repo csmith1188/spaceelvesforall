@@ -93,9 +93,9 @@
     
             */
             this.item = 0;
-            this.inventory = [];
-            this.inventory = [new Items.Sword()];
-            // this.inventory = [new Items.Pistol()];
+            // this.inventory = [];
+            // this.inventory = [new Items.Sword()];
+            this.inventory = [new Items.Pistol()];
             this.inventory[0].owner = this.parent;
             this.ammo = {
                 plasma: 1,
@@ -430,6 +430,7 @@
                     if (c.solid && side) { //If the block is solid
                         if (this.owner == game.player) { // Only play for the player until sound ranges are implemented
                             // sounds.wallhit.currentTime = 0;
+
                             if (!this.muted && typeof window !== 'undefined') sounds.wallhit.play();
                         }
                         switch (side) { //see which side you collided on

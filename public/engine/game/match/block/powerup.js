@@ -293,25 +293,27 @@
             this.item = new Items.Pistol();
             this.ammoMax = 10;
             this.shadowDraw = true;
-            this.pickupDelay = ((game.match) ? game.match.ticks : 0) + 180;
+            this.pickupDelay = ((game.match) ? game.match.time.ticks : 0) + 180;
             if (typeof window !== 'undefined') this.touchSFX = sounds.pickup_weapon;
             this.runFunc = [(actor, side) => {
-                if (this.pickupDelay < game.match.ticks) {
-                    if (game.match.characters.includes(actor)) {
-                        if (actor.inventory.length < 2) {
-                            if (!actor.muted)
-                                this.touchSFX.play();
-                            if (actor.parent instanceof Player)
+                if (actor) {
+                    console.log(actor);
+                    if (this.pickupDelay < game.time.ticks) {
+                        if (game.match.characters.includes(actor)) {
+                            if (actor.inventory.length < 2) {
+                                if (!actor.muted && typeof window !== 'undefined')
+                                    this.touchSFX.play();
                                 this.item.owner = actor.parent;
-                            actor.inventory.push(this.item); // Add to inventory
-                        }
-                        else {
-                            this.active = true; // Turn this back on if the player is full inventory
+                                actor.inventory.push(this.item); // Add to inventory
+                            }
+                            else {
+                                this.active = true; // Turn this back on if the player is full inventory
+                            }
                         }
                     }
-                }
-                else {
-                    this.active = true; // Turn this back on if the player is full inventory
+                    else {
+                        this.active = true; // Turn this back on if the player is full inventory
+                    }
                 }
                 this.speed.z -= game.match.map.gravity;
                 if (this.HB.pos.z < 0) {

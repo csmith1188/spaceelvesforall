@@ -132,10 +132,9 @@ gameWSS.addEventListener('message', (event) => {
             for (let weapon of message.weapons) {
                 let p = game.match.map.blocks.find(p => p.id === weapon.id);
                 if (p) {
-                    p.serverPos.x = weapon.pos.x;
-                    p.serverPos.y = weapon.pos.y;
-                    p.serverPos.z = weapon.pos.z;
-                    p.serverPos.time = message.time;
+                    p.HB.pos.x = weapon.pos.x;
+                    p.HB.pos.y = weapon.pos.y;
+                    p.HB.pos.z = weapon.pos.z;
                 } else {
                     game.match.map.spawn({ type: "weapon", ...weapon });
                 }

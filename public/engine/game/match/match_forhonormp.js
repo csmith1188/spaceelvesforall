@@ -51,77 +51,79 @@
                 this.characters[i].speed.y = 0;
                 this.characters[i].speed.z = 0;
                 this.characters[i].hp = this.characters[i].hp_max;
-                this.characters[i].inventory = [new Items.Sword()];
-                // this.characters[i].inventory = [new Items.Pistol()];
+                // this.characters[i].inventory = [new Items.Sword()];
+                this.characters[i].inventory = [new Items.Pistol()];
                 this.characters[i].item = 0;
                 this.characters[i].pp = this.characters[i].pp_max;
                 this.characters[i].ammo.ballistic = 1;
                 this.characters[i].ammo.plasma = 1;
             }
 
-            // Add health pickups to each side fothe map
-            this.map.blocks.push(new Powerups.HealthPickup({
-                spawnPos: new Utils.Vect3((this.map.w / 2) - 800, (this.map.h / 2) + 96, 0),
-                spawnVol: new Utils.Vect3(128, 128, 64)
-            }));
-            this.map.blocks.push(new Powerups.HealthPickup({
-                spawnPos: new Utils.Vect3((this.map.w / 2) + 800, (this.map.h / 2) - 96, 0),
-                spawnVol: new Utils.Vect3(128, 128, 64)
-            }));
-            // add both ammo pickups to top and bottom of map
-            this.map.blocks.push(new Powerups.Ammo_Ballistic({
-                spawnPos: new Utils.Vect3((this.map.w / 2) - 500, (this.map.h / 2) - 400, 0),
-                spawnVol: new Utils.Vect3(128, 128, 64)
-            }));
-            this.map.blocks.push(new Powerups.Ammo_Plasma({
-                spawnPos: new Utils.Vect3((this.map.w / 2) + 472, (this.map.h / 2) + 400, 0),
-                spawnVol: new Utils.Vect3(128, 128, 64)
-            }));
-            this.map.blocks.push(new Powerups.Ammo_Ballistic({
-                spawnPos: new Utils.Vect3((this.map.w / 2) + 378, (this.map.h / 2) + 400, 0),
-                spawnVol: new Utils.Vect3(128, 128, 64)
-            }));
-            this.map.blocks.push(new Powerups.Ammo_Plasma({
-                spawnPos: new Utils.Vect3((this.map.w / 2) - 408, (this.map.h / 2) - 400, 0),
-                spawnVol: new Utils.Vect3(128, 128, 64)
-            }));
+            if (typeof window == 'undefined') {
+                // Add health pickups to each side fothe map
+                this.map.blocks.push(new Powerups.HealthPickup({
+                    spawnPos: new Utils.Vect3((this.map.w / 2) - 800, (this.map.h / 2) + 96, 0),
+                    spawnVol: new Utils.Vect3(128, 128, 64)
+                }));
+                this.map.blocks.push(new Powerups.HealthPickup({
+                    spawnPos: new Utils.Vect3((this.map.w / 2) + 800, (this.map.h / 2) - 96, 0),
+                    spawnVol: new Utils.Vect3(128, 128, 64)
+                }));
+                // add both ammo pickups to top and bottom of map
+                this.map.blocks.push(new Powerups.Ammo_Ballistic({
+                    spawnPos: new Utils.Vect3((this.map.w / 2) - 500, (this.map.h / 2) - 400, 0),
+                    spawnVol: new Utils.Vect3(128, 128, 64)
+                }));
+                this.map.blocks.push(new Powerups.Ammo_Plasma({
+                    spawnPos: new Utils.Vect3((this.map.w / 2) + 472, (this.map.h / 2) + 400, 0),
+                    spawnVol: new Utils.Vect3(128, 128, 64)
+                }));
+                this.map.blocks.push(new Powerups.Ammo_Ballistic({
+                    spawnPos: new Utils.Vect3((this.map.w / 2) + 378, (this.map.h / 2) + 400, 0),
+                    spawnVol: new Utils.Vect3(128, 128, 64)
+                }));
+                this.map.blocks.push(new Powerups.Ammo_Plasma({
+                    spawnPos: new Utils.Vect3((this.map.w / 2) - 408, (this.map.h / 2) - 400, 0),
+                    spawnVol: new Utils.Vect3(128, 128, 64)
+                }));
 
+                // add weapons to the center of the map
+                this.map.blocks.push(new Powerups.WeaponPickup({
+                    spawnPos: new Utils.Vect3((this.map.w / 2), (this.map.h / 2), 0),
+                    spawnVol: new Utils.Vect3(0, 0, 0),
+                    weapon: 'pistol', pickupDelay: 0
+                }));
+                // this.map.blocks.push(new Powerups.WeaponPickup({
+                //     spawnPos: new Utils.Vect3((this.map.w / 2), (this.map.h / 2), 0),
+                //     spawnVol: new Utils.Vect3(0, 0, 0),
+                //     weapon: 'lance', pickupDelay: 0
+                // }));
+                // this.map.blocks.push(new Powerups.WeaponPickup({
+                //     spawnPos: new Utils.Vect3((this.map.w / 2), (this.map.h / 2), 0),
+                //     spawnVol: new Utils.Vect3(0, 0, 0),
+                //     weapon: 'rifle', pickupDelay: 0
+                // }));
+                // this.map.blocks.push(new Powerups.WeaponPickup({
+                //     spawnPos: new Utils.Vect3((this.map.w / 2), (this.map.h / 2) + 0, 0),
+                //     spawnVol: new Utils.Vect3(0, 0, 0),
+                //     weapon: 'flamer', pickupDelay: 0
+                // }));
 
-            // add weapons to the center of the map
-            this.map.blocks.push(new Powerups.WeaponPickup({
-                spawnPos: new Utils.Vect3((this.map.w / 2), (this.map.h / 2), 0),
-                spawnVol: new Utils.Vect3(0, 0, 0),
-                weapon: 'pistol', pickupDelay: 0
-            }));
-            this.map.blocks.push(new Powerups.WeaponPickup({
-                spawnPos: new Utils.Vect3((this.map.w / 2), (this.map.h / 2), 0),
-                spawnVol: new Utils.Vect3(0, 0, 0),
-                weapon: 'lance', pickupDelay: 0
-            }));
-            this.map.blocks.push(new Powerups.WeaponPickup({
-                spawnPos: new Utils.Vect3((this.map.w / 2), (this.map.h / 2), 0),
-                spawnVol: new Utils.Vect3(0, 0, 0),
-                weapon: 'rifle', pickupDelay: 0
-            }));
-            this.map.blocks.push(new Powerups.WeaponPickup({
-                spawnPos: new Utils.Vect3((this.map.w / 2), (this.map.h / 2) + 0, 0),
-                spawnVol: new Utils.Vect3(0, 0, 0),
-                weapon: 'flamer', pickupDelay: 0
-            }));
+                // for every block in the blocks array
+                // if the block's type is not 'block'
+                // add one to the counter
+                let blockCounter = 0;
+                for (const block of this.map.blocks) {
+                    if (block.type == 'weapon') {
+                        block.sineOffset = blockCounter++;
+                        block.runFunc.push(
+                            function (bc) {
+                                // this.HB.pos.x = this.HB.pos.x + Utils.sineAnimate(100, 0.025, (this.sineOffset * 60));
+                                // this.HB.pos.y = this.HB.pos.y + Utils.sineAnimate(100, 0.025, (this.sineOffset * 60) + 60);
+                            }.bind(block)
+                        );
 
-            // for every block in the blocks array
-            // if the block's type is not 'block'
-            // add one to the counter
-            let blockCounter = 0;
-            for (const block of this.map.blocks) {
-                if (block.type == 'weapon') {
-                    block.sineOffset = blockCounter++;
-                    block.runFunc.push(
-                        function (bc) {
-                            this.HB.pos.x = this.HB.pos.x + Utils.sineAnimate(100, 0.025, (this.sineOffset * 60));
-                            this.HB.pos.y = this.HB.pos.y + Utils.sineAnimate(100, 0.025, (this.sineOffset * 60) + 60);
-                        }.bind(block)
-                    );
+                    }
                 }
             }
 
