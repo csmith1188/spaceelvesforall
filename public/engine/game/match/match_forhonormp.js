@@ -90,24 +90,24 @@
                 // add weapons to the center of the map
                 this.map.blocks.push(new Powerups.WeaponPickup({
                     spawnPos: new Utils.Vect3((this.map.w / 2), (this.map.h / 2), 0),
-                    spawnVol: new Utils.Vect3(0, 0, 0),
+                    spawnVol: new Utils.Vect3(32, 32, 32),
                     weapon: 'pistol', pickupDelay: 0
                 }));
-                // this.map.blocks.push(new Powerups.WeaponPickup({
-                //     spawnPos: new Utils.Vect3((this.map.w / 2), (this.map.h / 2), 0),
-                //     spawnVol: new Utils.Vect3(0, 0, 0),
-                //     weapon: 'lance', pickupDelay: 0
-                // }));
-                // this.map.blocks.push(new Powerups.WeaponPickup({
-                //     spawnPos: new Utils.Vect3((this.map.w / 2), (this.map.h / 2), 0),
-                //     spawnVol: new Utils.Vect3(0, 0, 0),
-                //     weapon: 'rifle', pickupDelay: 0
-                // }));
-                // this.map.blocks.push(new Powerups.WeaponPickup({
-                //     spawnPos: new Utils.Vect3((this.map.w / 2), (this.map.h / 2) + 0, 0),
-                //     spawnVol: new Utils.Vect3(0, 0, 0),
-                //     weapon: 'flamer', pickupDelay: 0
-                // }));
+                this.map.blocks.push(new Powerups.WeaponPickup({
+                    spawnPos: new Utils.Vect3((this.map.w / 2), (this.map.h / 2), 0),
+                    spawnVol: new Utils.Vect3(32, 32, 32),
+                    weapon: 'lance', pickupDelay: 0
+                }));
+                this.map.blocks.push(new Powerups.WeaponPickup({
+                    spawnPos: new Utils.Vect3((this.map.w / 2), (this.map.h / 2), 0),
+                    spawnVol: new Utils.Vect3(32, 32, 32),
+                    weapon: 'rifle', pickupDelay: 0
+                }));
+                this.map.blocks.push(new Powerups.WeaponPickup({
+                    spawnPos: new Utils.Vect3((this.map.w / 2), (this.map.h / 2) + 0, 0),
+                    spawnVol: new Utils.Vect3(32, 32, 32),
+                    weapon: 'flamer', pickupDelay: 0
+                }));
 
                 // for every block in the blocks array
                 // if the block's type is not 'block'

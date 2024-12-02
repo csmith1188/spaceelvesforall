@@ -297,7 +297,6 @@
             if (typeof window !== 'undefined') this.touchSFX = sounds.pickup_weapon;
             this.runFunc = [(actor, side) => {
                 if (actor) {
-                    console.log(actor);
                     if (this.pickupDelay < game.time.ticks) {
                         if (game.match.characters.includes(actor)) {
                             if (actor.inventory.length < 2) {
