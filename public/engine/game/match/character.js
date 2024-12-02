@@ -269,11 +269,15 @@
                     if (this.parent.controller.buttons.throw.current != this.parent.controller.buttons.throw.last) {
                         if (this.parent.controller.buttons.throw.current) {
                             if (this.inventory.length > 0) {
-                                // make a pickup
-                                game.match.map.blocks.push(new Powerups.WeaponPickup(
-                                    new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z + this.HB.height / 2),
-                                    new Utils.Vect3(this.speed.x, this.speed.y, this.speed.z + 20),
-                                    { weapon: this.inventory[this.item].weapon, ammo: this.inventory[this.item].ammo, livetime: game.match.despawnTimer, dying: true }));
+                                if (typeof window == 'undefined') {
+                                    // make a pickup
+                                    game.match.map.blocks.push(new Powerups.WeaponPickup(
+                                        {
+                                            spawnPos: new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z + this.HB.height / 2),
+                                            speed: new Utils.Vect3(this.speed.x, this.speed.y, this.speed.z + 20),
+                                            weapon: this.inventory[this.item].weapon, ammo: this.inventory[this.item].ammo, livetime: game.match.despawnTimer, dying: true
+                                        }));
+                                }
                                 // remove the item from the inventory
                                 this.inventory.splice(this.item, 1)[0];
                                 // while the length of the inventory is less than  the item slot plus one, reduce the item slot by one

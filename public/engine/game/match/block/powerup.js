@@ -384,6 +384,35 @@
                 this.imgSide.src = this.imgFileSide;
             }
         }
+
+        pack() {
+            let pack = {
+                id: this.id,
+                pos: this.HB.pos
+            }
+            if (this.user != null) {
+                pack.user = {
+                    id: this.user.id,
+                    team: this.user.team,
+                    name: this.user.name
+                }
+            }
+            if (this.HB instanceof Utils.Cube) {
+                pack.shape = 'cube';
+                pack.vol = this.HB.volume;
+            } else if (this.HB instanceof Utils.Cylinder) {
+                pack.shape = 'cylinder';
+                pack.radius = this.HB.radius;
+                pack.height = this.HB.height;
+            }
+
+            pack.subtype = this.subtype;
+            pack.weapon = this.weapon;
+            pack.ammo = this.ammo;
+
+            return pack;
+        }
+
     }
     return { Ammo_Ballistic, Ammo_Plasma, HealthPickup, WeaponPickup };
 }));
