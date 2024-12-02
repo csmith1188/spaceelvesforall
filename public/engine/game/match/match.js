@@ -114,6 +114,11 @@
                     entity.draw();
                 }
 
+                // Draw UI
+                if (game.player.interface) {
+                    game.player.interface.drawHUD();
+                }
+
             }
 
         }

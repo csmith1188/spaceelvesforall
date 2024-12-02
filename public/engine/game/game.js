@@ -68,6 +68,8 @@
 
             if (typeof window !== 'undefined') {
                 this.player = this.players.find(player => player.token.id == token.id);
+                if (this.player)
+                    this.player.interface = this.player.interface || new Interfaces.Interface(this.player);
                 this.window.w = window.innerWidth;
                 this.window.h = window.innerHeight;
                 if (this.player)
