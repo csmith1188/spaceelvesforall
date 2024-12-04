@@ -511,8 +511,9 @@
                 this.lastHB = new Utils.Cylinder(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), this.HB.radius, this.HB.height);
 
                 if (typeof window !== 'undefined') {
-                    let interpolationFactor = Math.min(((Date.now() - this.serverPos.time) / 1000) * 1, 1); // Adjust the factor as needed
-                    if (isNaN(interpolationFactor)) interpolationFactor = 0.5;
+                    // let interpolationFactor = Math.min(((Date.now() - this.serverPos.time) / 1000) * 5, 1); // Adjust the factor as needed
+                    // if (isNaN(interpolationFactor)) interpolationFactor = 0.1;
+                    let interpolationFactor = 0.1;
                     this.HB.pos.x += (this.serverPos.x - this.HB.pos.x) * interpolationFactor * game.time.delta;
                     this.HB.pos.y += (this.serverPos.y - this.HB.pos.y) * interpolationFactor * game.time.delta;
                     this.HB.pos.z += (this.serverPos.z - this.HB.pos.z) * interpolationFactor * game.time.delta;

@@ -67,7 +67,7 @@ app.get('/', (req, res) => {
     if (req.session.token) {
         res.render('client', { token: req.session.token, PORT: PORT });
     } else {
-        res.redirect('http://192.168.1.103:3000');
+        res.redirect('http://localhost:3000');
     }
 });
 
@@ -75,7 +75,7 @@ app.ws('/game', Sockets.gameHandler);
 
 // Start the server on port 3000
 app.listen(PORT, () => {
-    console.info(`Server started on http://192.168.1.103:${PORT}`);
+    console.info(`Server started on http://localhost:${PORT}`);
 });
 
 const tickInterval = global.game.time.tickRate; // ~16ms for 60Hz

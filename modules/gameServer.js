@@ -33,7 +33,7 @@ exports.spawnGameServer = (req, res) => {
         }
     });
 
-    res.redirect(`http://192.168.1.103:${child.PORT}/`);
+    res.redirect(`http://localhost:${child.PORT}/`);
 
     exports.gameServers.push(child);
     exports.gameServerCount++;

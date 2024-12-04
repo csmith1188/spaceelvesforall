@@ -19,7 +19,7 @@
 
 
 
-const gameWSS = new WebSocket('ws://192.168.1.103:10000/game');
+const gameWSS = new WebSocket('ws://localhost:10000/game');
 
 gameWSS.addEventListener('open', () => {
     console.log('Connected to Game WSS');
