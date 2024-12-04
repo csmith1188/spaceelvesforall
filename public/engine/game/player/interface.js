@@ -425,7 +425,7 @@
                 //draw the bot
                 if (game.match.characters[i].team === character.team) {
                     ctx.fillStyle = "#00FF00";
-                } else if (game.match.bots[i].character.team === 0) {
+                } else if (game.match.characters[i].team === 0) {
                     ctx.fillStyle = "#FFFF00";
                 } else {
                     ctx.fillStyle = "#FF0000";

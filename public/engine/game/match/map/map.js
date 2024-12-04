@@ -73,7 +73,7 @@
             // block.serverPos = { pos: block.pos, time: block.time };
             // delete block.pos;
             // delete block.vol;
-            let character = game.match.characters.find(c => c.id === block.user.id);
+            let character = game.match.characters.find(c => c.id === block.id);
             if (block.type == "block") {
                 this.blocks.push(new Blocks.Block(
                     {

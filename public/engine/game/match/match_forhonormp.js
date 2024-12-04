@@ -58,7 +58,8 @@
                 this.characters[i].ammo.ballistic = 1;
                 this.characters[i].ammo.plasma = 1;
             }
-
+            console.log(this.characters);
+            
             if (typeof window == 'undefined') {
                 // Add health pickups to each side fothe map
                 this.map.blocks.push(new Powerups.HealthPickup({
