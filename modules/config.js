@@ -10,9 +10,9 @@ module.exports = {
     // The port to run this on
     PORT: process.env.PORT || 3000,
     // The URL for the Formbar authentication server
-    AUTH_URL: process.env.AUTH_URL || 'http://localhost:420/oauth',
+    AUTH_URL: process.env.AUTH_URL || 'http://192.168.1.103:420/oauth',
     // The URL for this server for the oauth callback
-    THIS_URL: process.env.THIS_URL || 'http://localhost:3000',
+    THIS_URL: process.env.THIS_URL || 'http://192.168.1.103:3000',
     // The secret for the session data
     SS_SECRET: process.env.SS_SECRET || 'secret',
     // The host, email and password for the email server

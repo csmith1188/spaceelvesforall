@@ -19,7 +19,7 @@
 
 
 
-const gameWSS = new WebSocket('ws://localhost:10000/game');
+const gameWSS = new WebSocket('ws://192.168.1.103:10000/game');
 
 gameWSS.addEventListener('open', () => {
     console.log('Connected to Game WSS');
@@ -70,7 +70,8 @@ gameWSS.addEventListener('message', (event) => {
                     gameWSS.send(JSON.stringify({ getCharacter: character.id }));
                 }
                 // remove characters not in the message
-                game.match.characters = game.match.characters.filter(c => character.id === c.id);
+                // WARNING! message.characters only sends characters who *have not moved* since the last message
+                // game.match.characters = game.match.characters.filter(c => character.id === c.id);
             }
         }
 

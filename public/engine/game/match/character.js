@@ -605,7 +605,6 @@
 
         unitColor(fullOpaque = 0) {
             // find the match's character whose owner is the player
-            console.log(game.match.characters);
             let chara = game.match.characters.find(c => c.parent == game.player);
             
             if (this.team == chara.team) {

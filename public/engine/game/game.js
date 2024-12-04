@@ -101,8 +101,10 @@
             if (this.match) {
                 this.match.step();
                 if (typeof window !== 'undefined') {
-                    this.match.draw();
-                    this.player.camera.update(this.player); // Update the camera
+                    if (this.player) {
+                        this.match.draw();
+                        this.player.camera.update(this.player); // Update the camera
+                    }
                 } else {
                     /*
                                       _                 _      _

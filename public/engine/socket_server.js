@@ -88,6 +88,10 @@ function gameHandler(ws, req) {
     ws.on('close', () => {
         // remove the player from the game
         game.players = game.players.filter(player => player.token !== ws.token);
+        // delete the controller of each player
+        for (const player of game.players) {
+            delete player.controller;
+        }
         // broadcast the new player list
         broadcast(wss, { debug: 'Player disconnected', players: game.players });
     });

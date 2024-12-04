@@ -211,125 +211,122 @@
     
         */
         draw() {
-            if (game.player.camera) {
+            /*
+            ___                      _     ___ _            _   _         _                                   _
+            / __|_ _ ___ _  _ _ _  __| |   / __| |___  _    | | | |_ _  __| |___ _ _ __ _ _ _ ___ _  _ _ _  __| |
+            | (_ | '_/ _ \ || | ' \/ _` |_  \__ \ / / || |_  | |_| | ' \/ _` / -_) '_/ _` | '_/ _ \ || | ' \/ _` |
+            \___|_| \___/\_,_|_||_\__,_( ) |___/_\_\\_, ( )  \___/|_||_\__,_\___|_| \__, |_| \___/\_,_|_||_\__,_|
+                                     |/           |__/|/                          |___/
+        */
+            //Ground
+            ctx.fillStyle = "#333300";
+            ctx.fillRect(0, 0, game.gameView.w, game.gameView.h);
 
-                /*
-                ___                      _     ___ _            _   _         _                                   _
-                / __|_ _ ___ _  _ _ _  __| |   / __| |___  _    | | | |_ _  __| |___ _ _ __ _ _ _ ___ _  _ _ _  __| |
-                | (_ | '_/ _ \ || | ' \/ _` |_  \__ \ / / || |_  | |_| | ' \/ _` / -_) '_/ _` | '_/ _ \ || | ' \/ _` |
-                \___|_| \___/\_,_|_||_\__,_( ) |___/_\_\\_, ( )  \___/|_||_\__,_\___|_| \__, |_| \___/\_,_|_||_\__,_|
-                                         |/           |__/|/                          |___/
-            */
-                //Ground
-                ctx.fillStyle = "#333300";
-                ctx.fillRect(0, 0, game.gameView.w, game.gameView.h);
-
-                //If in 3D mode, draw the sky (This overdraws things past the horizon, even if visible)
-                if (game.player.camera._3D) {
-                    ctx.fillStyle = "#8cb8ff";
-                    ctx.fillRect(0, 0, game.gameView.w, (game.gameView.h / 2) /* * (1 - game.player.camera.angle)) */);
-                }
-
-                // If in 3D mode, draw the underground (This overdraws things past the underground, even if visible)
-                if (game.player.camera._3D) {
-                    ctx.fillStyle = "#281800";
-                    ctx.fillRect(0, (game.gameView.h / 2) /* +  ((game.gameView.h / 1)  * (game.player.camera.angle) ) */, game.gameView.w, game.gameView.h);
-                }
-
-                /*
-                  _____ _ _
-                 |_   _(_) |___ ___
-                 | | | | / -_|_-<
-                 |_| |_|_\___/__/
-                 
-                 */
-                try {
-                    this.tileSet.draw();
-
-                } catch (error) {
-                    console.error(error);
-
-                }
-
-                /*
-                  ___             _            ___  _     _        _
-                  | _ \___ _ _  __| |___ _ _   / _ \| |__ (_)___ __| |_ ___
-                 |   / -_) ' \/ _` / -_) '_| | (_) | '_ \| / -_) _|  _(_-<
-                 |_|_\___|_||_\__,_\___|_|    \___/|_.__// \___\__|\__/__/
-                 |__/
-                 */
-                //Put Bot player characters into a list
-                let npcs = [];
-                for (const npc in game.match.bots) {
-                    npcs.push(game.match.bots[npc].character);
-                }
-
-                let renderList =
-                    [...game.match.characters, ...npcs, ...game.match.map.blocks, ...game.match.map.bullets, ...game.match.map.debris]
-                        .sort((a, b) => {
-                            if (a.HB.pos.y < b.HB.pos.y + b.HB.pos.z) return -1;
-                            if (a.HB.pos.y > b.HB.pos.y + b.HB.pos.z) return 1;
-                            return 0;
-                        });
-                for (const entity of renderList) {
-                    // if the entity is within the camera's viewable radius
-                    let compareX = game.player.camera.x - entity.HB.pos.x;
-                    let compareY = game.player.camera.y - entity.HB.pos.y;
-                    let horizonCalc = 0;
-                    if (game.player.camera._3D)
-                        horizonCalc = (game.gameView.h / 2) * (1 - game.player.camera.angle)
-                    if (game.player.camera.radius > Math.abs(compareX) && game.player.camera.radius > Math.abs(compareY) - horizonCalc)
-                        entity.draw(game.player.character);
-                }
-
-                /*
-          ___                         _                _                                   _
-          | __|__  __ _   __ _ _ _  __| |  _  _ _ _  __| |___ _ _ __ _ _ _ ___ _  _ _ _  __| |
-          | _/ _ \/ _` | / _` | ' \/ _` | | || | ' \/ _` / -_) '_/ _` | '_/ _ \ || | ' \/ _` |
-          |_|\___/\__, | \__,_|_||_\__,_|  \_,_|_||_\__,_\___|_| \__, |_| \___/\_,_|_||_\__,_|
-          |___/                                          |___/
-          */
-                // Overdraw the sky as a gradient from the half of the top of the screen to the horizon to the horizon
-                if (game.player.camera._3D) {
-                    let grd = ctx.createLinearGradient(
-                        0,
-                        (game.gameView.h / 4) * (1 - game.player.camera.angle),
-                        0,
-                        (game.gameView.h / 4) * (1 - game.player.camera.angle) + (game.gameView.h / 6) * (1 - game.player.camera.angle));
-                    grd.addColorStop(0, "rgba(140, 184, 255, 1)");
-                    grd.addColorStop(1, "rgba(140, 184, 255, 0)");
-                    ctx.fillStyle = grd;
-                    ctx.fillRect(0, 0, game.gameView.w, (game.gameView.h / 2) * (1 - game.player.camera.angle));
-                }
-
-                // overdraw the underground as a gradient from the bottom of the screen to the underground horizon
-                if (game.player.camera._3D) {
-                    let grd = ctx.createLinearGradient(
-                        0,
-                        (game.gameView.h / 2) + ((game.gameView.h / 1) * (game.player.camera.angle)) + (game.gameView.h / 8) * (game.player.camera.angle),
-                        0,
-                        (game.gameView.h / 2) + ((game.gameView.h / 1) * (game.player.camera.angle))
-                    );
-                    grd.addColorStop(0, "rgba(40, 24, 0, 1)");
-                    // grd.addColorStop(0.5, "rgba(40, 24, 0, 0.5)");
-                    grd.addColorStop(1, "rgba(40, 24, 0, 0)");
-                    ctx.fillStyle = grd;
-                    ctx.fillRect(0, (game.gameView.h / 2) + ((game.gameView.h / 1) * (game.player.camera.angle)), game.gameView.w, game.gameView.h);
-                }
-
-                /*
-                     _     _
-                  __| |___| |__ _  _ __ _
-                  / _` / -_) '_ \ || / _` |
-                 \__,_\___|_.__/\_,_\__, |
-                 |___/
-                 */
-                //If debugging, show node grid
-                if (game.debug)
-                    for (const node of this.nodes) {
-                        node.draw();
-                    }
+            //If in 3D mode, draw the sky (This overdraws things past the horizon, even if visible)
+            if (game.player.camera._3D) {
+                ctx.fillStyle = "#8cb8ff";
+                ctx.fillRect(0, 0, game.gameView.w, (game.gameView.h / 2) /* * (1 - game.player.camera.angle)) */);
             }
+
+            // If in 3D mode, draw the underground (This overdraws things past the underground, even if visible)
+            if (game.player.camera._3D) {
+                ctx.fillStyle = "#281800";
+                ctx.fillRect(0, (game.gameView.h / 2) /* +  ((game.gameView.h / 1)  * (game.player.camera.angle) ) */, game.gameView.w, game.gameView.h);
+            }
+
+            /*
+              _____ _ _
+             |_   _(_) |___ ___
+             | | | | / -_|_-<
+             |_| |_|_\___/__/
+             
+             */
+            try {
+                this.tileSet.draw();
+
+            } catch (error) {
+                console.error(error);
+
+            }
+
+            /*
+              ___             _            ___  _     _        _
+              | _ \___ _ _  __| |___ _ _   / _ \| |__ (_)___ __| |_ ___
+             |   / -_) ' \/ _` / -_) '_| | (_) | '_ \| / -_) _|  _(_-<
+             |_|_\___|_||_\__,_\___|_|    \___/|_.__// \___\__|\__/__/
+             |__/
+             */
+            //Put Bot player characters into a list
+            let npcs = [];
+            for (const npc in game.match.bots) {
+                npcs.push(game.match.bots[npc].character);
+            }
+
+            let renderList =
+                [...game.match.characters, ...npcs, ...game.match.map.blocks, ...game.match.map.bullets, ...game.match.map.debris]
+                    .sort((a, b) => {
+                        if (a.HB.pos.y < b.HB.pos.y + b.HB.pos.z) return -1;
+                        if (a.HB.pos.y > b.HB.pos.y + b.HB.pos.z) return 1;
+                        return 0;
+                    });
+            for (const entity of renderList) {
+                // if the entity is within the camera's viewable radius
+                let compareX = game.player.camera.x - entity.HB.pos.x;
+                let compareY = game.player.camera.y - entity.HB.pos.y;
+                let horizonCalc = 0;
+                if (game.player.camera._3D)
+                    horizonCalc = (game.gameView.h / 2) * (1 - game.player.camera.angle)
+                if (game.player.camera.radius > Math.abs(compareX) && game.player.camera.radius > Math.abs(compareY) - horizonCalc)
+                    entity.draw(game.player.character);
+            }
+
+            /*
+      ___                         _                _                                   _
+      | __|__  __ _   __ _ _ _  __| |  _  _ _ _  __| |___ _ _ __ _ _ _ ___ _  _ _ _  __| |
+      | _/ _ \/ _` | / _` | ' \/ _` | | || | ' \/ _` / -_) '_/ _` | '_/ _ \ || | ' \/ _` |
+      |_|\___/\__, | \__,_|_||_\__,_|  \_,_|_||_\__,_\___|_| \__, |_| \___/\_,_|_||_\__,_|
+      |___/                                          |___/
+      */
+            // Overdraw the sky as a gradient from the half of the top of the screen to the horizon to the horizon
+            if (game.player.camera._3D) {
+                let grd = ctx.createLinearGradient(
+                    0,
+                    (game.gameView.h / 4) * (1 - game.player.camera.angle),
+                    0,
+                    (game.gameView.h / 4) * (1 - game.player.camera.angle) + (game.gameView.h / 6) * (1 - game.player.camera.angle));
+                grd.addColorStop(0, "rgba(140, 184, 255, 1)");
+                grd.addColorStop(1, "rgba(140, 184, 255, 0)");
+                ctx.fillStyle = grd;
+                ctx.fillRect(0, 0, game.gameView.w, (game.gameView.h / 2) * (1 - game.player.camera.angle));
+            }
+
+            // overdraw the underground as a gradient from the bottom of the screen to the underground horizon
+            if (game.player.camera._3D) {
+                let grd = ctx.createLinearGradient(
+                    0,
+                    (game.gameView.h / 2) + ((game.gameView.h / 1) * (game.player.camera.angle)) + (game.gameView.h / 8) * (game.player.camera.angle),
+                    0,
+                    (game.gameView.h / 2) + ((game.gameView.h / 1) * (game.player.camera.angle))
+                );
+                grd.addColorStop(0, "rgba(40, 24, 0, 1)");
+                // grd.addColorStop(0.5, "rgba(40, 24, 0, 0.5)");
+                grd.addColorStop(1, "rgba(40, 24, 0, 0)");
+                ctx.fillStyle = grd;
+                ctx.fillRect(0, (game.gameView.h / 2) + ((game.gameView.h / 1) * (game.player.camera.angle)), game.gameView.w, game.gameView.h);
+            }
+
+            /*
+                 _     _
+              __| |___| |__ _  _ __ _
+              / _` / -_) '_ \ || / _` |
+             \__,_\___|_.__/\_,_\__, |
+             |___/
+             */
+            //If debugging, show node grid
+            if (game.debug)
+                for (const node of this.nodes) {
+                    node.draw();
+                }
         }
 
         /*
