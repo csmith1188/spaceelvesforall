@@ -128,7 +128,7 @@
         }
 
         fullPack() {
-            const packeded = {
+            const packed = {
                 characters: this.characters.map(chara => chara.fullPack())
             }
             for (const key of Object.keys(this)) {

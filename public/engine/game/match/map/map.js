@@ -351,7 +351,7 @@
         }
 
         fullPack() {
-            const packeded = {
+            const packed = {
                 blocks: this.map.blocks.map(block => block.fullPack()),
                 debris: []
             }

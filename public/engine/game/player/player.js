@@ -35,7 +35,7 @@
         }
 
         fullPack() {
-            const packeded = {
+            const packed = {
                 controller: {}
             };
             for (let key in this) {

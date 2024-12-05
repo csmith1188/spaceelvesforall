@@ -450,7 +450,7 @@
         }
 
         fullPack() {
-            const packeded = {
+            const packed = {
                 characters: this.characters.map(chara => chara.fullPack()),
                 blocks: this.map.blocks.map(block => block.fullPack()),
                 debris: []

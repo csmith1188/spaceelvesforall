@@ -1014,7 +1014,7 @@
         }
 
         fullPack() {
-            const packeded = {
+            const packed = {
                 parent: this.parent.pack(),
                 inventory: this.inventory.map(item => item.pack())
             }
