@@ -607,18 +607,19 @@
         unitColor(fullOpaque = 0) {
             // find the match's character whose owner is the player
             let chara = game.match.characters.find(c => c.parent == game.player);
-            
-            if (this.team == chara.team) {
-                // return `rgba(0,255,0, ${Math.max(Number(fullOpaque), game.player.interface.drawFriendlyRing)})`;
-                return `rgba(0,255,0,${Math.max(Number(fullOpaque), 0.5)})`;
-            }
-            else if (chara.teams.includes(this.team)) {
-                // return `rgba(255,255,0, ${Math.max(Number(fullOpaque), game.player.interface.drawNeutralRing)})`;
-                return `rgba(255,255,0,${Math.max(Number(fullOpaque), 0.5)})`;
-            }
-            else {
-                // return `rgba(255,0,0, ${Math.max(Number(fullOpaque), game.player.interface.drawEnemyRing)})`;
-                return `rgba(255,0,0,${Math.max(Number(fullOpaque), 0.5)})`;
+            if (chara) {
+                if (this.team == chara.team) {
+                    // return `rgba(0,255,0, ${Math.max(Number(fullOpaque), game.player.interface.drawFriendlyRing)})`;
+                    return `rgba(0,255,0,${Math.max(Number(fullOpaque), 0.5)})`;
+                }
+                else if (chara.teams.includes(this.team)) {
+                    // return `rgba(255,255,0, ${Math.max(Number(fullOpaque), game.player.interface.drawNeutralRing)})`;
+                    return `rgba(255,255,0,${Math.max(Number(fullOpaque), 0.5)})`;
+                }
+                else {
+                    // return `rgba(255,0,0, ${Math.max(Number(fullOpaque), game.player.interface.drawEnemyRing)})`;
+                    return `rgba(255,0,0,${Math.max(Number(fullOpaque), 0.5)})`;
+                }
             }
         }
 

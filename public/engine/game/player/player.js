@@ -15,6 +15,7 @@
     class Bot {
         constructor(options) {
             this.controller = null;
+            // this.id = Utils.uuidGen(4);
             // loop through the options and add them to the bot
             for (let key in options) {
                 if (options.hasOwnProperty(key)) {
@@ -41,6 +42,7 @@
             this.token = {};
             this.inMenu = false;
             this.ready = false;
+            this.connected = true;
             if (typeof window === 'undefined') {
                 this.controller = new Controllers.SocketController(this);
             }

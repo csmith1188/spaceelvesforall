@@ -20,6 +20,7 @@
 - ~~Create HB generator util~~
 - ~~client side hud~~
 - ~~pickup weapons~~
+- reload page
 - lance and flamer bullets
 - do new bullets delete current bullets?
 - create bullet classes

@@ -144,8 +144,9 @@
         }
 
         loadMatch(match) {
+            console.log(match);
+            
             try {
-
                 switch (match) {
                     case 'Match':
                         this.match = new Matches.Match();

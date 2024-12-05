@@ -8,9 +8,6 @@ function broadcast(server, data) {
 }
 
 function gameHandler(ws, req) {
-    // get this ws's server
-    const wss = game.wss;
-
     // send the client their id when they connect
     ws.send(JSON.stringify({ debug: 'You are connected to the game server' }));
     console.info(`Game Client connected, ${new Date()}`);
@@ -23,33 +20,46 @@ function gameHandler(ws, req) {
         return;
     }
 
-    // if the game is full, close the connection
-    if (game.match) {
-        if (game.players.length >= game.match.playerLimit.max) {
-            console.error('Game server is full');
-            ws.send(JSON.stringify({ debug: 'Game server is full' }));
-            ws.close();
-            return;
-        }
-    }
-
     // set the token for the websocket
     ws.token = req.session.token;
 
-    // if this is the first player when this user connects, load a new match
-    if (game.players.length == 0) game.loadMatch('ForHonorMP');
-    ws.send(JSON.stringify({ debug: 'Loaded new match', newMatch: game.match }));
-
-    // create a new player
-    game.players.push(new Players.Player({ token: ws.token, ws: ws }));
+    let findPlayer = game.players.find(player => player.token.id === ws.token.id);
+    if (!findPlayer) {
+        // if the game is full, close the connection
+        if (game.match) {
+            if (game.players.length >= game.match.playerLimit.max) {
+                console.error('Game server is full');
+                ws.send(JSON.stringify({ debug: 'Game server is full' }));
+                ws.close();
+                return;
+            }
+        }
+        // if this is the first player when this user connects, load a new match
+        if (game.players.length == 0) game.loadMatch('ForHonorMP');
+        // create a new player
+        game.players.push(new Players.Player({ token: ws.token, ws: ws }));
+    } else {
+        findPlayer.ws = ws;
+        findPlayer.connected = true;
+    }
 
     let playersList = [];
     for (const player of game.players) {
         playersList.push(player.pack());
     }
 
+    try {
+        console.log(game.match);
+        
+        ws.send(JSON.stringify({ debug: 'Loaded new match', newMatch: game.match.matchType }));
+    } catch (error) {
+        console.log(error);
+
+    }
+
+
     // broadcast the new player to all players
-    broadcast(wss, { debug: 'Player connected', players: playersList });
+    broadcast(game.wss, { debug: 'Player connected', players: playersList });
 
     // listen for messages
     ws.on('message', (message) => {
@@ -86,14 +96,15 @@ function gameHandler(ws, req) {
 
     // listen for disconnects
     ws.on('close', () => {
-        // remove the player from the game
-        game.players = game.players.filter(player => player.token !== ws.token);
-        // delete the controller of each player
+        // set the player to disconnected
+        let player = game.players.find(player => player.token.id === ws.token.id);
+        player.connected = false;
+        let playersList = [];
         for (const player of game.players) {
-            delete player.controller;
+            playersList.push(player.pack);
         }
         // broadcast the new player list
-        broadcast(wss, { debug: 'Player disconnected', players: game.players });
+        broadcast(game.wss, { debug: 'Player disconnected', players: playersList });
     });
 
 }
