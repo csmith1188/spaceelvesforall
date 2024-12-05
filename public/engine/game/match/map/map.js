@@ -33,7 +33,7 @@
             this.floor = 0;
             this.collideReflect = 0.2;
 
-            if (game.client) {
+            if (Utils.isClient()) {
                 this.bgimg = new Image();
                 this.bgimg.src = "img/tiles/tile001.png";
             }
@@ -344,6 +344,25 @@
             ctx.fillStyle = `rgba(${this.lightValue[0]}, ${this.lightValue[1]}, ${this.lightValue[2]}, ${this.lightValue[3]})`
             ctx.fillRect(0, 0, game.gameView.w, game.gameView.h);
             // ctx.globalCompositeOperation = "source-over";
+        }
+
+        pack() {
+            return {};
+        }
+
+        fullPack() {
+            const packed = {
+                blocks: this.map.blocks.map(block => block.fullPack()),
+                debris: []
+            }
+            for (const key of Object.keys(this)) {
+                if (typeof this[key] !== 'function') {
+                    // if pack doesn't have this key, add it
+                    if (!pack[key])
+                        pack[key] = this[key];
+                }
+            }
+            return packed;
         }
 
     }

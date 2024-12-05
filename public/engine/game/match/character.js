@@ -1014,41 +1014,19 @@
         }
 
         fullPack() {
-            return {
-                type: 'character',
-                team: this.team,
-                id: this.id,
-                pos: this.HB.pos,
-                speed: this.speed,
-                hp: this.hp,
-                pp: this.pp,
-                ammo: this.ammo,
-                name: this.name,
-                gfx: this.gfx,
-                leftgfx: this.leftgfx,
-                faceCamera: this.faceCamera,
-                zMod: this.zMod,
-                hover: this.hover,
-                bouyancy: this.bouyancy,
-                floor: this.floor,
-                speedLimit: this.speedLimit,
-                airAccel: this.airAccel,
-                reflection: this.reflection,
-                hp_max: this.hp_max,
-                pp_max: this.pp_max,
-                item: this.item,
-                // inventory: this.inventory,
-                active: this.active,
-                visible: this.visible,
-                muted: this.muted,
-                deathSFX: this.deathSFX,
-                runFunc: this.runFunc,
+            const packed = {
                 parent: this.parent.pack(),
-                serverPos: this.serverPos,
-                lastHB: this.lastHB
+                inventory: this.inventory.map(item => item.pack())
             }
+            for (const key of Object.keys(this)) {
+                if (typeof this[key] !== 'function') {
+                    // if pack doesn't have this key, add it
+                    if (!pack[key])
+                        pack[key] = this[key];
+                }
+            }
+            return packed;
         }
-
     }
 
 

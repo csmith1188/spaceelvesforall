@@ -44,6 +44,28 @@
                 }
             }
         }
+
+        pack() {
+            return {
+                type: this.type,
+                name: this.name,
+                weapon: this.weapon,
+                ammo: this.ammo,
+                ammoMax: this.ammoMax
+            }
+        }
+
+        fullPack() {
+            let packed = {};
+            for (var key of Object.keys(this)) {
+                if (typeof this[key] !== 'function') {
+                    if (!packed[key])
+                        packed[key] = this[key];
+                }
+            }
+            return packed;
+        }
+
     }
 
     /*

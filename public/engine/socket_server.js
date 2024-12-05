@@ -49,8 +49,6 @@ function gameHandler(ws, req) {
     }
 
     try {
-        console.log(game.match);
-        
         ws.send(JSON.stringify({ debug: 'Loaded new match', newMatch: game.match.matchType }));
     } catch (error) {
         console.log(error);

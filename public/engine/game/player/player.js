@@ -33,6 +33,19 @@
                 }
             };
         }
+
+        fullPack() {
+            const packed = {
+                controller: {}
+            };
+            for (let key in this) {
+                if (this.hasOwnProperty(key)) {
+                    if (!packed[key])
+                        packed[key] = this[key];
+                }
+            }
+            return packed
+        }
     }
 
     class Player extends Bot {

@@ -169,6 +169,26 @@
         loadPlayer(options) {
             this.players.push(Players.Player(options));
         }
+
+        pack() {
+            return {
+                players: this.players.map(player => player.pack())
+            }
+        }
+
+        fullPack() {
+            const packed = {
+                players: this.players.map(player => player.fullPack())
+            }
+            for (var key of Object.keys(this)) {
+                if (typeof this[key] !== 'function') {
+                    if (!packed[key])
+                        packed[key] = this[key];
+                }
+            }
+            return packed;
+        }
+
     }
 
     /* For a single instance across all modules, instantiate here, then export */
