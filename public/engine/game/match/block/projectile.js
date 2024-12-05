@@ -130,7 +130,7 @@
                         if (typeof window !== 'undefined') {
                             this.touchSFX.currentTime = 0;
                             if (!this.user.muted)
-                                this.touchSFX.play();
+                                this.touchSFX.play().catch(err => {});
                         }
                         if (!c.invulnerable)
                             c.hp -= this.damage;
@@ -189,7 +189,7 @@
                         if (typeof window !== 'undefined') {
                             this.touchSFX.currentTime = 0;
                             if (!this.user.muted)
-                                this.touchSFX.play();
+                                this.touchSFX.play().catch(err => {});
                         }
                         this.active = false;
                         c.trigger(this, side); //Trigger the block's trigger function

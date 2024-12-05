@@ -25,6 +25,7 @@ function gameHandler(ws, req) {
 
     let findPlayer = game.players.find(player => player.token.id === ws.token.id);
     if (!findPlayer) {
+        console.info('Player not found. Creating new player', ws.token.username);
         // if the game is full, close the connection
         if (game.match) {
             if (game.players.length >= game.match.playerLimit.max) {
@@ -34,30 +35,24 @@ function gameHandler(ws, req) {
                 return;
             }
         }
-        // if this is the first player when this user connects, load a new match
-        if (game.players.length == 0) game.loadMatch('ForHonorMP');
         // create a new player
         game.players.push(new Players.Player({ token: ws.token, ws: ws }));
     } else {
+        console.info('Player found. Reconnecting player.', ws.token.username);
         findPlayer.ws = ws;
         findPlayer.connected = true;
     }
 
     let playersList = [];
     for (const player of game.players) {
-        playersList.push(player.pack());
-    }
-
-    try {
-        ws.send(JSON.stringify({ debug: 'Loaded new match', newMatch: game.match.matchType }));
-    } catch (error) {
-        console.log(error);
-
+        playersList.push(player.fullPack());
     }
 
 
-    // broadcast the new player to all players
+    // broadcast the new player list to all players
     broadcast(game.wss, { debug: 'Player connected', players: playersList });
+
+    ws.send(JSON.stringify({ debug: 'Loaded new match', newMatch: game.match.fullPack() }));
 
     // listen for messages
     ws.on('message', (message) => {
@@ -66,9 +61,11 @@ function gameHandler(ws, req) {
             // parse the message
             message = JSON.parse(message);
             // find the player
-            let player = game.players.find(player => player.token === ws.token);
+            let player = game.players.find(player => player.token.id === ws.token.id);
             // if the player is not found, close the connection
             if (!player) {
+                console.log('Could not find you in this game.');
+
                 ws.send(JSON.stringify({ debug: 'Could not find you in this game.' }));
                 ws.close();
                 return;

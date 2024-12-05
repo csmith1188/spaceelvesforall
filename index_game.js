@@ -60,7 +60,8 @@ const wss = expressWs(app);
 const Games = require('./public/engine/game/game.js');
 const Sockets = require('./public/engine/socket_server.js');
 
-global.game = new Games.Game({wss: wss, broadcast: Sockets.broadcast});
+game = new Games.Game({wss: wss, broadcast: Sockets.broadcast});
+game.loadMatch('ForHonorMP');
 
 // Define a route handler for the default home page
 app.get('/', (req, res) => {

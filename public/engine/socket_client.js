@@ -83,7 +83,7 @@ gameWSS.addEventListener('message', (event) => {
 
             if (message.character) {
                 let c = game.match.characters.find(c => c.id === message.character.id);
-                if (!c) game.match.map.spawn(message.character);
+                if (!c) game.match.spawnCharacter(message.character);
             }
 
             if (message.bullets) {

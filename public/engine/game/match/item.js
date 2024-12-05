@@ -40,7 +40,7 @@
                 if (this.reloading) {
                     this.reloading = false;
                     if (this.owner && typeof window !== 'undefined')
-                        this.reload_done.play();
+                        this.reload_done.play().catch(err => {});
                 }
             }
         }
@@ -119,7 +119,7 @@
                     this.ammo--; // consume a bullet
                     if (typeof window !== 'undefined') {
                         this.shootSFX.currentTime = 0;
-                        if (!user.muted) this.shootSFX.play(); // play shoot sound
+                        if (!user.muted) this.shootSFX.play().catch(err => {}); // play shoot sound
                     }
                     //find the distance from player to mouse with pythagorean theorem
                     let distance = ((aimX ** 2) + (aimY ** 2)) ** 0.5;
@@ -163,7 +163,7 @@
                 } else {
                     if (this.owner && typeof window !== 'undefined')
                         if (!user.muted)
-                            this.reload_empty.play();
+                            this.reload_empty.play().catch(err => {});
                     if (user.ammo[this.type] > 0 && !this.reloading) {
                         this.reloading = true;    // set reloading to true
                         this.ammo = this.ammoMax;   // reload
@@ -230,7 +230,7 @@
                     this.ammo--; // consume a bullet
                     if (typeof window !== 'undefined') {
                         this.shootSFX.currentTime = 0;
-                        if (!user.muted) this.shootSFX.play(); // play shoot sound
+                        if (!user.muted) this.shootSFX.play().catch(err => {}); // play shoot sound
                     }
                     //find the distance from player to mouse with pythagorean theorem
                     let distance = ((xaim ** 2) + (yaim ** 2)) ** 0.5;
@@ -319,7 +319,7 @@
                 } else {
                     if (this.owner && typeof window !== 'undefined')
                         if (!user.muted)
-                            this.reload_empty.play();
+                            this.reload_empty.play().catch(err => {});
                     if (user.ammo[this.type] > 0 && !this.reloading) {
                         this.reloading = true;    // set reloading to true
                         this.ammo = this.ammoMax;   // reload
@@ -327,7 +327,7 @@
                         user.ammo[this.type]--;      // consume a clip from a user
                         if (this.owner && typeof window !== 'undefined')
                             if (!user.muted)
-                                this.reload_empty.play();
+                                this.reload_empty.play().catch(err => {});
                     }
                 }
             }
@@ -385,10 +385,10 @@
                     this.ammo--; // consume a bullet
                     if (typeof window !== 'undefined') {
                         this.shootSFX.currentTime = 0;
-                        if (!user.muted) this.shootSFX.play(); // play shoot sound
+                        if (!user.muted) this.shootSFX.play().catch(err => {}); // play shoot sound
                     }
                     if (!user.muted && Utils.isClient())
-                        this.shootSFX.play(); // play shoot sound
+                        this.shootSFX.play().catch(err => {}); // play shoot sound
                     for (let i = 0; i < 5; i++) {
 
                         // There's a serious bug here.
@@ -432,7 +432,7 @@
                 } else {
                     if (this.owner && typeof window !== 'undefined')
                         if (!user.muted)
-                            this.reload_empty.play();
+                            this.reload_empty.play().catch(err => {});
                     if (user.ammo[this.type] > 0 && !this.reloading) {
                         this.reloading = true;    // set reloading to true
                         this.ammo = this.ammoMax;   // reload
@@ -440,7 +440,7 @@
                         user.ammo[this.type]--;      // consume a clip from a user
                         if (this.owner && typeof window !== 'undefined')
                             if (!user.muted)
-                                this.reload_empty.play();
+                                this.reload_empty.play().catch(err => {});
                     }
                 }
             }
@@ -499,7 +499,7 @@
                     this.ammo--; // consume a bullet
                     if (typeof window !== 'undefined') {
                         this.shootSFX.currentTime = 0;
-                        if (!user.muted) this.shootSFX.play(); // play shoot sound
+                        if (!user.muted) this.shootSFX.play().catch(err => {}); // play shoot sound
                     }
                     //find the distance from player to mouse with pythagorean theorem
                     let distance = ((aimX ** 2) + (aimY ** 2)) ** 0.5;
@@ -606,7 +606,7 @@
                 } else {
                     if (this.owner && typeof window !== 'undefined')
                         if (!user.muted)
-                            this.reload_empty.play();
+                            this.reload_empty.play().catch(err => {});
                     if (user.ammo[this.type] > 0 && !this.reloading) {
                         this.reloading = true;    // set reloading to true
                         this.ammo = this.ammoMax;   // reload
@@ -669,7 +669,7 @@
                     this.nextCool = game.match.time.ticks + this.coolDown;
                     if (typeof window !== 'undefined') {
                         this.shootSFX.currentTime = 0;
-                        if (!user.muted) this.shootSFX.play(); // play shoot sound
+                        if (!user.muted) this.shootSFX.play().catch(err => {}); // play shoot sound
                     }
                     //find the distance from player to mouse with pythagorean theorem
                     let distance = ((aimX ** 2) + (aimY ** 2)) ** 0.5;
@@ -697,7 +697,7 @@
                 } else {
                     if (this.owner && typeof window !== 'undefined')
                         if (!user.muted)
-                            this.reload_empty.play();
+                            this.reload_empty.play().catch(err => {});
                     if (user.ammo[this.type] > 0 && !this.reloading) {
                         this.reloading = true;    // set reloading to true
                         this.ammo = this.ammoMax;   // reload

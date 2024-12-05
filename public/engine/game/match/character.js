@@ -37,6 +37,7 @@
             this.team = 0;
             this.teams = [this.team];
             this.target = null;
+            this.type = 'character';
 
             /*
               ___        _ _   _            ___       _
@@ -159,6 +160,19 @@
         ########     ###     ########## ###
         */
 
+        spawnWeapon(item) {
+            let newItem = {};
+            switch (item.weapon) {
+                case 'pistol':
+                    newItem = new Items.Pistol(item);
+                    break;
+            
+                default:
+                    break;
+            }
+            return newItem;
+        }
+
         step() {
             if (this.active) {
                 if (this.pp < this.pp_max)
@@ -193,7 +207,7 @@
                             // If the player has positive power points (pp)
                             if (this.pp > 2) {
                                 // Sounds.upBoost.currentTime = 0;
-                                // if (!this.muted && typeof window !== 'undefined') Sounds.upBoost.play();
+                                // if (!this.muted && typeof window !== 'undefined') Sounds.upBoost.play().catch(err => {});
                                 // Set the z momentum to 1 (move upwards)
                                 this.mom.z = 1;
                                 // Decrease the power points by 1
@@ -211,7 +225,7 @@
                             this.pp -= 60;
                             if (typeof window !== 'undefined') {
                                 Sounds.boost.currentTime = 0;
-                                if (!this.muted) Sounds.boost.play();
+                                if (!this.muted) Sounds.boost.play().catch(err => {});
                             }
                             this.speed.x += this.mom.x * 8;
                             this.speed.y += this.mom.y * 8;
@@ -435,7 +449,7 @@
                         if (this.owner == game.player) { // Only play for the player until sound ranges are implemented
                             // Sounds.wallhit.currentTime = 0;
 
-                            if (!this.muted && typeof window !== 'undefined') Sounds.wallhit.play();
+                            if (!this.muted && typeof window !== 'undefined') Sounds.wallhit.play().catch(err => {});
                         }
                         switch (side) { //see which side you collided on
                             case 'front':
@@ -537,28 +551,28 @@
                     this.speed.x *= -game.match.map.collideReflect;
                     this.mom.x *= -game.match.map.collideReflect;
                     // Sounds.wallhit.currentTime = 0;
-                    if (!this.muted && typeof window !== 'undefined') Sounds.wallhit.play();
+                    if (!this.muted && typeof window !== 'undefined') Sounds.wallhit.play().catch(err => {});
                 }
                 if (this.HB.pos.x > game.match.map.w) {
                     this.HB.pos.x = game.match.map.w;
                     this.speed.x *= -game.match.map.collideReflect;
                     this.mom.x *= -game.match.map.collideReflect;
                     // Sounds.wallhit.currentTime = 0;
-                    if (!this.muted && typeof window !== 'undefined') Sounds.wallhit.play();
+                    if (!this.muted && typeof window !== 'undefined') Sounds.wallhit.play().catch(err => {});
                 }
                 if (this.HB.pos.y < 0) {
                     this.HB.pos.y = 0;
                     this.speed.y *= -game.match.map.collideReflect;
                     this.mom.y *= -game.match.map.collideReflect;
                     // Sounds.wallhit.currentTime = 0;
-                    if (!this.muted && typeof window !== 'undefined') Sounds.wallhit.play();
+                    if (!this.muted && typeof window !== 'undefined') Sounds.wallhit.play().catch(err => {});
                 }
                 if (this.HB.pos.y > game.match.map.h) {
                     this.HB.pos.y = game.match.map.h;
                     this.speed.y *= -game.match.map.collideReflect;
                     this.mom.y *= -game.match.map.collideReflect;
                     // Sounds.wallhit.currentTime = 0;
-                    if (!this.muted && typeof window !== 'undefined') Sounds.wallhit.play();
+                    if (!this.muted && typeof window !== 'undefined') Sounds.wallhit.play().catch(err => {});
                 }
 
                 /*
@@ -574,7 +588,7 @@
                     if (this.hover > 0) {
                         if (typeof window !== 'undefined') {
                             // Sounds.groundhit.currentTime = 0;
-                            if (!this.muted) Sounds.groundhit.play();
+                            if (!this.muted) Sounds.groundhit.play().catch(err => {});
                         }
                     }
                 }
@@ -594,7 +608,7 @@
                     this.active = false;
                     this.visible = false;
                     if (!this.muted && typeof window !== 'undefined')
-                        this.deathSFX.play();
+                        this.deathSFX.play().catch(err => {});
                     if (this.inventory[this.item])
                         game.match.map.blocks.push(new Powerups.WeaponPickup(
                             new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z + this.HB.height / 2),
@@ -1015,6 +1029,7 @@
 
         fullPack() {
             const packed = {
+                type: this.type,
                 parent: this.parent.pack(),
                 inventory: this.inventory.map(item => item.pack())
             }
@@ -1044,6 +1059,7 @@
             super(options);
             this.radius = 29;
             this.height = 37;
+            this.type = 'jetbike';
             if (typeof options === 'object')
                 for (var key of Object.keys(options)) {
                     this[key] = options[key];
@@ -1070,7 +1086,7 @@
                 if (Sounds.prop[freq].currentTime > (game.time.tickRate * game.time.delta) / 1000)
                     Sounds.prop[freq].currentTime = 0;
                 Sounds.prop[freq].volume = 0.2;
-                Sounds.prop[freq].play();
+                Sounds.prop[freq].play().catch(err => {});
             }
         }
     }

@@ -148,7 +148,7 @@
                             // Play pickup sound
                             this.touchSFX.currentTime = 0;
                             if (!actor.muted)
-                                this.touchSFX.play();
+                                this.touchSFX.play().catch(err => {});
                         }
                     } else {
                         this.active = true; // Turn this back on if the player is full ammo
@@ -198,7 +198,7 @@
                             // Play pickup sound
                             this.touchSFX.currentTime = 0;
                             if (!actor.muted)
-                                this.touchSFX.play();
+                                this.touchSFX.play().catch(err => {});
                         }
                         actor.ammo.plasma++; // Add plasma ammo
                     } else {
@@ -250,7 +250,7 @@
                             // Play pickup sound
                             this.touchSFX.currentTime = 0;
                             if (!actor.muted)
-                                this.touchSFX.play();
+                                this.touchSFX.play().catch(err => {});
                         }
                         actor.hp = Math.min(actor.hp + 50, actor.hp_max); // Add health
                     }
@@ -301,7 +301,7 @@
                         if (game.match.characters.includes(actor)) {
                             if (actor.inventory.length < 2) {
                                 if (!actor.muted && typeof window !== 'undefined')
-                                    this.touchSFX.play();
+                                    this.touchSFX.play().catch(err => {});
                                 this.item.owner = actor.parent;
                                 actor.inventory.push(this.item); // Add to inventory
                             }

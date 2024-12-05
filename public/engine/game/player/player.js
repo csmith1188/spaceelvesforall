@@ -44,6 +44,7 @@
                         packed[key] = this[key];
                 }
             }
+            delete packed.controller;
             return packed
         }
     }

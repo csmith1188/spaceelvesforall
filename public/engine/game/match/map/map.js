@@ -66,8 +66,8 @@
 
         */
         spawn(block) {
-            // find the character that the block belongs to
-            block.spawnPos = new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z);
+            if (!block.spawnPos)
+                block.spawnPos = new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z);
             if (block.type == "cube")
                 block.spawnVol = new Utils.Vect3(block.vol.x, block.vol.y, block.vol.z);
             // block.serverPos = { pos: block.pos, time: block.time };
@@ -126,11 +126,6 @@
                 }
             } else if (block.type == "weapon") {
                 this.blocks.push(new Powerups.WeaponPickup(block));
-            } else if (block.type == "character") {
-                delete block.pos;
-                block.lastHB = block.spawnPos;
-                block.parent = game.players.find(p => p.token.id === block.parent.token.id);
-                game.match.characters.push(new Characters.Jetbike(block));
             }
         }
 

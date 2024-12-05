@@ -14,7 +14,7 @@
     }
 }(typeof self !== 'undefined' ? self : this, function (Characters, Utils, Maps) {
     class Match {
-        constructor() {
+        constructor(options) {
             this.matchType = 'Match';
             this.playerLimit = { min: 2, max: 2 };
             this.characters = [];
@@ -26,7 +26,49 @@
                 ticks: 0,
                 start: performance.now()
             }
+
+            /*
+                ___       _   _
+               / _ \ _ __| |_(_)___ _ _  ___
+              | (_) | '_ \  _| / _ \ ' \(_-<
+               \___/| .__/\__|_\___/_||_/__/
+                    |_|
+            */
+            if (typeof options === 'object')
+                for (var key of Object.keys(options)) {
+                    this[key] = options[key];
+                }
+
+
+            let spawnList = this.characters;
+            this.characters = [];
+            for (const character of spawnList) {
+                this.characters.push(this.spawnCharacter(character));
+            }
+
             this.setup();
+        }
+
+
+        spawnCharacter(chara) {
+            if (chara && chara.constructor === Object) {
+                console.log('Spawning character', chara);
+
+                chara.lastHB = chara.spawnPos;
+                chara.parent = game.players.find(p => p.token.id === chara.parent.token.id);
+                let newChara;
+                // for each item in the chara.inventory, create a new item and add it to the character's inventory
+                switch (chara.type) {
+                    case 'jetbike':
+                        newChara = new Characters.Jetbike(chara);
+                        break;
+                    default:
+                        newChara = new Characters.Character(chara);
+                        break;
+                }
+                newChara.inventory = chara.inventory.map(item => newChara.spawnWeapon(item));
+                this.characters.push(newChara);
+            }
         }
 
         reset() {
