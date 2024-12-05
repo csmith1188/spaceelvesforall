@@ -96,7 +96,7 @@ function gameHandler(ws, req) {
         player.connected = false;
         let playersList = [];
         for (const player of game.players) {
-            playersList.push(player.pack);
+            playersList.push(player.pack());
         }
         // broadcast the new player list
         broadcast(game.wss, { debug: 'Player disconnected', players: playersList });

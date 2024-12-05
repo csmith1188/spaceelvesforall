@@ -40,10 +40,11 @@
                 }
 
 
+
             let spawnList = this.characters;
             this.characters = [];
             for (const character of spawnList) {
-                this.characters.push(this.spawnCharacter(character));
+                this.spawnCharacter(character);
             }
 
             this.setup();
@@ -52,8 +53,6 @@
 
         spawnCharacter(chara) {
             if (chara && chara.constructor === Object) {
-                console.log('Spawning character', chara);
-
                 chara.lastHB = chara.spawnPos;
                 chara.parent = game.players.find(p => p.token.id === chara.parent.token.id);
                 let newChara;

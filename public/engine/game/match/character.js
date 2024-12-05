@@ -1031,7 +1031,9 @@
             const packed = {
                 type: this.type,
                 parent: this.parent.pack(),
-                inventory: this.inventory.map(item => item.pack())
+                inventory: this.inventory.map(item => item.pack()),
+                spawnPos: this.HB.pos,
+                serverPos: this.HB.pos
             }
             for (const key of Object.keys(this)) {
                 if (typeof this[key] !== 'function') {

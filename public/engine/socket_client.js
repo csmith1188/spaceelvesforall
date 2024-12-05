@@ -34,6 +34,11 @@ gameWSS.addEventListener('message', (event) => {
         console.log(error);
         return;
     }
+
+    if (message.debug) {
+        console.log(message.debug);
+    }
+
     if (game) {
         if (message.players) {
             for (let player of message.players) {
