@@ -143,6 +143,16 @@
             }
         }
 
+        countConnections() {
+            let count = 0;
+            for (let player of this.players) {
+                if (player.connected === true) count++;
+                else if (Date.now() - player.connected > 10000) player.ws.close();
+            }   
+
+            return count;
+        }
+
         loadMatch(match) {
             try {
                 if (typeof match === 'string')

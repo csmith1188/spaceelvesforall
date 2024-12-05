@@ -93,7 +93,7 @@ function gameHandler(ws, req) {
     ws.on('close', () => {
         // set the player to disconnected
         let player = game.players.find(player => player.token.id === ws.token.id);
-        player.connected = false;
+        player.connected = Date.now();
         let playersList = [];
         for (const player of game.players) {
             playersList.push(player.pack());
