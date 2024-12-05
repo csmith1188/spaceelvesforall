@@ -92,10 +92,10 @@
             //     if (this[key] !== PickUp.prototype[key]) {
             //         if (key == 'runFunc') {
             //             let noNatives = this[key].filter(func => !func.toString().includes('[native code]'));
-            //             pack[key] = noNatives.map(func => func.toString());
+            //             packed[key] = noNatives.map(func => func.toString());
             //         }
             //         else
-            //             pack[key] = this[key];
+            //             packed[key] = this[key];
             //     }
             // }
 

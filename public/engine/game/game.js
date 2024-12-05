@@ -177,7 +177,7 @@
         }
 
         fullPack() {
-            const packed = {
+            const packeded = {
                 players: this.players.map(player => player.fullPack())
             }
             for (var key of Object.keys(this)) {

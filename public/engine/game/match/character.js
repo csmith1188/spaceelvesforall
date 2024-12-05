@@ -1014,15 +1014,15 @@
         }
 
         fullPack() {
-            const packed = {
+            const packeded = {
                 parent: this.parent.pack(),
                 inventory: this.inventory.map(item => item.pack())
             }
             for (const key of Object.keys(this)) {
                 if (typeof this[key] !== 'function') {
                     // if pack doesn't have this key, add it
-                    if (!pack[key])
-                        pack[key] = this[key];
+                    if (!packed[key])
+                        packed[key] = this[key];
                 }
             }
             return packed;

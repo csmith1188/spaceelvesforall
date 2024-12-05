@@ -450,7 +450,7 @@
         }
 
         fullPack() {
-            const packed = {
+            const packeded = {
                 characters: this.characters.map(chara => chara.fullPack()),
                 blocks: this.map.blocks.map(block => block.fullPack()),
                 debris: []
@@ -458,8 +458,8 @@
             for (const key of Object.keys(this)) {
                 if (typeof this[key] !== 'function') {
                     // if pack doesn't have this key, add it
-                    if (!pack[key])
-                        pack[key] = this[key];
+                    if (!packed[key])
+                        packed[key] = this[key];
                 }
             }
             return packed;
