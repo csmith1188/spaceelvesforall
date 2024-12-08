@@ -2,18 +2,16 @@
 const express = require('express');
 // import express session module
 const session = require('express-session');
-// import the websockets module
-const WebSocket = require('ws');
 // import the express-ws module
 const expressWs = require('express-ws')
 // import local environment variables
 require('dotenv').config();
-// import webtoken module
-const jwt = require('jsonwebtoken');
 // sqlite3 session store
 const SQLiteStore = require('connect-sqlite3')(session);
 // Retrieve all command-line arguments starting from the third element
 const args = process.argv.slice(2);
+// Import the API routes
+const api_router = require('./modules/game_api.js');
 
 var PORT = 10000;
 
@@ -36,6 +34,9 @@ app.set('view engine', 'ejs');
 
 // set express to use public for static files
 app.use(express.static(__dirname + '/public'));
+
+// Use the imported routes
+app.use('/api', api_router);
 
 // create a session middleware with a secret key using in memory store
 const sessionMiddleware = session({

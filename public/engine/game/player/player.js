@@ -36,7 +36,8 @@
 
         fullPack() {
             const packed = {
-                controller: {}
+                controller: {},
+                ws: {}
             };
             for (let key in this) {
                 if (this.hasOwnProperty(key)) {
