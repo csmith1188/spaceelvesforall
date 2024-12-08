@@ -37,6 +37,7 @@
             this.team = 0;
             this.teams = [this.team];
             this.target = null;
+            this.type = 'character';
 
             /*
               ___        _ _   _            ___       _
@@ -159,6 +160,19 @@
         ########     ###     ########## ###
         */
 
+        spawnWeapon(item) {
+            let newItem = {};
+            switch (item.weapon) {
+                case 'pistol':
+                    newItem = new Items.Pistol(item);
+                    break;
+            
+                default:
+                    break;
+            }
+            return newItem;
+        }
+
         step() {
             if (this.active) {
                 if (this.pp < this.pp_max)
@@ -193,7 +207,7 @@
                             // If the player has positive power points (pp)
                             if (this.pp > 2) {
                                 // Sounds.upBoost.currentTime = 0;
-                                // if (!this.muted && typeof window !== 'undefined') Sounds.upBoost.play();
+                                // if (!this.muted && typeof window !== 'undefined') Sounds.upBoost.play().catch(err => {});
                                 // Set the z momentum to 1 (move upwards)
                                 this.mom.z = 1;
                                 // Decrease the power points by 1
@@ -211,7 +225,7 @@
                             this.pp -= 60;
                             if (typeof window !== 'undefined') {
                                 Sounds.boost.currentTime = 0;
-                                if (!this.muted) Sounds.boost.play();
+                                if (!this.muted) Sounds.boost.play().catch(err => {});
                             }
                             this.speed.x += this.mom.x * 8;
                             this.speed.y += this.mom.y * 8;
@@ -435,7 +449,7 @@
                         if (this.owner == game.player) { // Only play for the player until sound ranges are implemented
                             // Sounds.wallhit.currentTime = 0;
 
-                            if (!this.muted && typeof window !== 'undefined') Sounds.wallhit.play();
+                            if (!this.muted && typeof window !== 'undefined') Sounds.wallhit.play().catch(err => {});
                         }
                         switch (side) { //see which side you collided on
                             case 'front':
@@ -537,28 +551,28 @@
                     this.speed.x *= -game.match.map.collideReflect;
                     this.mom.x *= -game.match.map.collideReflect;
                     // Sounds.wallhit.currentTime = 0;
-                    if (!this.muted && typeof window !== 'undefined') Sounds.wallhit.play();
+                    if (!this.muted && typeof window !== 'undefined') Sounds.wallhit.play().catch(err => {});
                 }
                 if (this.HB.pos.x > game.match.map.w) {
                     this.HB.pos.x = game.match.map.w;
                     this.speed.x *= -game.match.map.collideReflect;
                     this.mom.x *= -game.match.map.collideReflect;
                     // Sounds.wallhit.currentTime = 0;
-                    if (!this.muted && typeof window !== 'undefined') Sounds.wallhit.play();
+                    if (!this.muted && typeof window !== 'undefined') Sounds.wallhit.play().catch(err => {});
                 }
                 if (this.HB.pos.y < 0) {
                     this.HB.pos.y = 0;
                     this.speed.y *= -game.match.map.collideReflect;
                     this.mom.y *= -game.match.map.collideReflect;
                     // Sounds.wallhit.currentTime = 0;
-                    if (!this.muted && typeof window !== 'undefined') Sounds.wallhit.play();
+                    if (!this.muted && typeof window !== 'undefined') Sounds.wallhit.play().catch(err => {});
                 }
                 if (this.HB.pos.y > game.match.map.h) {
                     this.HB.pos.y = game.match.map.h;
                     this.speed.y *= -game.match.map.collideReflect;
                     this.mom.y *= -game.match.map.collideReflect;
                     // Sounds.wallhit.currentTime = 0;
-                    if (!this.muted && typeof window !== 'undefined') Sounds.wallhit.play();
+                    if (!this.muted && typeof window !== 'undefined') Sounds.wallhit.play().catch(err => {});
                 }
 
                 /*
@@ -574,7 +588,7 @@
                     if (this.hover > 0) {
                         if (typeof window !== 'undefined') {
                             // Sounds.groundhit.currentTime = 0;
-                            if (!this.muted) Sounds.groundhit.play();
+                            if (!this.muted) Sounds.groundhit.play().catch(err => {});
                         }
                     }
                 }
@@ -594,7 +608,7 @@
                     this.active = false;
                     this.visible = false;
                     if (!this.muted && typeof window !== 'undefined')
-                        this.deathSFX.play();
+                        this.deathSFX.play().catch(err => {});
                     if (this.inventory[this.item])
                         game.match.map.blocks.push(new Powerups.WeaponPickup(
                             new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z + this.HB.height / 2),
@@ -607,18 +621,19 @@
         unitColor(fullOpaque = 0) {
             // find the match's character whose owner is the player
             let chara = game.match.characters.find(c => c.parent == game.player);
-            
-            if (this.team == chara.team) {
-                // return `rgba(0,255,0, ${Math.max(Number(fullOpaque), game.player.interface.drawFriendlyRing)})`;
-                return `rgba(0,255,0,${Math.max(Number(fullOpaque), 0.5)})`;
-            }
-            else if (chara.teams.includes(this.team)) {
-                // return `rgba(255,255,0, ${Math.max(Number(fullOpaque), game.player.interface.drawNeutralRing)})`;
-                return `rgba(255,255,0,${Math.max(Number(fullOpaque), 0.5)})`;
-            }
-            else {
-                // return `rgba(255,0,0, ${Math.max(Number(fullOpaque), game.player.interface.drawEnemyRing)})`;
-                return `rgba(255,0,0,${Math.max(Number(fullOpaque), 0.5)})`;
+            if (chara) {
+                if (this.team == chara.team) {
+                    // return `rgba(0,255,0, ${Math.max(Number(fullOpaque), game.player.interface.drawFriendlyRing)})`;
+                    return `rgba(0,255,0,${Math.max(Number(fullOpaque), 0.5)})`;
+                }
+                else if (chara.teams.includes(this.team)) {
+                    // return `rgba(255,255,0, ${Math.max(Number(fullOpaque), game.player.interface.drawNeutralRing)})`;
+                    return `rgba(255,255,0,${Math.max(Number(fullOpaque), 0.5)})`;
+                }
+                else {
+                    // return `rgba(255,0,0, ${Math.max(Number(fullOpaque), game.player.interface.drawEnemyRing)})`;
+                    return `rgba(255,0,0,${Math.max(Number(fullOpaque), 0.5)})`;
+                }
             }
         }
 
@@ -1013,41 +1028,22 @@
         }
 
         fullPack() {
-            return {
-                type: 'character',
-                team: this.team,
-                id: this.id,
-                pos: this.HB.pos,
-                speed: this.speed,
-                hp: this.hp,
-                pp: this.pp,
-                ammo: this.ammo,
-                name: this.name,
-                gfx: this.gfx,
-                leftgfx: this.leftgfx,
-                faceCamera: this.faceCamera,
-                zMod: this.zMod,
-                hover: this.hover,
-                bouyancy: this.bouyancy,
-                floor: this.floor,
-                speedLimit: this.speedLimit,
-                airAccel: this.airAccel,
-                reflection: this.reflection,
-                hp_max: this.hp_max,
-                pp_max: this.pp_max,
-                item: this.item,
-                // inventory: this.inventory,
-                active: this.active,
-                visible: this.visible,
-                muted: this.muted,
-                deathSFX: this.deathSFX,
-                runFunc: this.runFunc,
+            const packed = {
+                type: this.type,
                 parent: this.parent.pack(),
-                serverPos: this.serverPos,
-                lastHB: this.lastHB
+                inventory: this.inventory.map(item => item.pack()),
+                spawnPos: this.HB.pos,
+                serverPos: this.HB.pos
             }
+            for (const key of Object.keys(this)) {
+                if (typeof this[key] !== 'function') {
+                    // if pack doesn't have this key, add it
+                    if (!packed[key])
+                        packed[key] = this[key];
+                }
+            }
+            return packed;
         }
-
     }
 
 
@@ -1065,6 +1061,7 @@
             super(options);
             this.radius = 29;
             this.height = 37;
+            this.type = 'jetbike';
             if (typeof options === 'object')
                 for (var key of Object.keys(options)) {
                     this[key] = options[key];
@@ -1091,7 +1088,7 @@
                 if (Sounds.prop[freq].currentTime > (game.time.tickRate * game.time.delta) / 1000)
                     Sounds.prop[freq].currentTime = 0;
                 Sounds.prop[freq].volume = 0.2;
-                Sounds.prop[freq].play();
+                Sounds.prop[freq].play().catch(err => {});
             }
         }
     }

@@ -34,6 +34,11 @@ gameWSS.addEventListener('message', (event) => {
         console.log(error);
         return;
     }
+
+    if (message.debug) {
+        console.log(message.debug);
+    }
+
     if (game) {
         if (message.players) {
             for (let player of message.players) {
@@ -52,98 +57,101 @@ gameWSS.addEventListener('message', (event) => {
                     game.players = game.players.filter(p => p.token.username !== player.token.username);
                 }
             }
-        }
 
-        if (message.characters) {
-            for (let character of message.characters) {
-                let c = game.match.characters.find(c => c.id === character.id);
-                if (c) {
-                    c.serverPos.x = character.pos.x;
-                    c.serverPos.y = character.pos.y;
-                    c.serverPos.z = character.pos.z;
-                    c.serverPos.time = message.time;
-                    c.id = character.id;
-                    c.hp = character.hp;
-                    c.pp = character.pp;
-                    c.ammo = character.ammo;
-                } else {
-                    gameWSS.send(JSON.stringify({ getCharacter: character.id }));
-                }
-                // remove characters not in the message
-                // WARNING! message.characters only sends characters who *have not moved* since the last message
-                // game.match.characters = game.match.characters.filter(c => character.id === c.id);
-            }
-        }
-
-        if (message.character) {
-            let c = game.match.characters.find(c => c.id === message.character.id);
-            if (!c) game.match.map.spawn(message.character);
-        }
-
-        if (message.bullets) {
-            for (let bullet of message.bullets) {
-                let b = game.match.map.bullets.find(b => b.id === bullet.id);
-                if (b) {
-                    //if the bullet is a cube, set the bullet's pos and volume
-                    if (bullet.shape == 'cube') {
-                        b.serverPos.pos.x = bullet.pos.x;
-                        b.serverPos.pos.y = bullet.pos.y;
-                        b.serverPos.pos.z = bullet.pos.z;
-                        b.serverVol.vol.x = bullet.vol.x;
-                        b.serverPos.vol.y = bullet.vol.y;
-                        b.serverPos.vol.z = bullet.vol.z;
-                        b.serverPos.speed = bullet.speed;
-                    } else if (bullet.shape == 'cylinder') {
-                        //if the bullet is a sphere, set the bullet's pos and volume
-                        b.serverPos.pos.x = bullet.pos.x;
-                        b.serverPos.pos.y = bullet.pos.y;
-                        b.serverPos.pos.z = bullet.pos.z;
-                        b.serverPos.radius = bullet.radius;
-                        b.serverPos.height = bullet.height;
-                        b.serverPos.speed = bullet.speed;
-                    }
-                    b.serverPos.time = message.time;
-                } else {
-                    bullet.serverPos = { pos: { x: bullet.pos.x, y: bullet.pos.y, z: bullet.pos.z }, time: message.time };
-                    //if the bullet is not in the game, add it
-                    game.match.map.spawn(bullet);
-                }
-                // remove bullets not in the message
-                game.match.map.bullets = game.match.map.bullets.filter(b => bullet.id === b.id);
-            }
-        }
-
-        if (message.powerups) {
-            for (let powerup of message.powerups) {
-                let p = game.match.map.blocks.find(p => p.id === powerup.id);
-                if (p) {
-                    p.serverPos.x = powerup.pos.x;
-                    p.serverPos.y = powerup.pos.y;
-                    p.serverPos.z = powerup.pos.z;
-                    p.serverPos.time = message.time;
-                } else {
-                    game.match.map.spawn({ type: "pickup", ...powerup });
-                }
-                // remove powerups not in the message
-                // game.match.map.blocks = game.match.map.blocks.filter(p => powerup.id === p.id && p.type === 'pickup');
-            }
-        }
-
-        if (message.weapons) {
-            for (let weapon of message.weapons) {
-                let p = game.match.map.blocks.find(p => p.id === weapon.id);
-                if (p) {
-                    p.HB.pos.x = weapon.pos.x;
-                    p.HB.pos.y = weapon.pos.y;
-                    p.HB.pos.z = weapon.pos.z;
-                } else {
-                    game.match.map.spawn({ type: "weapon", ...weapon });
-                }
-            }
         }
 
         if (message.newMatch) {
             game.loadMatch(message.newMatch);
+        }
+
+        if (game.match) {
+            if (message.characters) {
+                for (let character of message.characters) {
+                    let c = game.match.characters.find(c => c.id === character.id);
+                    if (c) {
+                        c.serverPos.x = character.pos.x;
+                        c.serverPos.y = character.pos.y;
+                        c.serverPos.z = character.pos.z;
+                        c.serverPos.time = message.time;
+                        c.id = character.id;
+                        c.hp = character.hp;
+                        c.pp = character.pp;
+                        c.ammo = character.ammo;
+                    } else {
+                        gameWSS.send(JSON.stringify({ getCharacter: character.id }));
+                    }
+                    // remove characters not in the message
+                    // WARNING! message.characters only sends characters who *have not moved* since the last message
+                    // game.match.characters = game.match.characters.filter(c => character.id === c.id);
+                }
+            }
+
+            if (message.character) {
+                let c = game.match.characters.find(c => c.id === message.character.id);
+                if (!c) game.match.spawnCharacter(message.character);
+            }
+
+            if (message.bullets) {
+                for (let bullet of message.bullets) {
+                    let b = game.match.map.bullets.find(b => b.id === bullet.id);
+                    if (b) {
+                        //if the bullet is a cube, set the bullet's pos and volume
+                        if (bullet.shape == 'cube') {
+                            b.serverPos.pos.x = bullet.pos.x;
+                            b.serverPos.pos.y = bullet.pos.y;
+                            b.serverPos.pos.z = bullet.pos.z;
+                            b.serverVol.vol.x = bullet.vol.x;
+                            b.serverPos.vol.y = bullet.vol.y;
+                            b.serverPos.vol.z = bullet.vol.z;
+                            b.serverPos.speed = bullet.speed;
+                        } else if (bullet.shape == 'cylinder') {
+                            //if the bullet is a sphere, set the bullet's pos and volume
+                            b.serverPos.pos.x = bullet.pos.x;
+                            b.serverPos.pos.y = bullet.pos.y;
+                            b.serverPos.pos.z = bullet.pos.z;
+                            b.serverPos.radius = bullet.radius;
+                            b.serverPos.height = bullet.height;
+                            b.serverPos.speed = bullet.speed;
+                        }
+                        b.serverPos.time = message.time;
+                    } else {
+                        bullet.serverPos = { pos: { x: bullet.pos.x, y: bullet.pos.y, z: bullet.pos.z }, time: message.time };
+                        //if the bullet is not in the game, add it
+                        game.match.map.spawn(bullet);
+                    }
+                    // remove bullets not in the message
+                    game.match.map.bullets = game.match.map.bullets.filter(b => bullet.id === b.id);
+                }
+            }
+
+            if (message.powerups) {
+                for (let powerup of message.powerups) {
+                    let p = game.match.map.blocks.find(p => p.id === powerup.id);
+                    if (p) {
+                        p.serverPos.x = powerup.pos.x;
+                        p.serverPos.y = powerup.pos.y;
+                        p.serverPos.z = powerup.pos.z;
+                        p.serverPos.time = message.time;
+                    } else {
+                        game.match.map.spawn({ type: "pickup", ...powerup });
+                    }
+                    // remove powerups not in the message
+                    // game.match.map.blocks = game.match.map.blocks.filter(p => powerup.id === p.id && p.type === 'pickup');
+                }
+            }
+
+            if (message.weapons) {
+                for (let weapon of message.weapons) {
+                    let p = game.match.map.blocks.find(p => p.id === weapon.id);
+                    if (p) {
+                        p.HB.pos.x = weapon.pos.x;
+                        p.HB.pos.y = weapon.pos.y;
+                        p.HB.pos.z = weapon.pos.z;
+                    } else {
+                        game.match.map.spawn({ type: "weapon", ...weapon });
+                    }
+                }
+            }
         }
     }
 });

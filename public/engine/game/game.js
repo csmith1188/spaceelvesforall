@@ -143,31 +143,60 @@
             }
         }
 
+        countConnections() {
+            let count = 0;
+            for (let player of this.players) {
+                if (player.connected === true) count++;
+                else if (Date.now() - player.connected > 10000) player.ws.close();
+            }   
+
+            return count;
+        }
+
         loadMatch(match) {
             try {
-
-                switch (match) {
+                if (typeof match === 'string')
+                    match = { matchType: match };
+                switch (match.matchType) {
                     case 'Match':
-                        this.match = new Matches.Match();
+                        this.match = new Matches.Match(match);
                         break;
                     case 'ForHonorMP':
                         console.log('For Honor Multiplayer');
-
-                        this.match = new Matches.ForHonorMP();
+                        this.match = new Matches.ForHonorMP(match);
                         break;
                     default:
-                        this.match = new Matches.Match();
+                        this.match = new Matches.Match(match);
                         break;
                 }
             } catch (error) {
                 console.log(error);
-
             }
         }
 
         loadPlayer(options) {
             this.players.push(Players.Player(options));
         }
+
+        pack() {
+            return {
+                players: this.players.map(player => player.pack())
+            }
+        }
+
+        fullPack() {
+            const packed = {
+                players: this.players.map(player => player.fullPack())
+            }
+            for (var key of Object.keys(this)) {
+                if (typeof this[key] !== 'function') {
+                    if (!packed[key])
+                        packed[key] = this[key];
+                }
+            }
+            return packed;
+        }
+
     }
 
     /* For a single instance across all modules, instantiate here, then export */

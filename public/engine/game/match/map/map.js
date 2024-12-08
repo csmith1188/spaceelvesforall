@@ -33,7 +33,7 @@
             this.floor = 0;
             this.collideReflect = 0.2;
 
-            if (game.client) {
+            if (Utils.isClient()) {
                 this.bgimg = new Image();
                 this.bgimg.src = "img/tiles/tile001.png";
             }
@@ -66,8 +66,8 @@
 
         */
         spawn(block) {
-            // find the character that the block belongs to
-            block.spawnPos = new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z);
+            if (!block.spawnPos)
+                block.spawnPos = new Utils.Vect3(block.pos.x, block.pos.y, block.pos.z);
             if (block.type == "cube")
                 block.spawnVol = new Utils.Vect3(block.vol.x, block.vol.y, block.vol.z);
             // block.serverPos = { pos: block.pos, time: block.time };
@@ -126,11 +126,6 @@
                 }
             } else if (block.type == "weapon") {
                 this.blocks.push(new Powerups.WeaponPickup(block));
-            } else if (block.type == "character") {
-                delete block.pos;
-                block.lastHB = block.spawnPos;
-                block.parent = game.players.find(p => p.token.id === block.parent.token.id);
-                game.match.characters.push(new Characters.Jetbike(block));
             }
         }
 
@@ -344,6 +339,25 @@
             ctx.fillStyle = `rgba(${this.lightValue[0]}, ${this.lightValue[1]}, ${this.lightValue[2]}, ${this.lightValue[3]})`
             ctx.fillRect(0, 0, game.gameView.w, game.gameView.h);
             // ctx.globalCompositeOperation = "source-over";
+        }
+
+        pack() {
+            return {};
+        }
+
+        fullPack() {
+            const packed = {
+                blocks: this.map.blocks.map(block => block.fullPack()),
+                debris: []
+            }
+            for (const key of Object.keys(this)) {
+                if (typeof this[key] !== 'function') {
+                    // if pack doesn't have this key, add it
+                    if (!packed[key])
+                        packed[key] = this[key];
+                }
+            }
+            return packed;
         }
 
     }

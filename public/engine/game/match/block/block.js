@@ -449,6 +449,22 @@
             return pack;
         }
 
+        fullPack() {
+            const packed = {
+                characters: this.characters.map(chara => chara.fullPack()),
+                blocks: this.map.blocks.map(block => block.fullPack()),
+                debris: []
+            }
+            for (const key of Object.keys(this)) {
+                if (typeof this[key] !== 'function') {
+                    // if pack doesn't have this key, add it
+                    if (!packed[key])
+                        packed[key] = this[key];
+                }
+            }
+            return packed;
+        }
+
     }
 
 
