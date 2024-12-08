@@ -148,15 +148,14 @@
             // this.characters.push(new Characters.Jetbike({ name: game.player.token.username, team: i, parent: game.players[i], active: true, cleanup: false, spawnPos: new Utils.Vect3((this.map.w / 2) - 800, (this.map.h / 2), 10), gfx: 'img/sprites/jetbike' }));
             // game.player.interface = new Interface_LocalMP(game.player, 0, 0);
 
-
             // find all characters that are active
-            // let activeCharacters = this.characters.filter(character => character.active);
-            // if (activeCharacters.length == 1) {
-            //     this.lastWinner = activeCharacters[0].name;
-            //     if (game.player.controller.buttons.inventory1.current) {
-            //         this.reset();
-            //     }
-            // }
+            let activeCharacters = this.characters.filter(character => character.active);
+            if (activeCharacters.length == 1) {
+                this.lastWinner = activeCharacters[0].name;
+                if (activeCharacters[0].parent.controller.buttons.inventory1.current) {
+                    this.reset();
+                }
+            }
 
         }
 
