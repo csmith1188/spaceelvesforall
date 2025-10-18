@@ -106,26 +106,27 @@
                 }
 
                 // Check for players without characters and create them (late joiners)
-                if (typeof window === 'undefined') {
-                    for (let i = 0; i < game.players.length; i++) {
-                        const player = game.players[i];
-                        const hasCharacter = this.characters.some(c => c.parent === player);
+                // This is disabled for now, as we don't want it in the only available match type (for honor)
+                // if (typeof window === 'undefined') {
+                //     for (let i = 0; i < game.players.length; i++) {
+                //         const player = game.players[i];
+                //         const hasCharacter = this.characters.some(c => c.parent === player);
                         
-                        if (!hasCharacter) {
-                            console.log('Creating character for late-joining player', player.token.displayName);
-                            let images = ['img/sprites/jetbike', 'img/sprites/dark1', 'img/sprites/dark2'];
-                            this.characters.push(new Characters.Jetbike({ 
-                                name: player.token.displayName, 
-                                team: i, 
-                                parent: player, 
-                                active: true, 
-                                cleanup: false, 
-                                spawnPos: new Utils.Vect3(i * 100 + 100, i * 100 + 100, 0), 
-                                gfx: images[i % images.length] 
-                            }));
-                        }
-                    }
-                }
+                //         if (!hasCharacter) {
+                //             console.log('Creating character for late-joining player', player.token.displayName);
+                //             let images = ['img/sprites/jetbike', 'img/sprites/dark1', 'img/sprites/dark2'];
+                //             this.characters.push(new Characters.Jetbike({ 
+                //                 name: player.token.displayName, 
+                //                 team: i, 
+                //                 parent: player, 
+                //                 active: true, 
+                //                 cleanup: false, 
+                //                 spawnPos: new Utils.Vect3(i * 100 + 100, i * 100 + 100, 0), 
+                //                 gfx: images[i % images.length] 
+                //             }));
+                //         }
+                //     }
+                // }
 
                 for (const chara of this.characters) {
                     chara.step();

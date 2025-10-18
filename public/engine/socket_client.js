@@ -130,7 +130,8 @@ gameWSS.addEventListener('message', (event) => {
                                         // Same weapon, just update ammo and cooldown
                                         c.inventory[i].ammo = weaponAmmo;
                                         if (weaponNextCool !== undefined) {
-                                            c.inventory[i].nextCool = weaponNextCool;
+                                            // Convert relative cooldown time to absolute using client's tick counter
+                                            c.inventory[i].nextCool = game.match.time.ticks + weaponNextCool;
                                         }
                                         if (weaponReloading !== undefined) {
                                             c.inventory[i].reloading = weaponReloading;
@@ -156,7 +157,8 @@ gameWSS.addEventListener('message', (event) => {
                                         }
                                         weaponInstance.ammo = weaponAmmo;
                                         if (weaponNextCool !== undefined) {
-                                            weaponInstance.nextCool = weaponNextCool;
+                                            // Convert relative cooldown time to absolute using client's tick counter
+                                            weaponInstance.nextCool = game.match.time.ticks + weaponNextCool;
                                         }
                                         if (weaponReloading !== undefined) {
                                             weaponInstance.reloading = weaponReloading;
@@ -185,7 +187,8 @@ gameWSS.addEventListener('message', (event) => {
                                     }
                                     weaponInstance.ammo = weaponAmmo;
                                     if (weaponNextCool !== undefined) {
-                                        weaponInstance.nextCool = weaponNextCool;
+                                        // Convert relative cooldown time to absolute using client's tick counter
+                                        weaponInstance.nextCool = game.match.time.ticks + weaponNextCool;
                                     }
                                     if (weaponReloading !== undefined) {
                                         weaponInstance.reloading = weaponReloading;

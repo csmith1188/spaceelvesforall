@@ -120,6 +120,19 @@
                     }
                 ));
             }
+            else if (block.type == "lanceSlash") {
+                this.bullets.push(new Projectiles.LanceSlash(
+                    {
+                        spawnPos: block.spawnPos,
+                        radius: block.radius,
+                        height: block.height,
+                        user: character || block.user,
+                        speed: block.speed,
+                        serverPos: { pos: block.pos, time: block.time },
+                        id: block.id
+                    }
+                ));
+            }
             else if (block.type == "pickup") {
                 switch (block.subtype) {
                     case "health":

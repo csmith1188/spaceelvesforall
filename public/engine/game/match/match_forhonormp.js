@@ -51,8 +51,8 @@
                 this.characters[i].speed.y = 0;
                 this.characters[i].speed.z = 0;
                 this.characters[i].hp = this.characters[i].hp_max;
-                // this.characters[i].inventory = [new Items.Sword()];
-                this.characters[i].inventory = [new Items.Pistol()];
+                this.characters[i].inventory = [new Items.Sword()];
+                // this.characters[i].inventory = [new Items.Pistol()];
                 this.characters[i].item = 0;
                 this.characters[i].pp = this.characters[i].pp_max;
                 this.characters[i].ammo.ballistic = 1;
@@ -138,6 +138,7 @@
             this.map = new Maps.Map_Deathbox();
             this.name = "For Honor";
             this.description = "A duel to the death.";
+            this.playerLimit = { min: 2, max: 2 };
             // this.reset();
         }
 

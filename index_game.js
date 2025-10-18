@@ -14,6 +14,7 @@ const args = process.argv.slice(2);
 const api_router = require('./modules/game_api.js');
 
 var PORT = 10000;
+var DEBUG = false;
 
 // Example: Log each argument
 args.forEach((arg, index) => {
@@ -21,6 +22,10 @@ args.forEach((arg, index) => {
     if (arg.split(" ")[0] === '-p') {
         PORT = parseInt(arg.split(" ")[1]);
         console.info(`PORT: ${PORT}`);
+    }
+    if (arg.split(" ")[0] === '-dev') {
+        DEBUG = true;
+        console.info(`DEBUG: ${DEBUG}`);
     }
 });
 
@@ -62,6 +67,9 @@ const Games = require('./public/engine/game/game.js');
 const Sockets = require('./public/engine/socket_server.js');
 
 game = new Games.Game({wss: wss, broadcast: Sockets.broadcast});
+if (DEBUG) {
+    game.debug = true;
+}
 game.loadMatch('ForHonorMP');
 
 // Define a route handler for the default home page

@@ -140,18 +140,20 @@
                     ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
                     ctx.fillRect(10, 100, 180, 60);
                     // Draw the FPS graph line
-                    ctx.beginPath();
-                    for (let i = 0; i < game.frameList.length; i++) {
-                        const fpsValue = Math.min(game.frameList[i], 60); // Cap FPS to avoid spikes
-                        const x = 10 + (i / (game.frameList.length - 1)) * 180;
-                        const y = 100 + (fpsValue / 60) * 60; // Scale FPS to height
-                        if (i === 0) {
-                            ctx.moveTo(x, y);
-                        } else {
-                            ctx.lineTo(x, y);
+                    if (game.frameList && game.frameList.length > 0) {
+                        ctx.beginPath();
+                        for (let i = 0; i < game.frameList.length; i++) {
+                            const fpsValue = Math.min(game.frameList[i], 60); // Cap FPS to avoid spikes
+                            const x = 10 + (i / (game.frameList.length - 1)) * 180;
+                            const y = 100 + (fpsValue / 60) * 60; // Scale FPS to height
+                            if (i === 0) {
+                                ctx.moveTo(x, y);
+                            } else {
+                                ctx.lineTo(x, y);
+                            }
                         }
+                        ctx.stroke();
                     }
-                    ctx.stroke();
                     document.getElementById("debugger").style.display = "block";
                 } else {
                     document.getElementById("debugger").style.display = "none";

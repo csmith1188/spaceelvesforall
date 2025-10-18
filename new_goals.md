@@ -23,16 +23,22 @@
 - ~~reload page~~
 - ~~lance bullets~~
 - ~~flamer bullets~~
-- lance visible
+- ~~sword work?~~
+- ~~lance visible~~
 - lance raycast damage multiplier
 - sword slash
 - fix team selector rings, second player sees nuetral first player
 - last man standing in match reset all players
 - why does it redownload block textures every second?
 - redownload image on flip
+- handle death properly
+- Banner text
 - sound broadcast by server by distance
+- fix frameslist for debugging
+- fix networkStats
 - animations always play (bullets/debris)
 - clip through walls collision
+- server always one tick behind client
 
 
 - pass fullpack for powerups/weapons, including runFunc and drawFunc

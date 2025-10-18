@@ -457,98 +457,36 @@
                     //find the distance from player to mouse with pythagorean theorem
                     let distance = ((aimX ** 2) + (aimY ** 2)) ** 0.5;
                     //Normalize the dimension distance by the real distance (ratio)
-                    aimX = (aimX / distance) * this.boostSpeed;
-                    aimY = (aimY / distance) * this.boostSpeed;
-                    aimZ = (aimZ / distance) * this.boostSpeed;
+                    let normalizedAimX = aimX / distance;
+                    let normalizedAimY = aimY / distance;
+                    let normalizedAimZ = aimZ / distance;
+                    
+                    let boostX = normalizedAimX * this.boostSpeed;
+                    let boostY = normalizedAimY * this.boostSpeed;
+                    let boostZ = normalizedAimZ * this.boostSpeed;
 
-                    aimZ += this.hopSpeed;
+                    boostZ += this.hopSpeed;
 
                     // add aim to user speed
-                    user.speed.x += aimX;
-                    user.speed.y += aimY;
-                    user.speed.z += aimZ;
+                    user.speed.x += boostX;
+                    user.speed.y += boostY;
+                    user.speed.z += boostZ;
 
-                    // Add a new missile at this user's position
+                    // Add a new lance slash at this user's position (raycast like sword)
                     if (typeof window === 'undefined')
                         game.match.map.bullets.push(
-                            new Projectiles.LanceBullet(
+                            new Projectiles.LanceSlash(
                                 {
                                     spawnPos: new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z),
                                     radius: 4,
                                     height: 4,
-                                    user: user, // Position and size
-                                    speed: new Utils.Vect3(aimX, aimY, 0),
+                                    user: user,
+                                    speed: new Utils.Vect3(normalizedAimX * 30, normalizedAimY * 30, 0),
                                     parent: user,
-                                    color: user.color,
-                                    damage: 10,
-                                    livetime: 30,
-                                    touchSFX: Utils.isClient() ? Sounds.hit_lance : null,
-                                    opacity: 0,
-                                    shadowDraw: false,
-                                    force: 1
+                                    color: user.color
                                 }
                             )
                         );
-                    // // Run this function every frame the bullet is alive
-                    // game.match.map.bullets[game.match.map.bullets.length - 1].runFunc.push(
-                    //     function () {
-                    //         // Match the user's position
-                    //         this.HB.pos.x = this.parent.HB.pos.x;
-                    //         this.HB.pos.y = this.parent.HB.pos.y;
-                    //         this.HB.pos.z = this.parent.HB.pos.z;
-                    //         // this damage is equal to the true speed of the player
-                    //         this.damage = Math.sqrt(Math.abs(this.parent.speed.x) ** 2 + Math.abs(this.parent.speed.y) ** 2 + Math.abs(this.parent.speed.z) ** 2);
-                    //         // multiply damage
-                    //         this.damage *= 2;
-                    //         // add a debris block to the map at the player's position with a random speed
-                    //         let tempx = ((Math.random() * 1) - 0.5) * 10;
-                    //         let tempy = ((Math.random() * 1) - 0.5) * 10;
-                    //         let tempz = ((Math.random() * 1) - 0.5) * 10;
-                    //         let tempC1 = Math.ceil(Math.random() * 255);
-                    //         let tempC2 = Math.ceil(Math.random() * 255);
-                    //         // add a debris block to the map at the player's position with a random speed
-                    //         game.match.map.debris.push(
-                    //             new Block(
-                    //                 new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
-                    //                 new Utils.Vect3(1, 1, 1),
-                    //                 {
-                    //                     speed: new Utils.Vect3(tempx, tempy, tempz),
-                    //                     HB: new Cube(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Utils.Vect3(4, 4, 4)),
-                    //                     z: this.HB.pos.z,
-                    //                     color: [tempC1, 0, tempC2],
-                    //                     colorSide: [tempC2, 0, tempC1],
-                    //                     livetime: 15,
-                    //                     dying: true,
-                    //                     shadowDraw: false,
-                    //                     solid: false,
-                    //                 }));
-
-                    //     }.bind(game.match.map.bullets[game.match.map.bullets.length - 1])
-                    // )
-                    // //Change hitSpash
-                    // game.match.map.bullets[game.match.map.bullets.length - 1].hitSplash = function () {
-                    //     for (let parts = 0; parts < 20; parts++) {
-                    //         let tempx = (Math.random() * 4) - 2;
-                    //         let tempy = (Math.random() * 4) - 2;
-                    //         let tempz = (Math.random() * 4) - 2;
-                    //         let tempC = Math.ceil(Math.random() * 255);
-                    //         game.match.map.debris.push(
-                    //             new Block(
-                    //                 new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
-                    //                 new Utils.Vect3(1, 1, 1),
-                    //                 {
-                    //                     speed: new Utils.Vect3(tempx + (this.speed.x * 0.25), tempy + (this.speed.y * 0.25), tempz + (this.speed.z * 0.25)),
-                    //                     HB: new Cube(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Utils.Vect3(6, 3, 1)),
-                    //                     z: this.HB.pos.z,
-                    //                     color: [255, tempC, 0],
-                    //                     livetime: 20,
-                    //                     dying: true,
-                    //                     shadowDraw: false,
-                    //                     solid: false
-                    //                 }));
-                    //     }
-                    // }.bind(game.match.map.bullets[game.match.map.bullets.length - 1])
-                    // game.match.map.bullets[game.match.map.bullets.length - 1].HB.radius = user.HB.radius + 10;
 
                     // If the user has a gamepad, rumble
                     if (user.parent.controller.type == 'gamepad') user.parent.controller.rumble(100, 1.0, 0);

@@ -11,5 +11,11 @@
     "nodemailer": "^6.9.16",
     "sqlite3": "^5.1.7",
     "ws": "^8.18.0"
+  },
+  "scripts": {
+    "master": "node index_master.js",
+    "game": "node index_game.js",
+    "master-dev": "nodemon index_master.js -dev",
+    "game-dev": "nodemon index_game.js -dev"
   }
 }

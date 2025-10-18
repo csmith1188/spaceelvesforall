@@ -1135,7 +1135,7 @@
                 inv: this.inventory.map(weapon => ({ 
                     w: weapon.weapon || weapon.type, // weapon type
                     a: weapon.ammo, // weapon ammo
-                    nc: weapon.nextCool, // next cooldown tick
+                    nc: Math.max(weapon.nextCool - game.match.time.ticks, 0), // remaining cooldown ticks (relative)
                     r: weapon.reloading // is reloading
                 })), // inventory
                 inp: inputState // input state (compressed)

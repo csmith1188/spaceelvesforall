@@ -385,39 +385,65 @@
     }
 
     /*
-     :::            :::     ::::    :::  ::::::::  ::::::::::
-    :+:          :+: :+:   :+:+:   :+: :+:    :+: :+:
-   +:+         +:+   +:+  :+:+:+  +:+ +:+        +:+
-  +#+        +#++:++#++: +#+ +:+ +#+ +#+        +#++:++#
- +#+        +#+     +#+ +#+  +#+#+# +#+        +#+
-#+#        #+#     #+# #+#   #+#+# #+#    #+# #+#
-########## ###     ### ###    ####  ########  ##########
+          :::            :::     ::::    :::  ::::::::  ::::::::::
+         :+:          :+: :+:   :+:+:   :+: :+:    :+: :+:
+        +:+         +:+   +:+  :+:+:+  +:+ +:+        +:+
+       +#+        +#++:++#++: +#+ +:+ +#+ +#+        +#++:++#
+      +#+        +#+     +#+ +#+  +#+#+# +#+        +#+
+     #+#        #+#     #+# #+#   #+#+# #+#    #+# #+#
+    ########## ###     ### ###    ####  ########  ##########
+       ::::::::  :::            :::      ::::::::  :::    :::
+      :+:    :+: :+:          :+: :+:   :+:    :+: :+:    :+:
+     +:+        +:+         +:+   +:+  +:+        +:+    +:+
+    +#++:++#++ +#+        +#++:++#++: +#++:++#++ +#++:++#++
+          +#+ +#+        +#+     +#+        +#+ +#+    +#+
+   #+#    #+# #+#        #+#     #+# #+#    #+# #+#    #+#
+    ########  ########## ###     ###  ########  ###    ###
     */
-    class LanceBullet extends Bullet {
+    class LanceSlash extends Bullet {
         constructor(options) {
             super(options);
-            this.bulletType = 'lance';
-            this.visible = false;
+            this.type = 'lanceSlash';
+            this.baseDamage = 10; // Base damage
+            this.damage = this.baseDamage;
+            this.livetime = 30;
+            this.touchSFX = typeof window !== 'undefined' ? Sounds.hit_lance : null;
+            this.opacity = 1; // Make bullet visible
+            this.shadowDraw = true; // Enable shadow
+            this.force = 1.0;
+            // Keep default bullet colors (orange/red)
+            this.color = [255, 100, 0];
+            this.colorSide = [255, 50, 0];
             
-            // Make the lance wider (larger hitbox)
-            if (this.user && this.user.HB) {
-                this.HB.radius = this.user.HB.radius + 10;
+            if (typeof options === 'object')
+                for (var key of Object.keys(options)) {
+                    if (key == 'runFunc') {
+                    }
+                    else if (key == 'drawFunc') {
+                    } else {
+                        this[key] = options[key];
+                    }
+                }
+            
+            // Set defaults if not provided (for client-side spawning from server data)
+            if (!this.speed) {
+                this.speed = new Utils.Vect3(0, 0, 0);
+            }
+            if (this.user && this.user.color) {
+                this.color = this.user.color;
             }
             
-            // Lance follows the player and damage is based on speed
+            // Set radius and height BEFORE generating HB (make it much larger than user's for easier off-angle hits)
+            if (this.user && this.user.HB && this.user.HB.radius) {
+                this.radius = this.user.HB.radius + 25;
+            } else {
+                this.radius = 35; // Default radius
+            }
+            this.height = 10; // Set height for cylinder drawing
+            this.HB = Utils.generateHB(this);
+
+            // Add debris generation to runFunc (like original LanceBullet)
             this.runFunc.push(function () {
-                const owner = this.parent || this.user;
-                if (owner && owner.HB && owner.speed) {
-                    // Match the user's position
-                    this.HB.pos.x = owner.HB.pos.x;
-                    this.HB.pos.y = owner.HB.pos.y;
-                    this.HB.pos.z = owner.HB.pos.z;
-                    // Damage is equal to the true speed of the player
-                    this.damage = Math.sqrt(Math.abs(owner.speed.x) ** 2 + Math.abs(owner.speed.y) ** 2 + Math.abs(owner.speed.z) ** 2);
-                    // Multiply damage
-                    this.damage *= 2;
-                }
-                
                 // Add trail debris (client-side only)
                 if (typeof window !== 'undefined') {
                     // Create purple/pink trail debris
@@ -440,31 +466,232 @@
                         }));
                 }
             }.bind(this));
-            
-            // Custom hit splash (client-side only)
-            if (typeof window !== 'undefined') {
-                this.hitSplash = function () {
-                    for (let parts = 0; parts < 20; parts++) {
-                        let tempx = (Math.random() * 4) - 2;
-                        let tempy = (Math.random() * 4) - 2;
-                        let tempz = (Math.random() * 4) - 2;
-                        let tempC = Math.ceil(Math.random() * 255);
-                        game.match.map.debris.push(
-                            new Blocks.Block({
-                                spawnPos: new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
-                                spawnVol: new Utils.Vect3(6, 3, 1),
-                                speed: new Utils.Vect3(tempx + (this.speed.x * 0.25), tempy + (this.speed.y * 0.25), tempz + (this.speed.z * 0.25)),
-                                color: [255, tempC, 0],
-                                livetime: 20,
-                                dying: true,
-                                shadowDraw: false,
-                                solid: false
-                            }));
+
+            // Add purple/pink lance line to draw functions (in addition to default bullet rendering)
+            this.drawFunc.push(() => {
+                // Safety check: ensure user and required properties exist
+                if (!this.user || !this.user.HB || !this.user.HB.pos) {
+                    return;
+                }
+                
+                // Draw a line from the user extending forward in the lance's fixed direction
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(255, 0, 255, 0.8)'; // Purple/magenta lance
+                ctx.lineWidth = 6;
+                
+                // Find where the user is on the camera
+                let compareX = game.player.camera.x - this.user.HB.pos.x;
+                let compareY = game.player.camera.y - this.user.HB.pos.y;
+                
+                // Start point at user's position
+                ctx.moveTo(
+                    game.window.w / 2 - compareX,
+                    game.window.h / 2 - compareY - this.user.HB.pos.z - this.user.HB.height / 2
+                );
+                
+                // Use the fixed lance direction (from this.speed) to calculate end point
+                // Normalize the speed vector to get direction
+                let lanceDistance = Math.sqrt(this.speed.x ** 2 + this.speed.y ** 2);
+                let lanceLength = 80; // Lance visual length
+                
+                if (lanceDistance > 0) {
+                    let dirX = (this.speed.x / lanceDistance) * lanceLength;
+                    let dirY = (this.speed.y / lanceDistance) * lanceLength;
+                    
+                    // Draw line extending in the lance's fixed direction
+                    ctx.lineTo(
+                        game.window.w / 2 - compareX + dirX,
+                        game.window.h / 2 - compareY + dirY - this.user.HB.pos.z - this.user.HB.height / 2
+                    );
+                }
+                
+                ctx.stroke();
+                
+                // Debug: Draw hitbox cylinder
+                if (game.debug) {
+                    // Find where the hitbox center is on the camera
+                    let hbCompareX = game.player.camera.x - this.HB.pos.x;
+                    let hbCompareY = game.player.camera.y - this.HB.pos.y;
+                    
+                    // Draw hitbox circle
+                    ctx.beginPath();
+                    ctx.strokeStyle = 'rgba(255, 255, 0, 0.7)'; // Yellow
+                    ctx.fillStyle = 'rgba(255, 255, 0, 0.1)'; // Semi-transparent yellow fill
+                    ctx.lineWidth = 2;
+                    ctx.arc(
+                        game.window.w / 2 - hbCompareX,
+                        game.window.h / 2 - hbCompareY - this.HB.pos.z,
+                        this.HB.radius,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // Draw center point
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.8)'; // Red center dot
+                    ctx.beginPath();
+                    ctx.arc(
+                        game.window.w / 2 - hbCompareX,
+                        game.window.h / 2 - hbCompareY - this.HB.pos.z,
+                        3,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.fill();
+                }
+            });
+
+            // Hit splash - purple/pink debris
+            this.hitSplash = () => {
+                for (let parts = 0; parts < 20; parts++) {
+                    let tempx = (Math.random() * 4) - 2;
+                    let tempy = (Math.random() * 4) - 2;
+                    let tempz = (Math.random() * 4) - 2;
+                    let tempC = Math.ceil(Math.random() * 255);
+                    game.match.map.debris.push(
+                        new Blocks.Block({
+                            spawnPos: new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
+                            spawnVol: new Utils.Vect3(6, 3, 1),
+                            speed: new Utils.Vect3(tempx + (this.speed.x * 0.25), tempy + (this.speed.y * 0.25), tempz + (this.speed.z * 0.25)),
+                            color: [255, tempC, 0], // Orange/yellow hit
+                            livetime: 20,
+                            dying: true,
+                            shadowDraw: false,
+                            solid: false
+                        }));
+                }
+            }
+        }
+
+        step() {
+            // Don't call super.step() - we need custom collision handling
+            if (this.active && this.livetime != 0) {
+                const owner = this.parent || this.user;
+                
+                // Position stays relative to user
+                if (owner && owner.HB) {
+                    this.HB.pos.x = owner.HB.pos.x + this.speed.x;
+                    this.HB.pos.y = owner.HB.pos.y + this.speed.y;
+                    this.HB.pos.z = owner.HB.pos.z + this.speed.z;
+                }
+                
+                // Get normalized lance direction for damage calculations
+                let lanceDistance = Math.sqrt(this.speed.x ** 2 + this.speed.y ** 2);
+                let lanceNormX = lanceDistance > 0 ? this.speed.x / lanceDistance : 0;
+                let lanceNormY = lanceDistance > 0 ? this.speed.y / lanceDistance : 0;
+                
+                /*
+                ___     _ _         _
+                / __|  _| (_)_ _  __| |___ _ _
+                | (_| || | | | ' \/ _` / -_) '_|
+                \___\_, |_|_|_||_\__,_\___|_|
+                |__/
+                */
+                for (let c of game.match.characters) {
+                    if (c === this.user) //Don't collide with yourself
+                        continue;
+                    let side = this.HB.collide(c.HB); //Check for collision
+                    if (side && c.solid && c.team !== this.user.team) {
+                        // Calculate speed damage at time of collision
+                        let speedMagnitude = owner && owner.speed ? 
+                            Math.sqrt(owner.speed.x ** 2 + owner.speed.y ** 2) : 0;
+                        let speedDamage = speedMagnitude * 1;
+                        
+                        // Calculate angle between lance direction and user-to-target direction
+                        let targetDirX = c.HB.pos.x - (owner ? owner.HB.pos.x : this.user.HB.pos.x);
+                        let targetDirY = c.HB.pos.y - (owner ? owner.HB.pos.y : this.user.HB.pos.y);
+                        let targetDistance = Math.sqrt(targetDirX ** 2 + targetDirY ** 2);
+                        
+                        if (targetDistance > 0) {
+                            // Normalize target direction
+                            let targetNormX = targetDirX / targetDistance;
+                            let targetNormY = targetDirY / targetDistance;
+                            
+                            // Calculate dot product (cosine of angle)
+                            let dotProduct = (lanceNormX * targetNormX) + (lanceNormY * targetNormY);
+                            
+                            // Clamp to [-1, 1] range
+                            dotProduct = Math.max(-1, Math.min(1, dotProduct));
+                            
+                            // Convert to angle in radians, then degrees
+                            let angleRadians = Math.acos(dotProduct);
+                            let angleDegrees = angleRadians * (180 / Math.PI);
+                            
+                            // Linear damage reduction: 0° = 100%, 90° = 0%
+                            // Formula: 1 - (angle / 90)
+                            let angleMultiplier = Math.max(0, 1 - (angleDegrees / 90));
+                            
+                            // Final damage = base + (speed * angle alignment)
+                            this.damage = this.baseDamage + (speedDamage * angleMultiplier);
+                            
+                            // Server-side logging
+                            if (typeof window === 'undefined') {
+                                console.log(`[Lance Hit] Target: ${c.id.substring(0, 4)} | Angle: ${angleDegrees.toFixed(1)}° | Multiplier: ${(angleMultiplier * 100).toFixed(1)}% | Speed: ${speedMagnitude.toFixed(1)} | Damage: ${this.damage.toFixed(1)}`);
+                            }
+                        } else {
+                            // Target is at same position, full damage
+                            this.damage = this.baseDamage + speedDamage;
+                            
+                            // Server-side logging
+                            if (typeof window === 'undefined') {
+                                console.log(`[Lance Hit] Target: ${c.id.substring(0, 4)} | Angle: 0.0° (center) | Multiplier: 100.0% | Speed: ${speedMagnitude.toFixed(1)} | Damage: ${this.damage.toFixed(1)}`);
+                            }
+                        }
+                        
+                        //play hit sound
+                        if (typeof window !== 'undefined') {
+                            this.touchSFX.currentTime = 0;
+                            if (!this.user.muted)
+                                this.touchSFX.play().catch(err => {});
+                        }
+                        if (!c.invulnerable)
+                            c.hp -= this.damage;
+                        c.speed.x += this.speed.x * this.force;
+                        c.speed.y += this.speed.y * this.force;
+                        c.speed.z += this.speed.z * this.force;
+                        c.trigger(this, side);
+                        this.active = false;
+                        this.hitSplash();
+                        if (c === game.match.player) {
+                            // if the c's parent has a camera, shake it
+                            if (c.parent.camera) c.parent.camera.shakeTime = 10;
+                            // if the c's controller has a rumble, rumble it
+                            if (c.parent.controller.type == 'gamepad') c.parent.controller.rumble(100, 1.0, 1.0);
+                            // if the c's controller is a touch controller, rumble it
+                            if (c.parent.controller.type == 'touch' && c.parent.controller.canVibrate) navigator.vibrate(100);
+                        }
                     }
-                }.bind(this);
+                }
+
+                /*
+                ___ _         _
+                | _ ) |___  __| |__ ___
+                | _ \ / _ \/ _| / /(_-<
+                |___/_\___/\__|_\_\/__/
+                
+                */
+                for (const c of game.match.map.blocks) { //For each block
+                    let side = this.HB.collide(c.HB); //Check for collision
+                    if (c.solid && side) { //If the block is solid and you collided
+                        this.active = false;
+                        this.hitSplash();
+                    }
+                }
+
+                // Run custom functions
+                for (let i = 0; i < this.runFunc.length; i++) {
+                    this.runFunc[i]();
+                }
+
+                // Countdown livetime
+                this.livetime--;
+                if (this.livetime <= 0) {
+                    this.active = false;
+                }
             }
         }
     }
 
-    return { Bullet, Slash, RifleBullet, LanceBullet };
+    return { Bullet, Slash, RifleBullet, LanceSlash };
 }));
