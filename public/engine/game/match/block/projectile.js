@@ -408,8 +408,8 @@
             this.damage = this.baseDamage;
             this.livetime = 30;
             this.touchSFX = typeof window !== 'undefined' ? Sounds.hit_lance : null;
-            this.opacity = 1; // Make bullet visible
-            this.shadowDraw = true; // Enable shadow
+            this.opacity = 0; // Make bullet invisible (hitbox only visible in debug mode)
+            this.shadowDraw = false; // Disable shadow
             this.force = 1.0;
             // Keep default bullet colors (orange/red)
             this.color = [255, 100, 0];
@@ -433,13 +433,19 @@
                 this.color = this.user.color;
             }
             
-            // Set radius and height BEFORE generating HB (make it much larger than user's for easier off-angle hits)
-            if (this.user && this.user.HB && this.user.HB.radius) {
-                this.radius = this.user.HB.radius + 25;
-            } else {
-                this.radius = 35; // Default radius
+            // Set radius and height BEFORE generating HB
+            // Use the radius from options if provided (server spawning sets it to 40 for lance length)
+            // Otherwise use default for client-side spawning from server data
+            if (!this.radius) {
+                if (this.user && this.user.HB && this.user.HB.radius) {
+                    this.radius = this.user.HB.radius + 25;
+                } else {
+                    this.radius = 35; // Default radius
+                }
             }
-            this.height = 10; // Set height for cylinder drawing
+            if (!this.height) {
+                this.height = 10; // Set height for cylinder drawing
+            }
             this.HB = Utils.generateHB(this);
 
             // Add debris generation to runFunc (like original LanceBullet)
@@ -513,14 +519,14 @@
                     let hbCompareX = game.player.camera.x - this.HB.pos.x;
                     let hbCompareY = game.player.camera.y - this.HB.pos.y;
                     
-                    // Draw hitbox circle
+                    // Draw hitbox circle at midpoint of z height
                     ctx.beginPath();
                     ctx.strokeStyle = 'rgba(255, 255, 0, 0.7)'; // Yellow
                     ctx.fillStyle = 'rgba(255, 255, 0, 0.1)'; // Semi-transparent yellow fill
                     ctx.lineWidth = 2;
                     ctx.arc(
                         game.window.w / 2 - hbCompareX,
-                        game.window.h / 2 - hbCompareY - this.HB.pos.z,
+                        game.window.h / 2 - hbCompareY - this.HB.pos.z - this.HB.height / 2,
                         this.HB.radius,
                         0,
                         Math.PI * 2
@@ -528,12 +534,12 @@
                     ctx.fill();
                     ctx.stroke();
                     
-                    // Draw center point
+                    // Draw center point at midpoint of z height
                     ctx.fillStyle = 'rgba(255, 0, 0, 0.8)'; // Red center dot
                     ctx.beginPath();
                     ctx.arc(
                         game.window.w / 2 - hbCompareX,
-                        game.window.h / 2 - hbCompareY - this.HB.pos.z,
+                        game.window.h / 2 - hbCompareY - this.HB.pos.z - this.HB.height / 2,
                         3,
                         0,
                         Math.PI * 2

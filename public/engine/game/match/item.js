@@ -473,15 +473,26 @@
                     user.speed.z += boostZ;
 
                     // Add a new lance slash at this user's position (raycast like sword)
+                    // Position the bullet so one edge touches user center and opposite edge is at lance tip
+                    let lanceLength = 80; // Lance visual length
+                    let bulletRadius = lanceLength / 2; // Diameter equals lance length
+                    // Offset bullet position forward by its radius in the aim direction
+                    let bulletOffsetX = normalizedAimX * bulletRadius;
+                    let bulletOffsetY = normalizedAimY * bulletRadius;
+                    
                     if (typeof window === 'undefined')
                         game.match.map.bullets.push(
                             new Projectiles.LanceSlash(
                                 {
-                                    spawnPos: new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z),
-                                    radius: 4,
-                                    height: 4,
+                                    spawnPos: new Utils.Vect3(
+                                        user.HB.pos.x + bulletOffsetX,
+                                        user.HB.pos.y + bulletOffsetY,
+                                        user.HB.pos.z + user.HB.height/2 - 6
+                                    ),
+                                    radius: bulletRadius,
+                                    height: 12,
                                     user: user,
-                                    speed: new Utils.Vect3(normalizedAimX * 30, normalizedAimY * 30, 0),
+                                    speed: new Utils.Vect3(bulletOffsetX, bulletOffsetY, 0),
                                     parent: user,
                                     color: user.color
                                 }
