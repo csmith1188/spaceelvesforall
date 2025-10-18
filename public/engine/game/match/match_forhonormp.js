@@ -44,6 +44,7 @@
             for (let i in this.characters) {
                 this.characters[i].active = true;
                 this.characters[i].visible = true;
+                this.characters[i].solid = true; // Reset collision
                 this.characters[i].HB.pos.x = (this.map.w / 2) + (i % 2 ? 800 : -800);
                 this.characters[i].HB.pos.y = (this.map.h / 2);
                 this.characters[i].HB.pos.z = 0;
@@ -160,8 +161,11 @@
             // Only allow reset if there are multiple players and only one is still active (winner)
             if (activeCharacters.length == 1 && this.characters.length > 1) {
                 this.lastWinner = activeCharacters[0].name;
-                if (activeCharacters[0].parent.controller.buttons.inventory1.current) {
-                    this.reset();
+                // Only the server should handle the reset to keep all players synchronized
+                if (typeof window === 'undefined') {
+                    if (activeCharacters[0].parent.controller.buttons.inventory1.current) {
+                        this.reset();
+                    }
                 }
             }
 

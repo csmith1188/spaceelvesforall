@@ -700,13 +700,21 @@
                 if (this.hp <= 0) {
                     this.active = false;
                     this.visible = false;
+                    this.solid = false; // Dead players should not collide with anything
                     if (!this.muted && typeof window !== 'undefined')
                         this.deathSFX.play().catch(err => {});
-                    if (this.inventory[this.item])
-                        game.match.map.blocks.push(new Powerups.WeaponPickup(
-                            new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z + this.HB.height / 2),
-                            new Utils.Vect3(this.speed.x, this.speed.y, this.speed.z + 20),
-                            { weapon: this.inventory[this.item].weapon, ammo: this.inventory[this.item].ammo, livetime: game.match.despawnTimer, dying: true }))
+                    // Only drop weapon on server to avoid duplication and position issues
+                    if (typeof window === 'undefined') {
+                        if (this.inventory[this.item])
+                            game.match.map.blocks.push(new Powerups.WeaponPickup({
+                                spawnPos: new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z + this.HB.height / 2),
+                                speed: new Utils.Vect3(this.speed.x, this.speed.y, this.speed.z + 20),
+                                weapon: this.inventory[this.item].weapon,
+                                ammo: this.inventory[this.item].ammo,
+                                livetime: game.match.despawnTimer,
+                                dying: true
+                            }))
+                    }
                 }
             }
         }
@@ -1131,6 +1139,9 @@
                 h: this.hp, // hp
                 pp: this.pp, // pp
                 a: this.ammo, // ammo
+                ac: this.active, // active state
+                vis: this.visible, // visible state
+                sol: this.solid, // solid state (collision)
                 item: this.item, // current weapon index
                 inv: this.inventory.map(weapon => ({ 
                     w: weapon.weapon || weapon.type, // weapon type

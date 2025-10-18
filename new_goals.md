@@ -28,7 +28,7 @@
 - ~~lance raycast damage multiplier~~
 - sword slash
 - ~~fix team selector rings, second player sees nuetral first player~~
-- last man standing in match reset all players
+- ~~last man standing in match reset all players~~
 - why does it redownload block textures every second?
 - redownload image on flip
 - handle death properly

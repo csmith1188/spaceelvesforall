@@ -110,6 +110,17 @@ gameWSS.addEventListener('message', (event) => {
                         c.pp = character.pp;
                         c.ammo = character.a;
                         
+                        // Sync active, visible, and solid states (important for match resets and death)
+                        if (character.ac !== undefined) {
+                            c.active = character.ac;
+                        }
+                        if (character.vis !== undefined) {
+                            c.visible = character.vis;
+                        }
+                        if (character.sol !== undefined) {
+                            c.solid = character.sol;
+                        }
+                        
                         // Sync inventory and current weapon
                         if (character.item !== undefined) {
                             c.item = character.item;

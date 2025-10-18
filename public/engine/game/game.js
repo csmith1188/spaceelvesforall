@@ -274,10 +274,13 @@
         getChangedCharacters() {
             const changed = [];
             for (const character of this.match.characters) {
-                if (!character.active) continue;
-                
                 const currentState = character.pack();
                 const lastState = this.networkConfig.lastSentState.get(character.id);
+                
+                // Skip inactive characters UNLESS they just became inactive (death state needs to be broadcast)
+                if (!character.active && lastState && !lastState.ac) {
+                    continue;
+                }
                 
                 // Check if character has changed significantly
                 if (!lastState || this.hasEntityChanged(lastState, currentState)) {
@@ -368,6 +371,9 @@
             // Check if other important properties have changed
             if (lastState.h !== currentState.h) return true; // hp
             if (lastState.pp !== currentState.pp) return true; // pp
+            if (lastState.ac !== currentState.ac) return true; // active state
+            if (lastState.vis !== currentState.vis) return true; // visible state
+            if (lastState.sol !== currentState.sol) return true; // solid state
             
             // Check speed (which is an object)
             if (lastState.s && currentState.s) {
