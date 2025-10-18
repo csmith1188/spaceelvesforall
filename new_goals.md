@@ -20,16 +20,25 @@
 - ~~Create HB generator util~~
 - ~~client side hud~~
 - ~~pickup weapons~~
-- reload page
-- lance and flamer bullets
-- do new bullets delete current bullets?
-- create bullet classes
+- ~~reload page~~
+- ~~lance bullets~~
+- ~~flamer bullets~~
+- lance visible
+- lance raycast damage multiplier
+- sword slash
+- fix team selector rings, second player sees nuetral first player
+- last man standing in match reset all players
+- why does it redownload block textures every second?
+- redownload image on flip
+- sound broadcast by server by distance
+- animations always play (bullets/debris)
+- clip through walls collision
+
+
+- pass fullpack for powerups/weapons, including runFunc and drawFunc
 - clientside and spawner for bullet classes
 - create debris and emitters
 - Add all spawns from the server to an update list
-- fix team selector rings, second player sees nuetral first player
-- why does it redownload block textures every second?
-- pass fullpack for powerups/weapons, including runFunc and drawFunc
 
 - client side menus
 - move fire function to items (hold to fire flamer)
@@ -42,7 +51,7 @@
 - restore full camera functionality
 - offline mode (consider running server in electron app)
 
-- deathmatch mode
+- deathmatch mode (bounty mode, like suck)
 - soccer mode
 
 - in-game server browser

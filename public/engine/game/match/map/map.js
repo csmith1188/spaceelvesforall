@@ -91,6 +91,8 @@
                 let BulletClass = Projectiles.Bullet; // default
                 if (block.bulletType === 'rifle') {
                     BulletClass = Projectiles.RifleBullet;
+                } else if (block.bulletType === 'lance') {
+                    BulletClass = Projectiles.LanceBullet;
                 }
                 
                 this.bullets.push(new BulletClass(

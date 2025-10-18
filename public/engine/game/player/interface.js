@@ -201,12 +201,12 @@
                         ammoBox.x + 20, // left of bar
                         ammoBox.y + 100 // bottom of bar
                         - (Math.min( // the smaller value of
-                            Math.max(item.nextCool - game.match.ticks, 0) / maxTime, // 0 to 1 of cooldown
+                            Math.max(item.nextCool - game.match.time.ticks, 0) / maxTime, // 0 to 1 of cooldown
                             1) // or 1 (if cooldown is greater than 1)
                             * 100), // times the size of the full bar
                         10, // width of bar
                         (Math.min(  // bar is the same height as the distance from top, conviently
-                            Math.max(item.nextCool - game.match.ticks, 0) / maxTime,
+                            Math.max(item.nextCool - game.match.time.ticks, 0) / maxTime,
                             1)
                             * 100) // times the size of the full bar
                     );
@@ -264,7 +264,9 @@
 
                     // Draw the image as a trapezoid
                     ctx.setTransform(1, 0, -0.2, 1, (game.gameView.w / 2) - 150, game.gameView.h - 64);
-                    ctx.drawImage(character.inventory[0].icon, 0, 0, 64, 64);
+                    if (character.inventory[0] && character.inventory[0].icon && character.inventory[0].icon.complete) {
+                        ctx.drawImage(character.inventory[0].icon, 0, 0, 64, 64);
+                    }
 
                     // Restore the context to the original state
                     ctx.restore();
@@ -275,21 +277,29 @@
                         case 0:
                             ctx.save();
                             ctx.setTransform(1, 0, -0.2, 1, (game.gameView.w / 2) - 150, game.gameView.h - 64);
-                            ctx.drawImage(character.inventory[0].icon, 0, 0, 64, 64);
+                            if (character.inventory[0] && character.inventory[0].icon && character.inventory[0].icon.complete) {
+                                ctx.drawImage(character.inventory[0].icon, 0, 0, 64, 64);
+                            }
                             ctx.restore();
                             ctx.save();
                             ctx.setTransform(1, 0, 0.2, 1, (game.gameView.w / 2) + 88, game.gameView.h - 64);
-                            ctx.drawImage(character.inventory[1].iconInactive, 0, 0, 64, 64);
+                            if (character.inventory[1] && character.inventory[1].iconInactive && character.inventory[1].iconInactive.complete) {
+                                ctx.drawImage(character.inventory[1].iconInactive, 0, 0, 64, 64);
+                            }
                             ctx.restore();
                             break;
                         case 1:
                             ctx.save();
                             ctx.setTransform(1, 0, -0.2, 1, (game.gameView.w / 2) - 150, game.gameView.h - 64);
-                            ctx.drawImage(character.inventory[0].iconInactive, 0, 0, 64, 64);
+                            if (character.inventory[0] && character.inventory[0].iconInactive && character.inventory[0].iconInactive.complete) {
+                                ctx.drawImage(character.inventory[0].iconInactive, 0, 0, 64, 64);
+                            }
                             ctx.restore();
                             ctx.save();
                             ctx.setTransform(1, 0, 0.2, 1, (game.gameView.w / 2) + 88, game.gameView.h - 64);
-                            ctx.drawImage(character.inventory[1].icon, 0, 0, 64, 64);
+                            if (character.inventory[1] && character.inventory[1].icon && character.inventory[1].icon.complete) {
+                                ctx.drawImage(character.inventory[1].icon, 0, 0, 64, 64);
+                            }
                             ctx.restore();
                             break;
                     }
@@ -631,12 +641,12 @@
                     hudBox.x + 20, // left of bar
                     hudBox.y + 80 // bottom of bar
                     - (Math.min( // the smaller value of
-                        Math.max(item.nextCool - game.match.ticks, 0) / maxTime, // 0 to 1 of cooldown
+                        Math.max(item.nextCool - game.match.time.ticks, 0) / maxTime, // 0 to 1 of cooldown
                         1) // or 1 (if cooldown is greater than 1)
                         * 60), // times the size of the full bar
                     10, // width of bar
                     (Math.min(  // bar is the same height as the distance from top, conviently
-                        Math.max(item.nextCool - game.match.ticks, 0) / maxTime,
+                        Math.max(item.nextCool - game.match.time.ticks, 0) / maxTime,
                         1)
                         * 60) // times the size of the full bar
                 );
@@ -690,17 +700,29 @@
 
 
             //if one item, it is active
-            if (character.inventory.length == 1) ctx.drawImage(character.inventory[0].icon, hudBox.x + 160, hudBox.y + 20, 48, 48);
+            if (character.inventory.length == 1) {
+                if (character.inventory[0] && character.inventory[0].icon && character.inventory[0].icon.complete) {
+                    ctx.drawImage(character.inventory[0].icon, hudBox.x + 160, hudBox.y + 20, 48, 48);
+                }
+            }
             else if (character.inventory.length == 2) {
                 // if you have two, draw both
                 switch (character.item) {
                     case 0:
-                        ctx.drawImage(character.inventory[1].iconInactive, hudBox.x + 176, hudBox.y + 36, 48, 48);
-                        ctx.drawImage(character.inventory[0].icon, hudBox.x + 160, hudBox.y + 20, 48, 48);
+                        if (character.inventory[1] && character.inventory[1].iconInactive && character.inventory[1].iconInactive.complete) {
+                            ctx.drawImage(character.inventory[1].iconInactive, hudBox.x + 176, hudBox.y + 36, 48, 48);
+                        }
+                        if (character.inventory[0] && character.inventory[0].icon && character.inventory[0].icon.complete) {
+                            ctx.drawImage(character.inventory[0].icon, hudBox.x + 160, hudBox.y + 20, 48, 48);
+                        }
                         break;
                     case 1:
-                        ctx.drawImage(character.inventory[0].iconInactive, hudBox.x + 160, hudBox.y + 20, 48, 48)
-                        ctx.drawImage(character.inventory[1].icon, hudBox.x + 176, hudBox.y + 36, 48, 48);
+                        if (character.inventory[0] && character.inventory[0].iconInactive && character.inventory[0].iconInactive.complete) {
+                            ctx.drawImage(character.inventory[0].iconInactive, hudBox.x + 160, hudBox.y + 20, 48, 48);
+                        }
+                        if (character.inventory[1] && character.inventory[1].icon && character.inventory[1].icon.complete) {
+                            ctx.drawImage(character.inventory[1].icon, hudBox.x + 176, hudBox.y + 36, 48, 48);
+                        }
                         break;
                 }
             }

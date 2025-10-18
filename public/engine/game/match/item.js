@@ -343,23 +343,22 @@
                     }
                     if (!user.muted && Utils.isClient())
                         this.shootSFX.play().catch(err => {}); // play shoot sound
+                    
+                    // Calculate base aim direction with user momentum
+                    let distance = Math.sqrt(aimX ** 2 + aimY ** 2);
+                    let baseAimX = (aimX / distance) * this.projectileSpeed;
+                    let baseAimY = (aimY / distance) * this.projectileSpeed;
+                    
+                    // Shoot 5 bullets with spread
                     for (let i = 0; i < 5; i++) {
-
-                        // There's a serious bug here.
-                        // The first bullet always shoots in the direction of the cursor
-                        // The rest will spread out weirdly
-
-                        let distance = Math.sqrt(aimX ** 2 + aimY ** 2);
-                        aimX = (aimX / distance) * (this.projectileSpeed + user.speed.x);
-                        aimY = (aimY / distance) * (this.projectileSpeed + user.speed.y);
-
-                        let spreadMagnitude = user.accuracy * 30;
-
+                        let spreadMagnitude = 5; // Wide spread for flamer
                         let spreadX = (Math.random() * 2 - 1) * spreadMagnitude;
                         let spreadY = (Math.random() * 2 - 1) * spreadMagnitude;
-
-                        aimX += spreadX;
-                        aimY += spreadY;
+                        
+                        // Each bullet gets base aim + user momentum + spread
+                        let bulletAimX = baseAimX + user.speed.x + spreadX;
+                        let bulletAimY = baseAimY + user.speed.y + spreadY;
+                        
                         // Add bullets to map
                         if (typeof window === 'undefined')
                             game.match.map.bullets.push(
@@ -369,8 +368,8 @@
                                         radius: 4,
                                         height: 4,
                                         user: user, // Position and size
-                                        livetime: 16,
-                                        speed: new Utils.Vect3(aimX, aimY, 0),
+                                        livetime: 16, // Short range
+                                        speed: new Utils.Vect3(bulletAimX, bulletAimY, 0),
                                         color: user.color,
                                         damage: 10,
                                         touchSFX: Utils.isClient() ? Sounds.hit_flamer : null
@@ -472,7 +471,7 @@
                     // Add a new missile at this user's position
                     if (typeof window === 'undefined')
                         game.match.map.bullets.push(
-                            new Projectiles.Bullet(
+                            new Projectiles.LanceBullet(
                                 {
                                     spawnPos: new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z),
                                     radius: 4,

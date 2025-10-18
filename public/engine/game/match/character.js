@@ -161,14 +161,30 @@
         */
 
         spawnWeapon(item) {
-            let newItem = {};
+            let newItem = null;
             switch (item.weapon) {
                 case 'pistol':
                     newItem = new Items.Pistol(item);
                     break;
-            
-                default:
+                case 'rifle':
+                    newItem = new Items.Rifle(item);
                     break;
+                case 'lance':
+                    newItem = new Items.Lance(item);
+                    break;
+                case 'flamer':
+                    newItem = new Items.Flamer(item);
+                    break;
+                case 'sword':
+                    newItem = new Items.Sword(item);
+                    break;
+                default:
+                    // Default to pistol if unknown weapon type
+                    newItem = new Items.Pistol(item);
+                    break;
+            }
+            if (newItem) {
+                newItem.owner = this;
             }
             return newItem;
         }
@@ -1118,7 +1134,9 @@
                 item: this.item, // current weapon index
                 inv: this.inventory.map(weapon => ({ 
                     w: weapon.weapon || weapon.type, // weapon type
-                    a: weapon.ammo // weapon ammo
+                    a: weapon.ammo, // weapon ammo
+                    nc: weapon.nextCool, // next cooldown tick
+                    r: weapon.reloading // is reloading
                 })), // inventory
                 inp: inputState // input state (compressed)
             }

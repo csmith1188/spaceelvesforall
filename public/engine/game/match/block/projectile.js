@@ -49,13 +49,13 @@
                         new Blocks.Block({
                             spawnPos: new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
                             spawnVol: new Utils.Vect3(2, 1, 1),
-                            speed: new Utils.Vect3(tempx, tempy, tempz),
-                            color: [255, tempC, 0],
-                            livetime: 20,
-                            dying: true,
-                            shadowDraw: false,
-                            solid: false
-                        }));
+                                speed: new Utils.Vect3(tempx, tempy, tempz),
+                                color: [255, tempC, 0],
+                                livetime: 20,
+                                dying: true,
+                                shadowDraw: false,
+                                solid: false
+                            }));
                 }
             }
             this.runFunc = [
@@ -68,13 +68,13 @@
                         new Blocks.Block({
                             spawnPos: new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
                             spawnVol: new Utils.Vect3(2, 2, 2),
-                            speed: new Utils.Vect3(tempx, tempy, tempz),
-                            color: [255, 255, 0],
-                            livetime: 15,
-                            dying: true,
-                            shadowDraw: false,
-                            solid: false
-                        }));
+                                speed: new Utils.Vect3(tempx, tempy, tempz),
+                                color: [255, 255, 0],
+                                livetime: 15,
+                                dying: true,
+                                shadowDraw: false,
+                                solid: false
+                            }));
                 }
             ]
             if (typeof options === 'object')
@@ -97,10 +97,6 @@
                 this.HB.pos.x += this.speed.x * game.time.delta;
                 this.HB.pos.y += this.speed.y * game.time.delta;
                 this.HB.pos.z += this.speed.z * game.time.delta;
-                
-                if (typeof window !== 'undefined' && this.bulletType === 'rifle') {
-                    console.log('[Bullet.step] Rifle bullet stepping, runFunc length:', this.runFunc.length);
-                }
                 
                 // Optional: Gentle correction toward server position if available
                 if (typeof window !== 'undefined' && this.serverPos && this.serverPos.pos) {
@@ -202,9 +198,6 @@
                 }
 
                 for (const func of this.runFunc) {
-                    if (typeof window !== 'undefined' && this.bulletType === 'rifle') {
-                        console.log('[Bullet.step] Calling runFunc');
-                    }
                     func()
                 }
                 this.livetime--;
@@ -290,13 +283,13 @@
                         new Blocks.Block({
                             spawnPos: new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
                             spawnVol: new Utils.Vect3(6, 3, 1),
-                            speed: new Utils.Vect3(tempx + (this.speed.x * 0.25), tempy + (this.speed.y * 0.25), tempz + (this.speed.z * 0.25)),
-                            color: [tempC, tempC, tempC],
-                            livetime: 20,
-                            dying: true,
-                            shadowDraw: false,
-                            solid: false
-                        }));
+                                speed: new Utils.Vect3(tempx + (this.speed.x * 0.25), tempy + (this.speed.y * 0.25), tempz + (this.speed.z * 0.25)),
+                                color: [tempC, tempC, tempC],
+                                livetime: 20,
+                                dying: true,
+                                shadowDraw: false,
+                                solid: false
+                            }));
                 }
             }
         }
@@ -321,14 +314,14 @@
                 new Blocks.Block({
                     spawnPos: new Utils.Vect3(compareX, compareY, this.HB.pos.z + this.HB.height),
                     spawnVol: new Utils.Vect3(2, 2, 2),
-                    speed: new Utils.Vect3(tempx, tempy, tempz),
-                    color: [tempC1, tempC1, tempC1],
-                    colorSide: [tempC2, tempC2, tempC2],
-                    livetime: 15,
-                    dying: true,
-                    shadowDraw: false,
+                        speed: new Utils.Vect3(tempx, tempy, tempz),
+                        color: [tempC1, tempC1, tempC1],
+                        colorSide: [tempC2, tempC2, tempC2],
+                        livetime: 15,
+                        dying: true,
+                        shadowDraw: false,
                     solid: false
-                }));
+                    }));
         }
     }
 
@@ -349,13 +342,12 @@
             // Add trail debris (client-side only)
             if (typeof window !== 'undefined') {
                 this.runFunc.push(function () {
-                    try {
-                        if (game.match.ticks % 2 == 0) { // Every other frame
-                            console.log('[RifleBullet] Tick check passed, creating debris');
-                            let tempx = ((Math.random() * 1) - 0.5) * 2;
-                            let tempy = ((Math.random() * 1) - 0.5) * 2;
-                            let tempz = ((Math.random() * 1) - 0.5) * 2;
-                            const debris = new Blocks.Block({
+                    if (game.match.time.ticks % 2 == 0) { // Every other frame
+                        let tempx = ((Math.random() * 1) - 0.5) * 2;
+                        let tempy = ((Math.random() * 1) - 0.5) * 2;
+                        let tempz = ((Math.random() * 1) - 0.5) * 2;
+                        game.match.map.debris.push(
+                            new Blocks.Block({
                                 spawnPos: new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
                                 spawnVol: new Utils.Vect3(4, 4, 4),
                                 speed: new Utils.Vect3(tempx, tempy, tempz),
@@ -363,14 +355,8 @@
                                 livetime: 15,
                                 dying: true,
                                 shadowDraw: false,
-                                solid: false,
-                                visible: true
-                            });
-                            console.log('[RifleBullet] Created debris:', debris, 'Total debris:', game.match.map.debris.length);
-                            game.match.map.debris.push(debris);
-                        }
-                    } catch (error) {
-                        console.error('[RifleBullet] Error creating debris:', error);
+                                solid: false
+                            }));
                     }
                 }.bind(this));
                 
@@ -398,5 +384,87 @@
         }
     }
 
-    return { Bullet, Slash, RifleBullet };
+    /*
+     :::            :::     ::::    :::  ::::::::  ::::::::::
+    :+:          :+: :+:   :+:+:   :+: :+:    :+: :+:
+   +:+         +:+   +:+  :+:+:+  +:+ +:+        +:+
+  +#+        +#++:++#++: +#+ +:+ +#+ +#+        +#++:++#
+ +#+        +#+     +#+ +#+  +#+#+# +#+        +#+
+#+#        #+#     #+# #+#   #+#+# #+#    #+# #+#
+########## ###     ### ###    ####  ########  ##########
+    */
+    class LanceBullet extends Bullet {
+        constructor(options) {
+            super(options);
+            this.bulletType = 'lance';
+            this.visible = false;
+            
+            // Make the lance wider (larger hitbox)
+            if (this.user && this.user.HB) {
+                this.HB.radius = this.user.HB.radius + 10;
+            }
+            
+            // Lance follows the player and damage is based on speed
+            this.runFunc.push(function () {
+                const owner = this.parent || this.user;
+                if (owner && owner.HB && owner.speed) {
+                    // Match the user's position
+                    this.HB.pos.x = owner.HB.pos.x;
+                    this.HB.pos.y = owner.HB.pos.y;
+                    this.HB.pos.z = owner.HB.pos.z;
+                    // Damage is equal to the true speed of the player
+                    this.damage = Math.sqrt(Math.abs(owner.speed.x) ** 2 + Math.abs(owner.speed.y) ** 2 + Math.abs(owner.speed.z) ** 2);
+                    // Multiply damage
+                    this.damage *= 2;
+                }
+                
+                // Add trail debris (client-side only)
+                if (typeof window !== 'undefined') {
+                    // Create purple/pink trail debris
+                    let tempx = ((Math.random() * 1) - 0.5) * 10;
+                    let tempy = ((Math.random() * 1) - 0.5) * 10;
+                    let tempz = ((Math.random() * 1) - 0.5) * 10;
+                    let tempC1 = Math.ceil(Math.random() * 255);
+                    let tempC2 = Math.ceil(Math.random() * 255);
+                    game.match.map.debris.push(
+                        new Blocks.Block({
+                            spawnPos: new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
+                            spawnVol: new Utils.Vect3(4, 4, 4),
+                            speed: new Utils.Vect3(tempx, tempy, tempz),
+                            color: [tempC1, 0, tempC2],
+                            colorSide: [tempC2, 0, tempC1],
+                            livetime: 15,
+                            dying: true,
+                            shadowDraw: false,
+                            solid: false
+                        }));
+                }
+            }.bind(this));
+            
+            // Custom hit splash (client-side only)
+            if (typeof window !== 'undefined') {
+                this.hitSplash = function () {
+                    for (let parts = 0; parts < 20; parts++) {
+                        let tempx = (Math.random() * 4) - 2;
+                        let tempy = (Math.random() * 4) - 2;
+                        let tempz = (Math.random() * 4) - 2;
+                        let tempC = Math.ceil(Math.random() * 255);
+                        game.match.map.debris.push(
+                            new Blocks.Block({
+                                spawnPos: new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
+                                spawnVol: new Utils.Vect3(6, 3, 1),
+                                speed: new Utils.Vect3(tempx + (this.speed.x * 0.25), tempy + (this.speed.y * 0.25), tempz + (this.speed.z * 0.25)),
+                                color: [255, tempC, 0],
+                                livetime: 20,
+                                dying: true,
+                                shadowDraw: false,
+                                solid: false
+                            }));
+                    }
+                }.bind(this);
+            }
+        }
+    }
+
+    return { Bullet, Slash, RifleBullet, LanceBullet };
 }));

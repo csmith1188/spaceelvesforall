@@ -47,7 +47,7 @@
                 avg: 0
             }
             this.networkConfig = {
-                updateInterval: 3, // ticks between network updates (20Hz at 60fps)
+                updateInterval: 2, // ticks between network updates (20Hz at 60fps)
                 maxUpdateInterval: 5, // maximum interval for low activity
                 minUpdateInterval: 1, // minimum interval for high activity
                 entityThreshold: 20, // switch to higher rate when entity count exceeds this

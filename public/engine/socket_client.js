@@ -117,24 +117,55 @@ gameWSS.addEventListener('message', (event) => {
                         
                         // Sync inventory weapons and ammo
                         if (character.inv && Array.isArray(character.inv)) {
-                            // Clear inventory if server says it's different length
-                            if (c.inventory.length !== character.inv.length) {
-                                c.inventory = [];
-                            }
-                            
                             // Sync each weapon in inventory
                             for (let i = 0; i < character.inv.length; i++) {
+                                const weaponType = character.inv[i].w;
+                                const weaponAmmo = character.inv[i].a || 0;
+                                const weaponNextCool = character.inv[i].nc;
+                                const weaponReloading = character.inv[i].r;
+                                
                                 if (c.inventory[i]) {
-                                    // Update existing weapon's ammo
-                                    if (character.inv[i].a !== undefined) {
-                                        c.inventory[i].ammo = character.inv[i].a;
+                                    // Update existing weapon's ammo and type
+                                    if (c.inventory[i].weapon === weaponType) {
+                                        // Same weapon, just update ammo and cooldown
+                                        c.inventory[i].ammo = weaponAmmo;
+                                        if (weaponNextCool !== undefined) {
+                                            c.inventory[i].nextCool = weaponNextCool;
+                                        }
+                                        if (weaponReloading !== undefined) {
+                                            c.inventory[i].reloading = weaponReloading;
+                                        }
+                                    } else {
+                                        // Different weapon, replace it
+                                        let weaponInstance;
+                                        switch(weaponType) {
+                                            case 'pistol':
+                                                weaponInstance = new Items.Pistol();
+                                                break;
+                                            case 'rifle':
+                                                weaponInstance = new Items.Rifle();
+                                                break;
+                                            case 'lance':
+                                                weaponInstance = new Items.Lance();
+                                                break;
+                                            case 'flamer':
+                                                weaponInstance = new Items.Flamer();
+                                                break;
+                                            default:
+                                                weaponInstance = new Items.Pistol();
+                                        }
+                                        weaponInstance.ammo = weaponAmmo;
+                                        if (weaponNextCool !== undefined) {
+                                            weaponInstance.nextCool = weaponNextCool;
+                                        }
+                                        if (weaponReloading !== undefined) {
+                                            weaponInstance.reloading = weaponReloading;
+                                        }
+                                        weaponInstance.owner = c;
+                                        c.inventory[i] = weaponInstance;
                                     }
                                 } else {
                                     // Add new weapon to inventory
-                                    const weaponType = character.inv[i].w;
-                                    const weaponAmmo = character.inv[i].a || 0;
-                                    
-                                    // Create weapon instance based on type
                                     let weaponInstance;
                                     switch(weaponType) {
                                         case 'pistol':
@@ -152,11 +183,21 @@ gameWSS.addEventListener('message', (event) => {
                                         default:
                                             weaponInstance = new Items.Pistol();
                                     }
-                                    
                                     weaponInstance.ammo = weaponAmmo;
-                                    weaponInstance.owner = c.parent;
+                                    if (weaponNextCool !== undefined) {
+                                        weaponInstance.nextCool = weaponNextCool;
+                                    }
+                                    if (weaponReloading !== undefined) {
+                                        weaponInstance.reloading = weaponReloading;
+                                    }
+                                    weaponInstance.owner = c;
                                     c.inventory.push(weaponInstance);
                                 }
+                            }
+                            
+                            // Remove extra weapons if server has fewer
+                            if (c.inventory.length > character.inv.length) {
+                                c.inventory.length = character.inv.length;
                             }
                         }
                         
@@ -229,7 +270,7 @@ gameWSS.addEventListener('message', (event) => {
                         bulletData.serverPos = { pos: { x: bullet.p.x, y: bullet.p.y, z: bullet.p.z }, time: message.time };
                         //if the bullet is not in the game, add it
                         game.match.map.spawn(bulletData);
-                    }
+                }
                 }
                 
                 // Remove bullets not in server update (server only sends active bullets)
@@ -286,10 +327,10 @@ gameWSS.addEventListener('message', (event) => {
                                 time: game.match.ticks
                             };
                             // Initialize at server position to avoid initial jump
-                            p.HB.pos.x = weapon.pos.x;
-                            p.HB.pos.y = weapon.pos.y;
-                            p.HB.pos.z = weapon.pos.z;
-                        } else {
+                        p.HB.pos.x = weapon.pos.x;
+                        p.HB.pos.y = weapon.pos.y;
+                        p.HB.pos.z = weapon.pos.z;
+                    } else {
                             // Update target position from server
                             p.serverPos.pos.x = weapon.pos.x;
                             p.serverPos.pos.y = weapon.pos.y;
