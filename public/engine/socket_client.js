@@ -105,6 +105,13 @@ gameWSS.addEventListener('message', (event) => {
                             c.serverSpeed.z = character.s.z;
                         }
                         
+                        // Update momentum for facing direction
+                        if (character.m) {
+                            c.mom.x = character.m.x;
+                            c.mom.y = character.m.y;
+                            c.mom.z = character.m.z;
+                        }
+                        
                         c.id = character.i;
                         c.hp = character.h;
                         c.pp = character.pp;

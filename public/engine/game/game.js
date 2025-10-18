@@ -352,6 +352,13 @@
                     if (Math.abs(lastState.s.z - currentState.s.z) > 0.01) return true;
                 }
                 
+                // Send if momentum changed (important for facing direction)
+                if (lastState.m && currentState.m) {
+                    if (Math.abs(lastState.m.x - currentState.m.x) > 0.01) return true;
+                    if (Math.abs(lastState.m.y - currentState.m.y) > 0.01) return true;
+                    if (Math.abs(lastState.m.z - currentState.m.z) > 0.01) return true;
+                }
+                
                 // Send if input state changed
                 if (currentState.inp) return true;
                 

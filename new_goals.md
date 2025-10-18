@@ -29,9 +29,10 @@
 - sword slash
 - ~~fix team selector rings, second player sees nuetral first player~~
 - ~~last man standing in match reset all players~~
+- ~~redownload image on flip~~
+- ~~handle death properly~~
+- ~~other characters face left~~
 - why does it redownload block textures every second?
-- redownload image on flip
-- handle death properly
 - Banner text
 - sound broadcast by server by distance
 - fix frameslist for debugging
@@ -39,7 +40,6 @@
 - animations always play (bullets/debris)
 - clip through walls collision
 - server always one tick behind client
-
 
 - pass fullpack for powerups/weapons, including runFunc and drawFunc
 - clientside and spawner for bullet classes

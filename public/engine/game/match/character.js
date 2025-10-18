@@ -197,8 +197,12 @@
                     this.pp += 1;
                 this.floor = 0;
 
-                //Reset Momentum
-                this.mom = new Utils.Vect3();
+                //Reset Momentum (but preserve server momentum for remote players)
+                const isLocalPlayer = this.parent && game.player && this.parent === game.player;
+                if (isLocalPlayer || typeof window === 'undefined') {
+                    // Only reset momentum if this is the local player or on server
+                    this.mom = new Utils.Vect3();
+                }
 
                 /*
                          _ _        _     _                _
@@ -759,8 +763,16 @@
                  | .__/_\__|_\_\ \__, |_| \__,_| .__/_||_|_\__|
                  |_|             |___/         |_|
                 */
-                if (this.mom.x < 0) this.img.src = this.leftgfx + '.png'
-                if (this.mom.x > 0) this.img.src = this.gfx + '.png'
+                // Only change image src when direction changes to avoid redownloading
+                const leftSrc = this.leftgfx + '.png';
+                const rightSrc = this.gfx + '.png';
+                
+                if (this.mom.x < 0 && !this.img.src.endsWith(leftSrc)) {
+                    this.img.src = leftSrc;
+                }
+                if (this.mom.x > 0 && !this.img.src.endsWith(rightSrc)) {
+                    this.img.src = rightSrc;
+                }
 
                 let compareX = game.player.camera.x - this.HB.pos.x;
                 let compareY = game.player.camera.y - this.HB.pos.y;
@@ -1136,6 +1148,7 @@
                 i: this.id, // id
                 p: this.HB.pos, // pos
                 s: this.speed, // speed
+                m: this.mom, // momentum (for facing direction)
                 h: this.hp, // hp
                 pp: this.pp, // pp
                 a: this.ammo, // ammo
