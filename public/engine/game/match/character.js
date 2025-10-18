@@ -175,6 +175,8 @@
 
         step() {
             if (this.active) {
+                // ALL PLAYERS (local and remote) run full physics simulation
+                // Then blend toward server position based on prediction error
                 if (this.pp < this.pp_max)
                     this.pp += 1;
                 this.floor = 0;
@@ -393,7 +395,15 @@
                         this.floor = c.HB.pos.z + c.HB.height; //Set the floor to the block's height
                     let side = this.HB.collide(c.HB); //Check for collision
                     if (side) c.trigger(this, side);
-                    if (c.solid && this.team != c.team) //If the other character is solid
+                    if (c.solid && this.team != c.team) { //If the other character is solid
+                        // On client side, check if this is a remote player
+                        const isRemotePlayer = typeof window !== 'undefined' && this.parent && game.player && this.parent !== game.player;
+                        
+                        // Mark collision time for reconciliation
+                        if (side) {
+                            this.lastCollisionTime = game.match.ticks;
+                        }
+                        
                         switch (side) { //See which side you collided on
                             case 'side': //If you collided on the side
                                 let xDistance = this.HB.pos.x - c.HB.pos.x;
@@ -410,10 +420,26 @@
                                 } else {
                                     this.HB.pos.x += c.HB.radius + this.HB.radius;
                                 }
-                                this.speed.x += c.speed.x * game.match.map.collideReflect; //Reflect the speed and mom by the map's reflect value
-                                this.speed.y += c.speed.y * game.match.map.collideReflect;
-                                c.speed.x -= this.speed.x * game.match.map.collideReflect;
-                                c.speed.y -= this.speed.y * game.match.map.collideReflect;
+                                
+                                // HYBRID PHYSICS: On client, only modify THIS character's speed
+                                // Don't modify other character's speed - let server/their client handle it
+                                if (isRemotePlayer) {
+                                    // Remote players on client: only bounce off, don't transfer momentum to others
+                                    this.speed.x += c.speed.x * game.match.map.collideReflect * 0.5;
+                                    this.speed.y += c.speed.y * game.match.map.collideReflect * 0.5;
+                                } else {
+                                    // Server or local player: full physics with momentum transfer
+                                    const thisSpeedX = this.speed.x;
+                                    const thisSpeedY = this.speed.y;
+                                    this.speed.x += c.speed.x * game.match.map.collideReflect;
+                                    this.speed.y += c.speed.y * game.match.map.collideReflect;
+                                    
+                                    // Only modify other character if on server or if it's the local player hitting a bot
+                                    if (typeof window === 'undefined' || (c.parent && c.parent === game.player)) {
+                                        c.speed.x -= thisSpeedX * game.match.map.collideReflect;
+                                        c.speed.y -= thisSpeedY * game.match.map.collideReflect;
+                                    }
+                                }
                                 break;
                             case 'top': //If you collided on the top
                                 //move the character to the edge of the other character
@@ -430,6 +456,7 @@
                                 //break if you didn't collide
                                 break;
                         }
+                    }
                 }
 
                 /*
@@ -524,18 +551,68 @@
                 // make lastHB the same as HB
                 this.lastHB = new Utils.Cylinder(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), this.HB.radius, this.HB.height);
 
-                if (typeof window !== 'undefined') {
-                    // let interpolationFactor = Math.min(((Date.now() - this.serverPos.time) / 1000) * 5, 1); // Adjust the factor as needed
-                    // if (isNaN(interpolationFactor)) interpolationFactor = 0.1;
-                    let interpolationFactor = 0.1;
-                    this.HB.pos.x += (this.serverPos.x - this.HB.pos.x) * interpolationFactor * game.time.delta;
-                    this.HB.pos.y += (this.serverPos.y - this.HB.pos.y) * interpolationFactor * game.time.delta;
-                    this.HB.pos.z += (this.serverPos.z - this.HB.pos.z) * interpolationFactor * game.time.delta;
-                }
-
+                // Apply speed-based movement (all players, all platforms)
                 this.HB.pos.x += this.speed.x * game.time.delta;
                 this.HB.pos.y += this.speed.y * game.time.delta;
                 this.HB.pos.z += this.speed.z * game.time.delta;
+                
+                // SMOOTH RECONCILIATION: Gradually correct toward server position
+                if (typeof window !== 'undefined' && this.serverPos && this.serverPos.x !== undefined) {
+                    const isLocalPlayer = this.parent && game.player && this.parent === game.player;
+                    
+                    // Calculate error between current position and server
+                    const dx = this.serverPos.x - this.HB.pos.x;
+                    const dy = this.serverPos.y - this.HB.pos.y;
+                    const dz = this.serverPos.z - this.HB.pos.z;
+                    const predictionError = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                    
+                    // Determine correction speed (pixels per frame to move toward server)
+                    let correctionSpeed = 0;
+                    
+                    if (isLocalPlayer) {
+                        // LOCAL PLAYER: Gentle corrections
+                        if (predictionError < 10) {
+                            correctionSpeed = 0.5; // 0.5 pixels per frame
+                        } else if (predictionError < 20) {
+                            correctionSpeed = 1.5; // 1.5 pixels per frame
+                        } else if (predictionError < 50) {
+                            correctionSpeed = 3; // 3 pixels per frame
+                        } else {
+                            correctionSpeed = predictionError * 0.5; // Snap quickly for large errors
+                        }
+                    } else {
+                        // REMOTE PLAYERS: Faster corrections for visual smoothness
+                        if (predictionError < 5) {
+                            correctionSpeed = 1; // 1 pixel per frame
+                        } else if (predictionError < 10) {
+                            correctionSpeed = 2; // 2 pixels per frame
+                        } else if (predictionError < 20) {
+                            correctionSpeed = 4; // 4 pixels per frame
+                        } else if (predictionError < 50) {
+                            correctionSpeed = 8; // 8 pixels per frame
+                        } else {
+                            correctionSpeed = predictionError; // Immediate snap
+                        }
+                    }
+                    
+                    // Apply correction (move toward server at fixed speed)
+                    if (predictionError > 0.1) {
+                        const correctionFactor = Math.min(correctionSpeed / predictionError, 1.0);
+                        this.HB.pos.x += dx * correctionFactor;
+                        this.HB.pos.y += dy * correctionFactor;
+                        this.HB.pos.z += dz * correctionFactor;
+                    }
+                    
+                    // Speed correction for drift prevention
+                    if (this.serverSpeed && predictionError > 3) {
+                        const speedCorrectionFactor = isLocalPlayer ? 0.1 : 0.2;
+                        this.speed.x += (this.serverSpeed.x - this.speed.x) * speedCorrectionFactor;
+                        this.speed.y += (this.serverSpeed.y - this.speed.y) * speedCorrectionFactor;
+                        this.speed.z += (this.serverSpeed.z - this.speed.z) * speedCorrectionFactor;
+                    }
+                    
+                    this.predictionError = predictionError;
+                }
 
                 /*
                    ___       _          __   ___                   _
@@ -1015,15 +1092,35 @@
         }
 
         pack() {
+            // Store last controller input state for remote player prediction
+            let inputState = null;
+            if (this.parent && this.parent.controller) {
+                inputState = {
+                    ml: this.parent.controller.buttons.moveLeft.current,
+                    mr: this.parent.controller.buttons.moveRight.current,
+                    mu: this.parent.controller.buttons.moveUp.current,
+                    md: this.parent.controller.buttons.moveDown.current,
+                    j: this.parent.controller.buttons.jump.current,
+                    br: this.parent.controller.buttons.brake.current,
+                    bo: this.parent.controller.buttons.boost.current
+                };
+            }
+            
             return {
-                type: 'character',
-                team: this.team,
-                id: this.id,
-                pos: this.HB.pos,
-                speed: this.speed,
-                hp: this.hp,
-                pp: this.pp,
-                ammo: this.ammo
+                t: 'c', // type: character
+                tm: this.team, // team
+                i: this.id, // id
+                p: this.HB.pos, // pos
+                s: this.speed, // speed
+                h: this.hp, // hp
+                pp: this.pp, // pp
+                a: this.ammo, // ammo
+                item: this.item, // current weapon index
+                inv: this.inventory.map(weapon => ({ 
+                    w: weapon.weapon || weapon.type, // weapon type
+                    a: weapon.ammo // weapon ammo
+                })), // inventory
+                inp: inputState // input state (compressed)
             }
         }
 

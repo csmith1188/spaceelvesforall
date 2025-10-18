@@ -12,7 +12,7 @@ Master Server
 - ~~Two windows one user chat~~
 - Better chat rate limiting
 - Profiles with links
-- local and formbar username overlap
+- local and formbar displayName overlap
 - Newsletter/Updates/Unsubscribe
 - News Blog
 - Forums

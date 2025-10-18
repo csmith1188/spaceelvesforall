@@ -28,7 +28,7 @@
             return {
                 id: this.id,
                 token: {
-                    username: this.token.username,
+                    displayName: this.token.displayName,
                     id: this.token.id
                 }
             };

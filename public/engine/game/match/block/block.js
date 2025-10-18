@@ -425,25 +425,28 @@
         */
         pack() {
             let pack = {
-                id: this.id,
-                pos: this.HB.pos,
-                speed: this.speed,
-                type: this.type
+                i: this.id, // id
+                p: this.HB.pos, // pos
+                s: this.speed, // speed
+                t: this.type // type
+            }
+            if (this.bulletType) {
+                pack.bt = this.bulletType; // bullet type (rifle, lance, etc.)
             }
             if (this.user != null) {
-                pack.user = {
-                    id: this.user.id,
-                    team: this.user.team,
-                    name: this.user.name
+                pack.u = { // user
+                    i: this.user.id, // id
+                    tm: this.user.team, // team
+                    n: this.user.name // name
                 }
             }
             if (this.HB instanceof Utils.Cube) {
-                pack.shape = 'cube';
-                pack.vol = this.HB.vol;
+                pack.sh = 'c'; // shape: cube
+                pack.v = this.HB.vol; // vol
             } else if (this.HB instanceof Utils.Cylinder) {
-                pack.shape = 'cylinder';
-                pack.radius = this.HB.radius;
-                pack.height = this.HB.height;
+                pack.sh = 'cy'; // shape: cylinder
+                pack.r = this.HB.radius; // radius
+                pack.h = this.HB.height; // height
             }
 
             return pack;

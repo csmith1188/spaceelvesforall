@@ -83,9 +83,9 @@
                 // create a new character for each player
                 for (let i = 0; i < game.players.length; i++) {
                     if (typeof window == 'undefined') {
-                        console.log('Creating character for player', game.players[i].token.username);
+                        console.log('Creating character for player', game.players[i].token.displayName);
                         let images = ['img/sprites/jetbike', 'img/sprites/dark1', 'img/sprites/dark2'];
-                        this.characters.push(new Characters.Jetbike({ name: game.players[i].token.username, team: i, parent: game.players[i], active: true, cleanup: false, spawnPos: new Utils.Vect3(i * 100 + 100, i * 100 + 100, 0), gfx: images[i] }));
+                        this.characters.push(new Characters.Jetbike({ name: game.players[i].token.displayName, team: i, parent: game.players[i], active: true, cleanup: false, spawnPos: new Utils.Vect3(i * 100 + 100, i * 100 + 100, 0), gfx: images[i] }));
 
                     }
                 }
@@ -103,6 +103,28 @@
                         return;
                     default:
                         break;
+                }
+
+                // Check for players without characters and create them (late joiners)
+                if (typeof window === 'undefined') {
+                    for (let i = 0; i < game.players.length; i++) {
+                        const player = game.players[i];
+                        const hasCharacter = this.characters.some(c => c.parent === player);
+                        
+                        if (!hasCharacter) {
+                            console.log('Creating character for late-joining player', player.token.displayName);
+                            let images = ['img/sprites/jetbike', 'img/sprites/dark1', 'img/sprites/dark2'];
+                            this.characters.push(new Characters.Jetbike({ 
+                                name: player.token.displayName, 
+                                team: i, 
+                                parent: player, 
+                                active: true, 
+                                cleanup: false, 
+                                spawnPos: new Utils.Vect3(i * 100 + 100, i * 100 + 100, 0), 
+                                gfx: images[i % images.length] 
+                            }));
+                        }
+                    }
                 }
 
                 for (const chara of this.characters) {

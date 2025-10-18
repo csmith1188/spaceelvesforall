@@ -13,7 +13,7 @@ function userList(clients, room) {
     let users = [];
     for (const client of clients) {
         if (client.rooms.includes(room)) {
-            users.push(client.token.username);
+            users.push(client.token.displayName);
         }
     }
     return users;
@@ -25,7 +25,7 @@ module.exports = (app, wss) => {
 
         // see if there is a ws with a token that matches the session token
         for (const client of wss.getWss().clients) {
-            if (client.token && client.token.username === req.session.token.username) {
+            if (client.token && client.token.displayName === req.session.token.displayName) {
                 client.send(JSON.stringify({ sender: 'Server', room: 'All', message: 'You have been disconnected because you logged in from another location' }));
                 client.terminate();
                 break;
@@ -85,14 +85,14 @@ module.exports = (app, wss) => {
                                     //remove command from message
                                     data.message = data.message.substring(command.length + 1);
                                     if (data.message.trim()) {
-                                        broadcast(wss.getWss().clients, ws.token.username, ws.currentRoom, data.message);
+                                        broadcast(wss.getWss().clients, ws.token.displayName, ws.currentRoom, data.message);
                                     }
                                     // ws.send(JSON.stringify({ error: `Unknown command: ${command}` }));
                                     break;
                             }
                         } else {
-                            broadcast(wss.getWss().clients, ws.token.username, ws.currentRoom, data.message);
-                            db.run('INSERT INTO chat (sender, room, message) VALUES (?, ?, ?)', [ws.token.username, ws.currentRoom, data.message], (err) => {
+                            broadcast(wss.getWss().clients, ws.token.displayName, ws.currentRoom, data.message);
+                            db.run('INSERT INTO chat (sender, room, message) VALUES (?, ?, ?)', [ws.token.displayName, ws.currentRoom, data.message], (err) => {
                                 if (err) console.error(err);
                             });
                         }

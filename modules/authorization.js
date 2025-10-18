@@ -19,12 +19,12 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-function sendVerificationEmail(userEmail, username) {
+function sendVerificationEmail(userEmail, displayName) {
 
     const token = jwt.sign({ email: userEmail }, config.SS_SECRET, { expiresIn: '1h' });
     const url = `${config.THIS_URL}/verify?token=${token}`;
 
-    ejs.renderFile(__dirname + '/views/email.ejs', { username: username, url: url }, (err, renderedTemplate) => {
+    ejs.renderFile(__dirname + '/views/email.ejs', { displayName: displayName, url: url }, (err, renderedTemplate) => {
         if (err) {
             console.error('Error rendering template:', err);
         } else {
@@ -33,7 +33,7 @@ function sendVerificationEmail(userEmail, username) {
                 from: config.EMAIL_USER,
                 to: userEmail,
                 subject: 'Space Elves On Jetbikes Email Verification',
-                text: `Hello, ${username}! Click this link to verify your email: ${url}`,
+                text: `Hello, ${displayName}! Click this link to verify your email: ${url}`,
                 html: renderedTemplate
             };
 
@@ -57,17 +57,17 @@ exports.loginGET = (req, res) => {
         let tokenData = jwt.decode(req.query.token);
         req.session.token = tokenData;
         req.session.token.verified = true;
-        db.get("SELECT * FROM users WHERE fb_username=?;", req.session.token.username, (err, row) => {
+        db.get("SELECT * FROM users WHERE fb_displayName=?;", req.session.token.displayName, (err, row) => {
             if (err) {
                 console.error(err);
                 res.render('error', { error: `Database error: ${err}` });
             } else if (!row) {
-                db.run("INSERT INTO users (username, fb_id, fb_username, validated) VALUES (?, ?, ?, ?);", [req.session.token.username, req.session.token.id, req.session.token.username, 1], (err) => {
+                db.run("INSERT INTO users (displayName, fb_id, fb_displayName, validated) VALUES (?, ?, ?, ?);", [req.session.token.displayName, req.session.token.id, req.session.token.displayName, 1], (err) => {
                     if (err) {
                         console.error(err);
                         res.render('error', { error: `Database error: ${err}` });
                     } else {
-                        console.info(`New user ${req.session.token.username} created`);
+                        console.info(`New user ${req.session.token.displayName} created`);
                         res.redirect('/');
                     }
                 });
@@ -88,8 +88,8 @@ exports.loginGET = (req, res) => {
 
 
 exports.loginPOST = (req, res) => {
-    if (req.body.username && req.body.password) {
-        db.get("SELECT * FROM users WHERE username=?;", req.body.username, (err, row) => {
+    if (req.body.displayName && req.body.password) {
+        db.get("SELECT * FROM users WHERE displayName=?;", req.body.displayName, (err, row) => {
             if (err) {
                 console.error(err);
                 res.render('error', { error: `Database error: ${err}` });
@@ -106,7 +106,7 @@ exports.loginPOST = (req, res) => {
                         const hashedPassword = derivedKey.toString("hex");
                         if (row.hash === hashedPassword) {
                             req.session.token = {
-                                username: row.username || row.fb_username,
+                                displayName: row.displayName || row.fb_displayName,
                                 verified: row.validated
                             }
                             res.redirect("/");
@@ -119,8 +119,8 @@ exports.loginPOST = (req, res) => {
             }
         });
     } else {
-        console.info("No username and password provided");
-        res.render('error', { error: "No username and password provided" });
+        console.info("No displayName and password provided");
+        res.render('error', { error: "No displayName and password provided" });
     }
 }
 
@@ -144,18 +144,18 @@ exports.signupGET = (req, res) => {
 }
 
 exports.signupPOST = (req, res) => {
-    if (!req.body.username || !req.body.password || !req.body.email) {
-        console.error("The username, password, or email is missing");
-        res.render('error', { error: "The username, password, or email is missing" });
+    if (!req.body.displayName || !req.body.password || !req.body.email) {
+        console.error("The displayName, password, or email is missing");
+        res.render('error', { error: "The displayName, password, or email is missing" });
     } else {
-        // Check to see if a user with that username already exists
-        db.get("SELECT * FROM users WHERE username=? OR email=?;", req.body.username, req.body.email, (err, row) => {
+        // Check to see if a user with that displayName already exists
+        db.get("SELECT * FROM users WHERE displayName=? OR email=?;", req.body.displayName, req.body.email, (err, row) => {
             if (err) {
                 console.error(err);
                 res.render('error', { error: `Database error: ${err}` });
             } else if (row) {
-                console.error("A user with that username or email already exists");
-                res.render('error', { error: "A user with that username or email already exists" });
+                console.error("A user with that displayName or email already exists");
+                res.render('error', { error: "A user with that displayName or email already exists" });
             } else {
                 // Create a new salt for this user
                 const salt = crypto.randomBytes(16).toString("hex");
@@ -167,17 +167,17 @@ exports.signupPOST = (req, res) => {
                         res.render('error', { error: `Error hashing password: ${err}` });
                     } else {
                         const hashedPassword = derivedKey.toString("hex");
-                        db.run("INSERT INTO users (username, email, hash, salt, validated) VALUES (?, ?, ?, ?, ?);", [req.body.username, req.body.email, hashedPassword, salt, 0], (err) => {
+                        db.run("INSERT INTO users (displayName, email, hash, salt, validated) VALUES (?, ?, ?, ?, ?);", [req.body.displayName, req.body.email, hashedPassword, salt, 0], (err) => {
                             if (err) {
                                 console.error(err);
                                 res.render('error', { error: `Database error: ${err}` });
                             } else {
                                 req.session.token = {
-                                    username: req.body.username,
+                                    displayName: req.body.displayName,
                                     verified: false
                                 }
-                                console.info(`New user ${req.body.username} created`);
-                                sendVerificationEmail(req.body.email, req.body.username);
+                                console.info(`New user ${req.body.displayName} created`);
+                                sendVerificationEmail(req.body.email, req.body.displayName);
                                 res.redirect('/');
                             }
                         });

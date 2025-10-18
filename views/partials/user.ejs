@@ -1,6 +1,6 @@
 <div id="userControls">
 <% if (token) { %>
-  <p><%- token.username %> || <a href="/logout">Log Out</a></p>
+  <p><%- token.displayName %> || <a href="/logout">Log Out</a></p>
   <% } else { %>
   <a href="<%- this_url %>">Log In </a>
   or

@@ -141,7 +141,7 @@
             this.colorSide = [255, 128, 128];
             this.shadowDraw = true;
             this.runFunc.push((actor, side) => {
-                if (game.match.characters.includes(actor))
+                if (game.match.characters.includes(actor)) {
                     if (actor.ammo.ballistic < actor.ammo.ballisticMax) {
                         actor.ammo.ballistic++; // Add ballistic ammo
                         if (typeof window !== 'undefined') {
@@ -153,6 +153,7 @@
                     } else {
                         this.active = true; // Turn this back on if the player is full ammo
                     }
+                }
             });
             if (typeof options === 'object')
                 for (var key of Object.keys(options)) {
@@ -192,7 +193,7 @@
             this.colorSide = [255, 128, 255];
             this.shadowDraw = true;
             this.runFunc.push((actor, side) => {
-                if (game.match.characters.includes(actor))
+                if (game.match.characters.includes(actor)) {
                     if (actor.ammo.plasma < actor.ammo.plasmaMax) {
                         if (typeof window !== 'undefined') {
                             // Play pickup sound
@@ -204,6 +205,7 @@
                     } else {
                         this.active = true; // Turn this back on if the player is full ammo
                     }
+                }
             });
             if (typeof options === 'object')
                 for (var key of Object.keys(options)) {
@@ -244,19 +246,32 @@
             this.colorSide = [128, 255, 128];
             //if health is not full
             this.runFunc.push((actor, side) => {
-                if (game.match.characters.includes(actor))
+                if (game.match.characters.includes(actor)) {
                     if (actor.hp < actor.hp_max) {
+                        // Play pickup sound (client-side only)
                         if (typeof window !== 'undefined') {
-                            // Play pickup sound
                             this.touchSFX.currentTime = 0;
                             if (!actor.muted)
                                 this.touchSFX.play().catch(err => {});
                         }
-                        actor.hp = Math.min(actor.hp + 50, actor.hp_max); // Add health
+                        
+                        // Apply health (server-authoritative)
+                        actor.hp = Math.min(actor.hp + 50, actor.hp_max);
+                        
+                        // Remove pickup from map (both client and server)
+                        this.active = false;
+                        
+                        // Handle respawn (server-side only)
+                        if (typeof window === 'undefined' && this.respawnTime && this.respawnTime > 0) {
+                            setTimeout(() => {
+                                this.active = true;
+                            }, this.respawnTime);
+                        }
                     }
                     else {
                         this.active = true; // Turn this back on if the player is full health
                     }
+                }
             });
             if (typeof options === 'object')
                 for (var key of Object.keys(options)) {

@@ -7,7 +7,7 @@ router.get('/status', (req, res) => {
     let players = [];
     for (let player of game.players) {
         players.push({
-            username: player.token.username
+            displayName: player.token.displayName
         });
     }
     //make a list of pack()ed characters
@@ -23,7 +23,7 @@ router.get('/statusall', (req, res) => {
     let players = [];
     for (let player of game.players) {
         players.push({
-            username: player.token.username
+            displayName: player.token.displayName
         });
     }
     //make a list of pack()ed characters

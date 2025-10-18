@@ -115,10 +115,16 @@
                 for (const block of this.map.blocks) {
                     if (block.type == 'weapon') {
                         block.sineOffset = blockCounter++;
+                        // Store the spawn position as the center of the circular movement
+                        if (!block.originalSpawnPos) {
+                            block.originalSpawnPos = { x: block.HB.pos.x, y: block.HB.pos.y };
+                        }
                         block.runFunc.push(
                             function (bc) {
-                                // this.HB.pos.x = this.HB.pos.x + Utils.sineAnimate(100, 0.025, (this.sineOffset * 60));
-                                // this.HB.pos.y = this.HB.pos.y + Utils.sineAnimate(100, 0.025, (this.sineOffset * 60) + 60);
+                                // Move in a circle pattern around the spawn position
+                                // This runs on the server and the position is synced to clients
+                                this.HB.pos.x = this.originalSpawnPos.x + Utils.sineAnimate(100, 0.025, (this.sineOffset * 60));
+                                this.HB.pos.y = this.originalSpawnPos.y + Utils.sineAnimate(100, 0.025, (this.sineOffset * 60) + 60);
                             }.bind(block)
                         );
 
@@ -145,7 +151,7 @@
         step() {
             super.step();
 
-            // this.characters.push(new Characters.Jetbike({ name: game.player.token.username, team: i, parent: game.players[i], active: true, cleanup: false, spawnPos: new Utils.Vect3((this.map.w / 2) - 800, (this.map.h / 2), 10), gfx: 'img/sprites/jetbike' }));
+            // this.characters.push(new Characters.Jetbike({ name: game.player.token.displayName, team: i, parent: game.players[i], active: true, cleanup: false, spawnPos: new Utils.Vect3((this.map.w / 2) - 800, (this.map.h / 2), 10), gfx: 'img/sprites/jetbike' }));
             // game.player.interface = new Interface_LocalMP(game.player, 0, 0);
 
             // find all characters that are active

@@ -38,6 +38,7 @@
             this.damage = 10;
             this.force = 0.15; // How much of this projectile's speed is applied to the target
             this.shadowDraw = true;
+            this.cleanup = true; // Enable automatic cleanup when inactive
             this.hitSplash = () => {
                 for (let parts = 0; parts < 10; parts++) {
                     let tempx = (Math.random() * 4) - 2;
@@ -45,19 +46,16 @@
                     let tempz = (Math.random() * 4) - 2;
                     let tempC = Math.ceil(Math.random() * 255);
                     game.match.map.debris.push(
-                        new Blocks.Block(
-                            new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
-                            new Utils.Vect3(1, 1, 1),
-                            {
-                                speed: new Utils.Vect3(tempx, tempy, tempz),
-                                HB: new Utils.Cube(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Utils.Vect3(2, 1, 1)),
-                                z: this.HB.pos.z,
-                                color: [255, tempC, 0],
-                                livetime: 20,
-                                dying: true,
-                                shadowDraw: false,
-                                solid: false
-                            }));
+                        new Blocks.Block({
+                            spawnPos: new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
+                            spawnVol: new Utils.Vect3(2, 1, 1),
+                            speed: new Utils.Vect3(tempx, tempy, tempz),
+                            color: [255, tempC, 0],
+                            livetime: 20,
+                            dying: true,
+                            shadowDraw: false,
+                            solid: false
+                        }));
                 }
             }
             this.runFunc = [
@@ -67,19 +65,16 @@
                     let tempy = ((Math.random() * 1) - 0.5) * 2;
                     let tempz = ((Math.random() * 1) - 0.5) * 2;
                     if (game.match.ticks % 4 == 0) game.match.map.debris.push(
-                        new Utils.Block(
-                            new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
-                            new Utils.Vect3(1, 1, 1),
-                            {
-                                speed: new Utils.Vect3(tempx, tempy, tempz),
-                                HB: new Utils.Cube(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Utils.Vect3(2, 2, 2)),
-                                z: this.HB.pos.z,
-                                color: [255, 255, 0],
-                                livetime: 15,
-                                dying: true,
-                                shadowDraw: false,
-                                solid: false
-                            }));
+                        new Blocks.Block({
+                            spawnPos: new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
+                            spawnVol: new Utils.Vect3(2, 2, 2),
+                            speed: new Utils.Vect3(tempx, tempy, tempz),
+                            color: [255, 255, 0],
+                            livetime: 15,
+                            dying: true,
+                            shadowDraw: false,
+                            solid: false
+                        }));
                 }
             ]
             if (typeof options === 'object')
@@ -98,21 +93,30 @@
 
         step() {
             if (this.active && this.livetime != 0) {
-                if (typeof window !== 'undefined') {
-                    // console.log( Math.min(((Date.now() - this.serverPos.time) / 1000) * 1, 1));
-
-                    let interpolationFactor = Math.min(((Date.now() - this.serverPos.time) / 1000) * 1, 1); // Adjust the factor as needed
-                    if (isNaN(interpolationFactor)) interpolationFactor = 0.5;
-                    // let interpolationFactor = 0.5;
-                    this.HB.pos.x += (this.serverPos.pos.x - this.HB.pos.x) * interpolationFactor * game.time.delta;
-                    this.HB.pos.y += (this.serverPos.pos.y - this.HB.pos.y) * interpolationFactor * game.time.delta;
-                    this.HB.pos.z += (this.serverPos.pos.z - this.HB.pos.z) * interpolationFactor * game.time.delta;
-                }
-
-                // Move
+                // Move bullets using speed (server-authoritative, no client prediction needed)
                 this.HB.pos.x += this.speed.x * game.time.delta;
                 this.HB.pos.y += this.speed.y * game.time.delta;
                 this.HB.pos.z += this.speed.z * game.time.delta;
+                
+                if (typeof window !== 'undefined' && this.bulletType === 'rifle') {
+                    console.log('[Bullet.step] Rifle bullet stepping, runFunc length:', this.runFunc.length);
+                }
+                
+                // Optional: Gentle correction toward server position if available
+                if (typeof window !== 'undefined' && this.serverPos && this.serverPos.pos) {
+                    const dx = this.serverPos.pos.x - this.HB.pos.x;
+                    const dy = this.serverPos.pos.y - this.HB.pos.y;
+                    const dz = this.serverPos.pos.z - this.HB.pos.z;
+                    const error = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                    
+                    // Only correct if error is significant (bullets are fast, small errors OK)
+                    if (error > 20) {
+                        const correctionFactor = 0.3; // Gentle correction
+                        this.HB.pos.x += dx * correctionFactor;
+                        this.HB.pos.y += dy * correctionFactor;
+                        this.HB.pos.z += dz * correctionFactor;
+                    }
+                }
 
                 /*
                 ___     _ _         _
@@ -122,7 +126,7 @@
                 |__/
                 */
                 for (let c of game.match.characters) {
-                    if (c.parent === this.user) //Don't collide with yourself
+                    if (c === this.user) //Don't collide with yourself
                         continue;
                     let side = this.HB.collide(c.HB); //Check for collision
                     if (side && c.solid && c.team !== this.user.team) {
@@ -198,6 +202,9 @@
                 }
 
                 for (const func of this.runFunc) {
+                    if (typeof window !== 'undefined' && this.bulletType === 'rifle') {
+                        console.log('[Bullet.step] Calling runFunc');
+                    }
                     func()
                 }
                 this.livetime--;
@@ -280,19 +287,16 @@
                     let tempz = (Math.random() * 4) - 2;
                     let tempC = Math.ceil(Math.random() * 255);
                     game.match.map.debris.push(
-                        new Blocks.Block(
-                            new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
-                            new Utils.Vect3(1, 1, 1),
-                            {
-                                speed: new Utils.Vect3(tempx + (this.speed.x * 0.25), tempy + (this.speed.y * 0.25), tempz + (this.speed.z * 0.25)),
-                                HB: new Utils.Cube(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Utils.Vect3(6, 3, 1)),
-                                z: this.HB.pos.z,
-                                color: [tempC, tempC, tempC],
-                                livetime: 20,
-                                dying: true,
-                                shadowDraw: false,
-                                solid: false
-                            }));
+                        new Blocks.Block({
+                            spawnPos: new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
+                            spawnVol: new Utils.Vect3(6, 3, 1),
+                            speed: new Utils.Vect3(tempx + (this.speed.x * 0.25), tempy + (this.speed.y * 0.25), tempz + (this.speed.z * 0.25)),
+                            color: [tempC, tempC, tempC],
+                            livetime: 20,
+                            dying: true,
+                            shadowDraw: false,
+                            solid: false
+                        }));
                 }
             }
         }
@@ -314,22 +318,85 @@
             let compareY = this.HB.pos.y - ((this.user.HB.pos.y - this.HB.pos.y) / 2);
 
             game.match.map.debris.push(
-                new Blocks.Block(
-                    new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
-                    new Utils.Vect3(1, 1, 1),
-                    {
-                        speed: new Utils.Vect3(tempx, tempy, tempz),
-                        HB: new Utils.Cube(new Utils.Vect3(compareX, compareY, this.HB.pos.z + this.HB.height), new Utils.Vect3(2, 2, 2)),
-                        z: this.HB.pos.z,
-                        color: [tempC1, tempC1, tempC1],
-                        colorSide: [tempC2, tempC2, tempC2],
-                        livetime: 15,
-                        dying: true,
-                        shadowDraw: false,
-                        solid: false,
-                    }));
+                new Blocks.Block({
+                    spawnPos: new Utils.Vect3(compareX, compareY, this.HB.pos.z + this.HB.height),
+                    spawnVol: new Utils.Vect3(2, 2, 2),
+                    speed: new Utils.Vect3(tempx, tempy, tempz),
+                    color: [tempC1, tempC1, tempC1],
+                    colorSide: [tempC2, tempC2, tempC2],
+                    livetime: 15,
+                    dying: true,
+                    shadowDraw: false,
+                    solid: false
+                }));
         }
     }
 
-    return { Bullet, Slash };
+    /*
+     :::::::::  ::::::::::: :::::::::: :::        ::::::::::
+     :+:    :+:     :+:     :+:        :+:        :+:
+    +:+    +:+     +:+     +:+        +:+        +:+
+   +#++:++#:      +#+     :#::+::#   +#+        +#++:++#
+  +#+    +#+     +#+     +#+        +#+        +#+
+ #+#    #+#     #+#     #+#        #+#        #+#
+###    ### ########### ###        ########## ##########
+    */
+    class RifleBullet extends Bullet {
+        constructor(options) {
+            super(options);
+            this.bulletType = 'rifle';
+            
+            // Add trail debris (client-side only)
+            if (typeof window !== 'undefined') {
+                this.runFunc.push(function () {
+                    try {
+                        if (game.match.ticks % 2 == 0) { // Every other frame
+                            console.log('[RifleBullet] Tick check passed, creating debris');
+                            let tempx = ((Math.random() * 1) - 0.5) * 2;
+                            let tempy = ((Math.random() * 1) - 0.5) * 2;
+                            let tempz = ((Math.random() * 1) - 0.5) * 2;
+                            const debris = new Blocks.Block({
+                                spawnPos: new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
+                                spawnVol: new Utils.Vect3(4, 4, 4),
+                                speed: new Utils.Vect3(tempx, tempy, tempz),
+                                color: [220, 220, 200],
+                                livetime: 15,
+                                dying: true,
+                                shadowDraw: false,
+                                solid: false,
+                                visible: true
+                            });
+                            console.log('[RifleBullet] Created debris:', debris, 'Total debris:', game.match.map.debris.length);
+                            game.match.map.debris.push(debris);
+                        }
+                    } catch (error) {
+                        console.error('[RifleBullet] Error creating debris:', error);
+                    }
+                }.bind(this));
+                
+                // Custom hit splash (client-side only)
+                this.hitSplash = function () {
+                    for (let parts = 0; parts < 20; parts++) {
+                        let tempx = (Math.random() * 4) - 2;
+                        let tempy = (Math.random() * 4) - 2;
+                        let tempz = (Math.random() * 4) - 2;
+                        let tempC = Math.ceil(Math.random() * 255);
+                        game.match.map.debris.push(
+                            new Blocks.Block({
+                                spawnPos: new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
+                                spawnVol: new Utils.Vect3(6, 3, 1),
+                                speed: new Utils.Vect3(tempx + (this.speed.x * 0.25), tempy + (this.speed.y * 0.25), tempz + (this.speed.z * 0.25)),
+                                color: [0, tempC, 255],
+                                livetime: 20,
+                                dying: true,
+                                shadowDraw: false,
+                                solid: false
+                            }));
+                    }
+                }.bind(this);
+            }
+        }
+    }
+
+    return { Bullet, Slash, RifleBullet };
 }));

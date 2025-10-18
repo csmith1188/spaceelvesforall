@@ -81,6 +81,8 @@
             this.owner = owner;
             this.type = "controller";
             this.newState = {};
+            this.inputHistory = []; // Store input history for reconciliation
+            this.lastInputSequence = 0;
             this.setupInputs();
         }
 
@@ -93,6 +95,30 @@
             for (const button in this.buttons) {
                 this.buttons[button].last = this.buttons[button].current;
             }
+        }
+
+        // Store input for client-side prediction
+        storeInput(inputState, aimX, aimY, aimZ) {
+            this.lastInputSequence++;
+            const input = {
+                sequence: this.lastInputSequence,
+                state: { ...inputState },
+                aimX: aimX,
+                aimY: aimY,
+                aimZ: aimZ,
+                timestamp: Date.now()
+            };
+            
+            this.inputHistory.push(input);
+            
+            // Keep only recent inputs (last 2 seconds)
+            const cutoff = Date.now() - 2000;
+            this.inputHistory = this.inputHistory.filter(input => input.timestamp > cutoff);
+        }
+
+        // Get inputs since a specific sequence number
+        getInputsSince(sequence) {
+            return this.inputHistory.filter(input => input.sequence > sequence);
         }
 
         resetButtons() {

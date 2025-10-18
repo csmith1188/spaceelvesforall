@@ -243,10 +243,10 @@
                     yaim *= this.projectileSpeed;
                     zaim *= this.projectileSpeed;
                     // Add the user's speed and multiply speed BEFORE spread for satisfying flamer ???
-                    // Add bullet to map
+                    // Add bullet to map (server-side only)
                     if (typeof window === 'undefined')
                         game.match.map.bullets.push(
-                            new Projectiles.Bullet(
+                            new Projectiles.RifleBullet(
                                 {
                                     spawnPos: new Utils.Vect3(user.HB.pos.x, user.HB.pos.y, user.HB.pos.z),
                                     radius: 4,
@@ -258,52 +258,6 @@
                                     livetime: 300,
                                     touchSFX: Utils.isClient() ? Sounds.hit_rifle : null
                                 }));
-                    // Change bullet runfunc
-                    // game.match.map.bullets[game.match.map.bullets.length - 1].runFunc.push(
-                    //     function () {
-                    //         let tempx = ((Math.random() * 1) - 0.5) * 2;
-                    //         let tempy = ((Math.random() * 1) - 0.5) * 2;
-                    //         let tempz = ((Math.random() * 1) - 0.5) * 2;
-                    //         game.match.map.debris.push(
-                    //             new Block(
-                    //                 new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
-                    //                 new Utils.Vect3(1, 1, 1),
-                    //                 {
-                    //                     speed: new Utils.Vect3(tempx, tempy, tempz),
-                    //                     HB: new Cube(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Utils.Vect3(4, 4, 4)),
-                    //                     z: this.HB.pos.z,
-                    //                     color: [220, 220, 200],
-                    //                     livetime: 15,
-                    //                     dying: true,
-                    //                     shadowDraw: false,
-                    //                     solid: false,
-                    //                 }));
-                    //     }.bind(game.match.map.bullets[game.match.map.bullets.length - 1])
-                    // );
-                    //Change hitSpash
-                    // game.match.map.bullets[game.match.map.bullets.length - 1].hitSplash = function () {
-                    //     for (let parts = 0; parts < 20; parts++) {
-                    //         let tempx = (Math.random() * 4) - 2;
-                    //         let tempy = (Math.random() * 4) - 2;
-                    //         let tempz = (Math.random() * 4) - 2;
-                    //         let tempC = Math.ceil(Math.random() * 255);
-                    //         game.match.map.debris.push(
-                    //             new Blocks.Block(
-                    //                 new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z),
-                    //                 new Utils.Vect3(1, 1, 1),
-                    //                 {
-                    //                     speed: new Utils.Vect3(tempx + (this.speed.x * 0.25), tempy + (this.speed.y * 0.25), tempz + (this.speed.z * 0.25)),
-                    //                     spawnVol: new Utils.Vect3(6, 3, 1),
-                    //                     HB: new Cube(new Utils.Vect3(this.HB.pos.x, this.HB.pos.y, this.HB.pos.z), new Utils.Vect3(6, 3, 1)),
-                    //                     z: this.HB.pos.z,
-                    //                     color: [0, tempC, 255],
-                    //                     livetime: 20,
-                    //                     dying: true,
-                    //                     shadowDraw: false,
-                    //                     solid: false
-                    //                 }));
-                    //     }
-                    // }.bind(game.match.map.bullets[game.match.map.bullets.length - 1])
 
                     // Push player back by the negative of the aim vector
                     user.speed.x -= (aimX / distance) * 10;

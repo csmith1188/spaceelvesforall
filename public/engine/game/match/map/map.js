@@ -73,7 +73,10 @@
             // block.serverPos = { pos: block.pos, time: block.time };
             // delete block.pos;
             // delete block.vol;
-            let character = game.match.characters.find(c => c.id === block.id);
+            // Find character by user ID for bullets/projectiles, or by block ID for other entities
+            let character = block.user && block.user.i 
+                ? game.match.characters.find(c => c.id === block.user.i)
+                : game.match.characters.find(c => c.id === block.id);
             if (block.type == "block") {
                 this.blocks.push(new Blocks.Block(
                     {
@@ -84,7 +87,13 @@
                 ));
             }
             else if (block.type == "bullet") {
-                this.bullets.push(new Projectiles.Bullet(
+                // Choose bullet class based on bulletType
+                let BulletClass = Projectiles.Bullet; // default
+                if (block.bulletType === 'rifle') {
+                    BulletClass = Projectiles.RifleBullet;
+                }
+                
+                this.bullets.push(new BulletClass(
                     {
                         spawnPos: block.spawnPos,
                         radius: block.radius,

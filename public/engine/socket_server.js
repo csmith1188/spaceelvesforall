@@ -25,7 +25,7 @@ function gameHandler(ws, req) {
 
     let findPlayer = game.players.find(player => player.token.id === ws.token.id);
     if (!findPlayer) {
-        console.info('Player not found. Creating new player', ws.token.username);
+        console.info('Player not found. Creating new player', ws.token.displayName);
         // if the game is full, close the connection
         if (game.match) {
             if (game.players.length >= game.match.playerLimit.max) {
@@ -38,7 +38,7 @@ function gameHandler(ws, req) {
         // create a new player
         game.players.push(new Players.Player({ token: ws.token, ws: ws }));
     } else {
-        console.info('Player found. Reconnecting player.', ws.token.username);
+        console.info('Player found. Reconnecting player.', ws.token.displayName);
         findPlayer.ws = ws;
         findPlayer.connected = true;
     }

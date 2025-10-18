@@ -28,6 +28,12 @@
     Enable 3D
     <input type="checkbox" onchange="game.player.camera._3D = this.checked;">
     <input type="range" value="1" min="0" max="1" step="0.01" oninput="game.player.camera.angle = this.value;">
+    <br>
+    Network Debug
+    <input type="checkbox" onchange="if(this.checked) networkStats.start(); else networkStats.stop();">
+    <br>
+    Sync Debug
+    <input type="checkbox" onchange="if(this.checked) syncDebug.start(); else syncDebug.stop();">
   </div>
 </body>
 
@@ -39,6 +45,8 @@
 
 <script src="engine/utils.js"></script>
 <script src="engine/sound.js"></script>
+<script src="engine/network_debug.js"></script>
+<script src="engine/sync_debug.js"></script>
 <script src="engine/game/match/block/block.js"></script>
 <script src="engine/game/match/block/projectile.js"></script>
 <script src="engine/game/match/item.js"></script>
@@ -78,6 +86,8 @@
   }
 
   gameLoop();
+
+  // networkStats.enabled = true; syncDebug.enabled = true;
 </script>
 
 </html>
