@@ -30,6 +30,10 @@
         constructor() {
             super();
             this.setup();
+            // Create the "Waiting for all players" menu (client-side only)
+            if (typeof window !== 'undefined' && typeof Menus !== 'undefined') {
+                this.awaitingMenu = new Menus.Menu_AwaitingPlayers([], new Utils.Rect(0, 0, 300, 100));
+            }
         }
 
         reset() {
@@ -147,6 +151,10 @@
             super.awaitPlayers();
             if (game.players.length >= this.playerLimit.min) {
                 this.reset();
+                // Hide the menu when match starts (client-side only)
+                if (typeof window !== 'undefined' && this.awaitingMenu) {
+                    this.awaitingMenu.visible = false;
+                }
             }
         }
 
@@ -173,6 +181,12 @@
 
         draw() {
             super.draw();
+            
+            // Draw the "Waiting for all players" menu during awaitPlayers stage
+            if (this.stage === 'awaitPlayers' && this.awaitingMenu) {
+                this.awaitingMenu.draw();
+            }
+            
             if (this.lastWinner) {
                 ctx.fillStyle = "rgba(0,0,0,0.5)";
                 ctx.fillRect(0, 0, game.gameView.w, game.gameView.h);
