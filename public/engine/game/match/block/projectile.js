@@ -221,15 +221,17 @@
     class Slash extends Bullet {
         constructor(options) {
             super(options);
-            this.speed = new Utils.Vect3(this.user.aimX, this.user.aimY, 0);
             this.type = 'slash';
-            this.color = this.user.color;
             this.damage = 10;
             this.livetime = 10;
             this.touchSFX = typeof window !== 'undefined' ? Sounds.hit_lance : null;
-            this.opacity = 0;
-            this.shadowDraw = false;
-            this.force = 0.2
+            this.opacity = 0; // Make bullet visible
+            this.shadowDraw = true; // Enable shadow
+            this.force = 0.2;
+            // Default sword colors (gray/silver)
+            this.color = [200, 200, 200];
+            this.colorSide = [150, 150, 150];
+            
             if (typeof options === 'object')
                 for (var key of Object.keys(options)) {
                     if (key == 'runFunc') {
@@ -239,39 +241,64 @@
                         this[key] = options[key];
                     }
                 }
-            this.HB.radius = this.user.HB.radius + 10;
+            
+            // Set defaults if not provided (for client-side spawning from server data)
+            if (!this.speed) {
+                this.speed = new Utils.Vect3(0, 0, 0);
+            }
+            if (this.user && this.user.color) {
+                this.color = this.user.color;
+            }
+            
+            // Set radius and height BEFORE generating HB
+            if (this.user && this.user.HB && this.user.HB.radius) {
+                this.radius = this.user.HB.radius + 10;
+            } else {
+                this.radius = 20; // Default radius
+            }
+            this.height = 8; // Set height for cylinder drawing
             this.HB = Utils.generateHB(this);
 
-            this.drawFunc = [
-                () => {
-                    // Draw a line from the user to the bullet
-                    ctx.beginPath();
-                    ctx.strokeStyle = 'rgba(200,200,200,1)';
-                    ctx.lineWidth = 5;
-                    // find where the user is on the camera
-                    let compareX = game.player.camera.x - this.user.HB.pos.x;
-                    let compareY = game.player.camera.y - this.user.HB.pos.y;
-                    ctx.moveTo(
-                        game.window.w / 2 - compareX,
-                        game.window.h / 2 - compareY - this.user.HB.pos.z - this.user.HB.height / 2
-                    );
-                    // find where the bullet is on the camera
-                    let targetX = game.player.camera.x - this.HB.pos.x;
-                    let targetY = game.player.camera.y - this.HB.pos.y;
-                    // Compare the user and bullet to find angle
-                    targetX = compareX - targetX;
-                    targetY = compareY - targetY;
-                    let distance = Math.sqrt((targetX ** 2) + (targetY ** 2));
-                    targetX = (targetX / distance) * -60;
-                    targetY = (targetY / distance) * -60;
-                    // Draw line from user to target
-                    ctx.lineTo(
-                        game.window.w / 2 - compareX - targetX,
-                        game.window.h / 2 - compareY - targetY - this.user.HB.pos.z - this.user.HB.height / 2
-                    );
-                    ctx.stroke();
+            // Add silver sword line to draw functions (in addition to default bullet rendering)
+            this.drawFunc.push(() => {
+                // Safety check: ensure user and required properties exist
+                if (!this.user || !this.user.HB || !this.user.HB.pos) {
+                    return;
                 }
-            ]
+                
+                // Draw a line from the user extending forward in the sword's fixed direction
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(200, 200, 200, 1)'; // Silver sword
+                ctx.lineWidth = 5;
+                
+                // Find where the user is on the camera
+                let compareX = game.player.camera.x - this.user.HB.pos.x;
+                let compareY = game.player.camera.y - this.user.HB.pos.y;
+                
+                // Start point at user's position
+                ctx.moveTo(
+                    game.window.w / 2 - compareX,
+                    game.window.h / 2 - compareY - this.user.HB.pos.z - this.user.HB.height / 2
+                );
+                
+                // Use the fixed sword direction (from this.speed) to calculate end point
+                // Normalize the speed vector to get direction
+                let swordDistance = Math.sqrt(this.speed.x ** 2 + this.speed.y ** 2);
+                let swordLength = 60; // Sword visual length
+                
+                if (swordDistance > 0) {
+                    let dirX = (this.speed.x / swordDistance) * swordLength;
+                    let dirY = (this.speed.y / swordDistance) * swordLength;
+                    
+                    // Draw line extending in the sword's fixed direction
+                    ctx.lineTo(
+                        game.window.w / 2 - compareX + dirX,
+                        game.window.h / 2 - compareY + dirY - this.user.HB.pos.z - this.user.HB.height / 2
+                    );
+                }
+                
+                ctx.stroke();
+            });
 
             this.hitSplash = () => {
                 for (let parts = 0; parts < 20; parts++) {
@@ -296,9 +323,12 @@
 
         step() {
             super.step();
-            this.HB.pos.x = this.user.HB.pos.x + this.speed.x;
-            this.HB.pos.y = this.user.HB.pos.y + this.speed.y;
-            this.HB.pos.z = this.user.HB.pos.z + this.speed.z;
+            // Position stays relative to user (follows player like lance)
+            if (this.user && this.user.HB) {
+                this.HB.pos.x = this.user.HB.pos.x + this.speed.x;
+                this.HB.pos.y = this.user.HB.pos.y + this.speed.y;
+                this.HB.pos.z = this.user.HB.pos.z + this.speed.z;
+            }
 
             // add a debris block to the map at the player's position with a random speed
             let tempx = ((Math.random() * 1) - 0.5) * 2;
