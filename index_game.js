@@ -75,17 +75,52 @@ game.loadMatch('ForHonorMP');
 // Define a route handler for the default home page
 app.get('/', (req, res) => {
     if (req.session.token) {
-        res.render('client', { token: req.session.token, PORT: PORT });
+        const masterHost = process.env.THIS_URL || 'localhost';
+        const masterPort = process.env.PORT || 3000;
+        
+        // Build master URL properly, handling cases where hostname might include protocol
+        let masterUrl;
+        if (masterHost.startsWith('http://') || masterHost.startsWith('https://')) {
+            // If hostname already has protocol, extract just the hostname and rebuild
+            const hostname = masterHost.replace(/^https?:\/\//, '').split(':')[0];
+            const protocol = masterHost.startsWith('https://') ? 'https' : 'http';
+            masterUrl = `${protocol}://${hostname}:${masterPort}`;
+        } else {
+            // If no protocol, add http
+            masterUrl = `http://${masterHost}:${masterPort}`;
+        }
+        
+        res.render('client', { 
+            token: req.session.token, 
+            PORT: PORT, 
+            THIS_URL: masterHost, 
+            MASTER_PORT: masterPort,
+            masterUrl: masterUrl
+        });
     } else {
-        res.redirect('http://localhost:3000');
+        const masterHost = process.env.THIS_URL || 'localhost';
+        const masterPort = process.env.PORT || 3000;
+        
+        // Build redirect URL properly
+        let redirectUrl;
+        if (masterHost.startsWith('http://') || masterHost.startsWith('https://')) {
+            const hostname = masterHost.replace(/^https?:\/\//, '').split(':')[0];
+            const protocol = masterHost.startsWith('https://') ? 'https' : 'http';
+            redirectUrl = `${protocol}://${hostname}:${masterPort}`;
+        } else {
+            redirectUrl = `http://${masterHost}:${masterPort}`;
+        }
+        
+        res.redirect(redirectUrl);
     }
 });
 
 app.ws('/game', Sockets.gameHandler);
 
 // Start the server on port 3000
-app.listen(PORT, () => {
-    console.info(`Server started on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    const host = process.env.THIS_URL || 'localhost';
+    console.info(`Game server started on http://${host}:${PORT}`);
 });
 
 const tickInterval = global.game.time.tickRate; // ~16ms for 60Hz

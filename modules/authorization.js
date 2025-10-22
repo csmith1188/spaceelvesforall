@@ -22,7 +22,7 @@ const transporter = nodemailer.createTransport({
 function sendVerificationEmail(userEmail, displayName) {
 
     const token = jwt.sign({ email: userEmail }, config.SS_SECRET, { expiresIn: '1h' });
-    const url = `${config.THIS_URL}/verify?token=${token}`;
+    const url = `${config.buildThisUrl('/verify')}?token=${token}`;
 
     ejs.renderFile(__dirname + '/views/email.ejs', { displayName: displayName, url: url }, (err, renderedTemplate) => {
         if (err) {
@@ -78,10 +78,11 @@ exports.loginGET = (req, res) => {
     } else {
         if (req.query.formbar == 'true') {
             // send them to the Formbar login page
-            res.redirect(`${config.AUTH_URL}?redirectURL=${config.THIS_URL + '/login'}`);
+            const redirectBack = config.buildThisUrl('/login');
+            res.redirect(`${config.buildAuthUrl('/oauth')}?redirectURL=${encodeURIComponent(redirectBack)}`);
         } else {
             //render local login page
-            res.render('login', { this_url: config.THIS_URL + '/login' });
+            res.render('login', { this_url: config.buildThisUrl('/login') });
         }
     };
 }
@@ -140,7 +141,7 @@ exports.logoutGET = (req, res) => {
 }
 
 exports.signupGET = (req, res) => {
-    res.render('signup', { this_url: config.THIS_URL + '/login' });
+    res.render('signup', { this_url: config.buildThisUrl('/login') });
 }
 
 exports.signupPOST = (req, res) => {

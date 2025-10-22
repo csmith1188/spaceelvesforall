@@ -33,7 +33,21 @@ exports.spawnGameServer = (req, res) => {
         }
     });
 
-    res.redirect(`http://localhost:${child.PORT}/`);
+    const host = process.env.THIS_URL || 'localhost';
+    
+    // Build redirect URL properly, handling cases where hostname might include protocol
+    let redirectUrl;
+    if (host.startsWith('http://') || host.startsWith('https://')) {
+        // If hostname already has protocol, extract just the hostname and rebuild
+        const hostname = host.replace(/^https?:\/\//, '').split(':')[0];
+        const protocol = host.startsWith('https://') ? 'https' : 'http';
+        redirectUrl = `${protocol}://${hostname}:${child.PORT}/`;
+    } else {
+        // If no protocol, add http
+        redirectUrl = `http://${host}:${child.PORT}/`;
+    }
+    
+    res.redirect(redirectUrl);
 
     exports.gameServers.push(child);
     exports.gameServerCount++;

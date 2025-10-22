@@ -23,7 +23,9 @@
     const userList = document.getElementById('userList');
     const roomList = document.getElementById('roomList');
 
-    const ws = new WebSocket('ws://localhost:3000/chat');
+    // Determine WebSocket protocol based on current page protocol
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${wsProtocol}//${window.location.host}/chat`);
     
     ws.onopen = () => {
         console.log('Connected to the chat server');

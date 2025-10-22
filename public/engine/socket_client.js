@@ -1,4 +1,4 @@
-// const MasterWSS = new WebSocket('ws://localhost:3000/chat');
+// const MasterWSS = new WebSocket(`ws://${THIS_URL}:${MASTER_PORT}/chat`);
 
 // MasterWSS.addEventListener('open', () => {
 //     console.log('Connected to Master WSS');
@@ -19,7 +19,9 @@
 
 
 
-const gameWSS = new WebSocket('ws://localhost:10000/game');
+// Determine WebSocket protocol based on current page protocol
+const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const gameWSS = new WebSocket(`${wsProtocol}//${window.location.hostname}:${PORT}/game`);
 
 gameWSS.addEventListener('open', () => {
     console.log('Connected to Game WSS');

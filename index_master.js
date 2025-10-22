@@ -48,7 +48,7 @@ app.get('/', (req, res) => {
             gamesList.push(server.PORT);
         });
     }
-    res.render('index', { this_url: config.THIS_URL + '/login', gamesList: gamesList, token: req.session.token });
+    res.render('index', { this_url: config.buildThisUrl('/login'), gamesList: gamesList, token: req.session.token });
 });
 
 // Handle account management endpoints
@@ -63,6 +63,6 @@ app.get('/verify', auth.verifyGET);
 app.get('/newgame', isAuthenticated, isVerified, game.spawnGameServer);
 
 // Start the server on port 3000
-app.listen(config.PORT, () => {
-    console.info(`Server started on http://localhost:${config.PORT}`);
+app.listen(config.PORT, '0.0.0.0', () => {
+    console.info(`Server started on ${config.buildThisUrl()}`);
 });
