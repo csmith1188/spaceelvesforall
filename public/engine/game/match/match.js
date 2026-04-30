@@ -152,13 +152,15 @@
                     func();
                 }
 
-                // Remove old bots
-                for (const e of this.characters) {
-                    if (e.cleanup && !e.active) {
-                        //Remove npcs
-                        this.characters = this.characters.filter(function (el) { return el != e; });
+                // Remove old bots with single-pass compaction
+                let writeIdx = 0;
+                for (let i = 0; i < this.characters.length; i++) {
+                    const e = this.characters[i];
+                    if (!(e.cleanup && !e.active)) {
+                        this.characters[writeIdx++] = e;
                     }
                 }
+                this.characters.length = writeIdx;
             }
         }
 
@@ -174,17 +176,6 @@
             if (this.map) {
 
                 this.map.draw();
-
-                // Combine blocks, bullets, debris, and characters
-                let entities = [...this.map.blocks, ...this.map.bullets, ...this.map.debris, ...this.characters];
-
-                // Sort entities by their HB's pos y
-                entities.sort((a, b) => a.HB.pos.y - b.HB.pos.y);
-
-                // Draw sorted entities
-                for (const entity of entities) {
-                    entity.draw();
-                }
 
                 // Draw UI
                 if (game.player.interface) {

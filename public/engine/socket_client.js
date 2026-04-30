@@ -22,6 +22,7 @@
 // Determine WebSocket protocol based on current page protocol
 const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 const gameWSS = new WebSocket(`${wsProtocol}//${window.location.hostname}:${PORT}/game`);
+let debugLastSnapshotAt = 0;
 
 gameWSS.addEventListener('open', () => {
     console.log('Connected to Game WSS');
@@ -75,6 +76,9 @@ gameWSS.addEventListener('message', (event) => {
 
         if (game.match) {
             if (message.characters) {
+                const now = Date.now();
+                const snapshotIntervalMs = debugLastSnapshotAt ? now - debugLastSnapshotAt : 0;
+                debugLastSnapshotAt = now;
                 for (let character of message.characters) {
                     let c = game.match.characters.find(c => c.id === character.i);
                     if (c) {
@@ -86,16 +90,43 @@ gameWSS.addEventListener('message', (event) => {
                             );
                         }
                         
-                        // Check if this is the local player for client-side prediction reconciliation
-                        if (c.parent && c.parent === game.player && message.inputSeq !== undefined) {
-                            game.reconcileWithServer(c, character.p, message.inputSeq);
-                        }
-                        
                         // Update server position and state
                         c.serverPos.x = character.p.x;
                         c.serverPos.y = character.p.y;
                         c.serverPos.z = character.p.z;
-                        c.serverPos.time = message.time;
+                        c.serverPos.time = message.serverTick || message.time;
+
+                        c.snapshotBuffer = c.snapshotBuffer || [];
+                        c.lastSnapshotSeq = Number.isFinite(c.lastSnapshotSeq) ? c.lastSnapshotSeq : null;
+                        const snapshotReceiveTime = Date.now();
+                        const incomingSeq = Number.isFinite(message.seq) ? message.seq : null;
+                        if (incomingSeq !== null) {
+                            c.lastSnapshotSeq = (c.lastSnapshotSeq === null) ? incomingSeq : Math.max(c.lastSnapshotSeq, incomingSeq);
+                        }
+                        const snapshotEntry = {
+                            time: snapshotReceiveTime,
+                            pos: { x: character.p.x, y: character.p.y, z: character.p.z },
+                            speed: character.s ? { x: character.s.x, y: character.s.y, z: character.s.z } : null,
+                            mom: character.m ? { x: character.m.x, y: character.m.y, z: character.m.z } : null
+                        };
+                        if (c.snapshotBuffer.length >= (c.maxSnapshotBuffer || 20)) {
+                            c.snapshotBuffer[0] = snapshotEntry;
+                            c.snapshotBuffer.push(c.snapshotBuffer.shift());
+                        } else {
+                            c.snapshotBuffer.push(snapshotEntry);
+                        }
+                        
+                        // Reconcile local predicted player using server input acknowledgement.
+                        if (c.parent && c.parent === game.player && Number.isFinite(character.isq)) {
+                            const ackAdvanced = character.isq > c.lastServerInputSeq;
+                            const localError = Math.sqrt(
+                                Math.pow(character.p.x - c.HB.pos.x, 2) +
+                                Math.pow(character.p.y - c.HB.pos.y, 2) +
+                                Math.pow(character.p.z - c.HB.pos.z, 2)
+                            );
+                            game.reconcileWithServer(c, character.p, character.isq, character.s, ackAdvanced);
+                            c.lastServerInputSeq = Math.max(c.lastServerInputSeq, character.isq);
+                        }
                         
                         // Store server speed for better reconciliation
                         if (character.s) {
@@ -224,16 +255,6 @@ gameWSS.addEventListener('message', (event) => {
                             }
                         }
                         
-                        // Apply remote player input state for client-side prediction
-                        if (character.inp && c.parent && c.parent !== game.player && c.parent.controller) {
-                            c.parent.controller.buttons.moveLeft.current = character.inp.ml || 0;
-                            c.parent.controller.buttons.moveRight.current = character.inp.mr || 0;
-                            c.parent.controller.buttons.moveUp.current = character.inp.mu || 0;
-                            c.parent.controller.buttons.moveDown.current = character.inp.md || 0;
-                            c.parent.controller.buttons.jump.current = character.inp.j || 0;
-                            c.parent.controller.buttons.brake.current = character.inp.br || 0;
-                            c.parent.controller.buttons.boost.current = character.inp.bo || 0;
-                        }
                     } else {
                         gameWSS.send(JSON.stringify({ getCharacter: character.i }));
                     }

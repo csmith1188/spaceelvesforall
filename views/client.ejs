@@ -75,22 +75,50 @@
     client: true
   });
 
-  const tickInterval = game.time.tickRate; // ~16ms for 60Hz
-  let lastTick = Date.now();
-
-  function gameLoop() {
-    const now = Date.now();
-    const delta = now - lastTick;
-
-    if (delta >= tickInterval) {
-      lastTick = now - (delta % tickInterval); // Adjust for drift
-      game.step(); // Your game logic
+  function applyCanvasResize() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
     }
-
-    requestAnimationFrame(gameLoop); // Keeps the event loop alive
+    game.window.w = w;
+    game.window.h = h;
+    game.gameView.w = Math.min(w, 1920);
+    game.gameView.h = Math.min(h, 1080);
+    if (game.player) {
+      game.player.camera.radius = Math.sqrt((w / 2) ** 2 + (h / 2) ** 2);
+    }
   }
 
-  gameLoop();
+  applyCanvasResize();
+  window.addEventListener('resize', applyCanvasResize);
+
+  let accumulator = 0;
+  let lastFrameTime = performance.now();
+  const fixedStepMs = game.time.tickRate;
+  const maxCatchupSteps = 5;
+
+  function gameLoop(now) {
+    const elapsedMs = now - lastFrameTime;
+    lastFrameTime = now;
+    accumulator += elapsedMs;
+
+    let steps = 0;
+    while (accumulator >= fixedStepMs && steps < maxCatchupSteps) {
+      game.step();
+      accumulator -= fixedStepMs;
+      steps++;
+    }
+
+    if (steps === maxCatchupSteps) {
+      accumulator = 0;
+    }
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  requestAnimationFrame(gameLoop);
 
   // networkStats.enabled = true; syncDebug.enabled = true;
 </script>

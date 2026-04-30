@@ -52,6 +52,10 @@
             this.bouyancy = 1;
             this.hover = 0; // 12
             this.serverPos = new Utils.Vect3(0, 0, 0);
+            this.snapshotBuffer = [];
+            this.interpolationDelayMs = 100;
+            this.maxSnapshotBuffer = 20;
+            this.lastServerInputSeq = -1;
             this.zMod = () => {
                 return 0;
             }
@@ -191,14 +195,20 @@
 
         step() {
             if (this.active) {
-                // ALL PLAYERS (local and remote) run full physics simulation
-                // Then blend toward server position based on prediction error
+                const isClient = typeof window !== 'undefined';
+                const isLocalPlayer = this.parent && game.player && this.parent === game.player;
+
+                // Client renders remote players from server snapshots only.
+                if (isClient && !isLocalPlayer) {
+                    this.stepRemoteInterpolated();
+                    return;
+                }
+
                 if (this.pp < this.pp_max)
                     this.pp += 1;
                 this.floor = 0;
 
                 //Reset Momentum (but preserve server momentum for remote players)
-                const isLocalPlayer = this.parent && game.player && this.parent === game.player;
                 if (isLocalPlayer || typeof window === 'undefined') {
                     // Only reset momentum if this is the local player or on server
                     this.mom = new Utils.Vect3();
@@ -588,19 +598,7 @@
                     
                     // Determine correction speed (pixels per frame to move toward server)
                     let correctionSpeed = 0;
-                    
-                    if (isLocalPlayer) {
-                        // LOCAL PLAYER: Gentle corrections
-                        if (predictionError < 10) {
-                            correctionSpeed = 0.5; // 0.5 pixels per frame
-                        } else if (predictionError < 20) {
-                            correctionSpeed = 1.5; // 1.5 pixels per frame
-                        } else if (predictionError < 50) {
-                            correctionSpeed = 3; // 3 pixels per frame
-                        } else {
-                            correctionSpeed = predictionError * 0.5; // Snap quickly for large errors
-                        }
-                    } else {
+                    if (!isLocalPlayer) {
                         // REMOTE PLAYERS: Faster corrections for visual smoothness
                         if (predictionError < 5) {
                             correctionSpeed = 1; // 1 pixel per frame
@@ -615,17 +613,18 @@
                         }
                     }
                     
-                    // Apply correction (move toward server at fixed speed)
-                    if (predictionError > 0.1) {
+                    // Apply correction only for remote entities here.
+                    // Local player is corrected by input-ack reconciliation to avoid double correction jitter.
+                    if (!isLocalPlayer && predictionError > 0.1) {
                         const correctionFactor = Math.min(correctionSpeed / predictionError, 1.0);
                         this.HB.pos.x += dx * correctionFactor;
                         this.HB.pos.y += dy * correctionFactor;
                         this.HB.pos.z += dz * correctionFactor;
                     }
                     
-                    // Speed correction for drift prevention
-                    if (this.serverSpeed && predictionError > 3) {
-                        const speedCorrectionFactor = isLocalPlayer ? 0.1 : 0.2;
+                    // Speed correction for drift prevention (remote only)
+                    if (!isLocalPlayer && this.serverSpeed && predictionError > 3) {
+                        const speedCorrectionFactor = 0.2;
                         this.speed.x += (this.serverSpeed.x - this.speed.x) * speedCorrectionFactor;
                         this.speed.y += (this.serverSpeed.y - this.speed.y) * speedCorrectionFactor;
                         this.speed.z += (this.serverSpeed.z - this.speed.z) * speedCorrectionFactor;
@@ -720,6 +719,50 @@
                             }))
                     }
                 }
+            }
+        }
+
+        stepRemoteInterpolated() {
+            if (this.snapshotBuffer.length >= 2) {
+                const renderTime = Date.now() - this.interpolationDelayMs;
+
+                while (this.snapshotBuffer.length >= 2 && this.snapshotBuffer[1].time <= renderTime) {
+                    this.snapshotBuffer.shift();
+                }
+
+                const older = this.snapshotBuffer[0];
+                const newer = this.snapshotBuffer[1];
+                if (older && newer) {
+                    const span = Math.max(newer.time - older.time, 1);
+                    const t = Math.max(0, Math.min(1, (renderTime - older.time) / span));
+
+                    this.HB.pos.x = older.pos.x + (newer.pos.x - older.pos.x) * t;
+                    this.HB.pos.y = older.pos.y + (newer.pos.y - older.pos.y) * t;
+                    this.HB.pos.z = older.pos.z + (newer.pos.z - older.pos.z) * t;
+
+                    if (older.mom && newer.mom) {
+                        this.mom.x = older.mom.x + (newer.mom.x - older.mom.x) * t;
+                        this.mom.y = older.mom.y + (newer.mom.y - older.mom.y) * t;
+                        this.mom.z = older.mom.z + (newer.mom.z - older.mom.z) * t;
+                    }
+                    if (older.speed && newer.speed) {
+                        this.speed.x = older.speed.x + (newer.speed.x - older.speed.x) * t;
+                        this.speed.y = older.speed.y + (newer.speed.y - older.speed.y) * t;
+                        this.speed.z = older.speed.z + (newer.speed.z - older.speed.z) * t;
+                    }
+                }
+            } else if (this.serverPos && this.serverPos.x !== undefined) {
+                this.HB.pos.x = this.serverPos.x;
+                this.HB.pos.y = this.serverPos.y;
+                this.HB.pos.z = this.serverPos.z;
+            }
+
+            for (let i = 0; i < this.inventory.length; i++) {
+                this.inventory[i].step('player');
+            }
+
+            for (const func of this.runFunc) {
+                func();
             }
         }
 
@@ -1141,17 +1184,18 @@
                     bo: this.parent.controller.buttons.boost.current
                 };
             }
+            const packedInputSeq = (this.parent && Number.isFinite(this.parent.lastProcessedInputSeq)) ? this.parent.lastProcessedInputSeq : -1;
             
             return {
                 t: 'c', // type: character
                 tm: this.team, // team
                 i: this.id, // id
-                p: this.HB.pos, // pos
-                s: this.speed, // speed
-                m: this.mom, // momentum (for facing direction)
+                p: { x: this.HB.pos.x, y: this.HB.pos.y, z: this.HB.pos.z }, // pos
+                s: { x: this.speed.x, y: this.speed.y, z: this.speed.z }, // speed
+                m: { x: this.mom.x, y: this.mom.y, z: this.mom.z }, // momentum (for facing direction)
                 h: this.hp, // hp
                 pp: this.pp, // pp
-                a: this.ammo, // ammo
+                a: { ...this.ammo }, // ammo
                 ac: this.active, // active state
                 vis: this.visible, // visible state
                 sol: this.solid, // solid state (collision)
@@ -1162,7 +1206,8 @@
                     nc: Math.max(weapon.nextCool - game.match.time.ticks, 0), // remaining cooldown ticks (relative)
                     r: weapon.reloading // is reloading
                 })), // inventory
-                inp: inputState // input state (compressed)
+                inp: inputState, // input state (compressed)
+                isq: packedInputSeq
             }
         }
 
@@ -1223,11 +1268,11 @@
                 if (freq !== lastFreq) {
                     Sounds.prop[lastFreq].pause();
                     Sounds.prop[lastFreq].currentTime = 0;
-                }
-                if (Sounds.prop[freq].currentTime > (game.time.tickRate * game.time.delta) / 1000)
                     Sounds.prop[freq].currentTime = 0;
-                Sounds.prop[freq].volume = 0.2;
-                Sounds.prop[freq].play().catch(err => {});
+                    Sounds.prop[freq].volume = 0.2;
+                    Sounds.prop[freq].play().catch(err => {});
+                }
+                this.lastCombinedSpeed = combinedSpeed;
             }
         }
     }

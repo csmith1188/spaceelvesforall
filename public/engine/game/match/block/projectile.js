@@ -12,6 +12,10 @@
         root.Projectiles = factory(root.Utils, root.Blocks);
     }
 }(typeof self !== 'undefined' ? self : this, function (Utils, Blocks) {
+    let sharedBulletHitSfx = null;
+    if (typeof window !== 'undefined') {
+        sharedBulletHitSfx = new Audio('sfx/hit_01.wav');
+    }
     /*
       :::::::::  :::::::::   ::::::::  ::::::::::: :::::::::: :::::::: ::::::::::: ::::::::::: :::        :::::::::: ::::::::
      :+:    :+: :+:    :+: :+:    :+:     :+:     :+:       :+:    :+:    :+:         :+:     :+:        :+:       :+:    :+:
@@ -34,7 +38,7 @@
             this.type = 'bullet';
             this.color = [255, 0, 0];
             this.colorSide = [255, 128, 0];
-            if (typeof window !== 'undefined') this.touchSFX = new Audio('sfx/hit_01.wav');
+            if (typeof window !== 'undefined') this.touchSFX = sharedBulletHitSfx;
             this.damage = 10;
             this.force = 0.15; // How much of this projectile's speed is applied to the target
             this.shadowDraw = true;

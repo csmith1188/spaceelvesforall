@@ -72,6 +72,8 @@
                 this.imgSide.src = this.imgFileSide;
                 this.shadow = new Image();
                 this.shadow.src = 'img/sprites/shadow.png';
+                this._tilePatternTop = null;
+                this._tilePatternSide = null;
             }
             this.drawStyle = 'tile'; // 'tile' or 'stretch'
             this.shadowDraw = false;
@@ -94,7 +96,13 @@
 
             this.HB = Utils.generateHB(this);
 
-            if (typeof window !== 'undefined') this.img.src = this.imgFile;
+            if (typeof window !== 'undefined') {
+                // Apply final image sources after options are merged.
+                this.img.src = this.imgFile || '';
+                this.imgSide.src = this.imgFileSide || '';
+                this._tilePatternTop = null;
+                this._tilePatternSide = null;
+            }
         }
 
         step() {
@@ -239,10 +247,14 @@
                                 this.HB.volume.z
                             );
                         } else if (this.drawStyle == 'tile') {
-                            let texture = new Image();
-                            texture.src = this.imgFile;
-                            let pattern = ctx.createPattern(texture, 'repeat');
-                            ctx.fillStyle = pattern;
+                            if (!this._tilePatternTop && this.img) {
+                                this._tilePatternTop = ctx.createPattern(this.img, 'repeat');
+                            }
+                            if (this._tilePatternTop) {
+                                ctx.fillStyle = this._tilePatternTop;
+                            } else {
+                                ctx.fillStyle = `rgba(${this.color[0]}, ${this.color[1]}, ${this.color[2]}, ${this.opacity})`;
+                            }
 
                             // Translate the context by the top-left corner of the rectangle
                             ctx.translate(game.window.w / 2 - compareX, game.window.h / 2 - compareY - this.HB.volume.z - this.HB.pos.z);
@@ -253,10 +265,14 @@
                             // Translate the context back
                             ctx.translate(-(game.window.w / 2 - compareX), -(game.window.h / 2 - compareY - this.HB.volume.z - this.HB.pos.z));
 
-                            texture = new Image();
-                            texture.src = this.imgFileSide;
-                            pattern = ctx.createPattern(texture, 'repeat');
-                            ctx.fillStyle = pattern;
+                            if (!this._tilePatternSide && this.imgSide) {
+                                this._tilePatternSide = ctx.createPattern(this.imgSide, 'repeat');
+                            }
+                            if (this._tilePatternSide) {
+                                ctx.fillStyle = this._tilePatternSide;
+                            } else {
+                                ctx.fillStyle = `rgba(${this.colorSide[0]}, ${this.colorSide[1]}, ${this.colorSide[2]}, ${this.opacity})`;
+                            }
                             ctx.translate(game.window.w / 2 - compareX, game.window.h / 2 - compareY - this.HB.pos.z - this.HB.volume.z + this.HB.volume.y);
                             ctx.fillRect(0, 0, this.HB.volume.x, this.HB.volume.z);
                             ctx.translate(-(game.window.w / 2 - compareX), -(game.window.h / 2 - compareY - this.HB.pos.z - this.HB.volume.z + this.HB.volume.y));

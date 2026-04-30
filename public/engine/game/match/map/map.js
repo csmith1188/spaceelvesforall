@@ -203,28 +203,26 @@
     
     */
         step() {
-
-            for (const e of this.blocks) {
-                if (e.cleanup && !e.active) {
-                    //Remove block
-                    this.blocks = this.blocks.filter(function (el) { return el != e; });
-                }
+            let writeBlocks = 0;
+            for (let i = 0; i < this.blocks.length; i++) {
+                const e = this.blocks[i];
+                if (!(e.cleanup && !e.active)) this.blocks[writeBlocks++] = e;
             }
+            this.blocks.length = writeBlocks;
 
-            // log list of bullets that have ids
-            for (const e of this.bullets) {
-                if (e.cleanup && !e.active) {
-                    //Remove bullet
-                    this.bullets = this.bullets.filter(function (el) { return el != e; });
-                }
+            let writeBullets = 0;
+            for (let i = 0; i < this.bullets.length; i++) {
+                const e = this.bullets[i];
+                if (!(e.cleanup && !e.active)) this.bullets[writeBullets++] = e;
             }
+            this.bullets.length = writeBullets;
 
-            for (const e of this.debris) {
-                if (e.cleanup && !e.active) {
-                    //Remove bullet
-                    this.debris = this.debris.filter(function (el) { return el != e; });
-                }
+            let writeDebris = 0;
+            for (let i = 0; i < this.debris.length; i++) {
+                const e = this.debris[i];
+                if (!(e.cleanup && !e.active)) this.debris[writeDebris++] = e;
             }
+            this.debris.length = writeDebris;
 
             // Run all runFunc
             for (const func of this.runFunc) {
@@ -309,7 +307,18 @@
                 let horizonCalc = 0;
                 if (game.player.camera._3D)
                     horizonCalc = (game.gameView.h / 2) * (1 - game.player.camera.angle)
-                if (game.player.camera.radius > Math.abs(compareX) && game.player.camera.radius > Math.abs(compareY) - horizonCalc)
+                // Expand culling by entity bounds so partially visible blocks still draw.
+                let boundsX = 0;
+                let boundsY = 0;
+                if (entity.HB && entity.HB.volume) {
+                    boundsX = entity.HB.volume.x;
+                    boundsY = entity.HB.volume.y + (entity.HB.volume.z || 0) + Math.max(0, entity.HB.pos.z || 0);
+                } else if (entity.HB && Number.isFinite(entity.HB.radius)) {
+                    const diameter = entity.HB.radius * 2;
+                    boundsX = diameter;
+                    boundsY = diameter + (entity.HB.height || 0) + Math.max(0, entity.HB.pos.z || 0);
+                }
+                if (game.player.camera.radius + boundsX > Math.abs(compareX) && game.player.camera.radius + boundsY > Math.abs(compareY) - horizonCalc)
                     entity.draw(game.player.character);
             }
 

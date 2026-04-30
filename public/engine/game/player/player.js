@@ -58,6 +58,7 @@
             this.inMenu = false;
             this.ready = false;
             this.connected = true;
+            this.lastProcessedInputSeq = -1;
             if (typeof window === 'undefined') {
                 this.controller = new Controllers.SocketController(this);
             }

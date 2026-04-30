@@ -77,6 +77,9 @@ function gameHandler(ws, req) {
                 player.controller.aimY = message.aimY;
                 player.controller.aimZ = message.aimZ;
                 player.controller.newState = message.controller;
+                if (Number.isFinite(message.inputSeq)) {
+                    player.lastProcessedInputSeq = message.inputSeq;
+                }
             }
 
             if (message.getCharacter) {

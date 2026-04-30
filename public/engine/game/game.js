@@ -47,14 +47,25 @@
                 avg: 0
             }
             this.networkConfig = {
-                updateInterval: 2, // ticks between network updates (20Hz at 60fps)
-                maxUpdateInterval: 5, // maximum interval for low activity
-                minUpdateInterval: 1, // minimum interval for high activity
+                updateInterval: 2, // fixed ticks between network updates (30Hz at 60fps)
+                maxUpdateInterval: 2,
+                minUpdateInterval: 2,
                 entityThreshold: 20, // switch to higher rate when entity count exceeds this
                 lastEntityCount: 0,
                 sequenceNumber: 0,
-                lastSentState: new Map() // entityId -> last sent state
+                lastSentState: new Map(), // entityId -> last sent state
+                lastBroadcastAt: 0
             }
+            this.debugPerf = {
+                lastClientPerfSentAt: 0,
+                slowFrameCount: 0,
+                deltaClampCount: 0,
+                lastRawDelta: 0,
+                reconcileCalls: 0,
+                reconcileNoAckCalls: 0,
+                reconcileSnapCount: 0,
+                maxReconcileError: 0
+            };
             // loop through the options and add them to the game
             for (let key in options) {
                 if (options.hasOwnProperty(key)) {
@@ -66,12 +77,29 @@
         step() {
             this.time.ticks++;
             this.time.diff = performance.now() - this.time.last;
-            this.time.delta = this.time.diff / this.time.tickRate;
+            const rawDelta = this.time.diff / this.time.tickRate;
+            this.debugPerf.lastRawDelta = rawDelta;
+            // Prevent client frame hitches from exploding physics steps and causing desync.
+            // Server remains authoritative; client prediction should stay bounded.
+            if (typeof window !== 'undefined') {
+                const maxClientDelta = 1.2;
+                if (rawDelta > maxClientDelta) {
+                    this.time.delta = maxClientDelta;
+                    this.debugPerf.deltaClampCount++;
+                } else {
+                    this.time.delta = rawDelta;
+                }
+            } else {
+                this.time.delta = rawDelta;
+            }
             this.time.last = performance.now();
             this.time.avgList.push(this.time.delta);
             if (this.time.avgList.length > 20) {
                 this.time.avgList.shift();
                 this.time.avg = this.time.avgList.reduce((a, b) => a + b, 0) / this.time.avgList.length;
+            }
+            if (typeof window !== 'undefined' && this.time.diff > 25) {
+                this.debugPerf.slowFrameCount++;
             }
             
             // Update network statistics
@@ -113,14 +141,6 @@
                 this.player = this.players.find(player => player.token.id == token.id);
                 if (this.player)
                     this.player.interface = this.player.interface || new Interfaces.Interface(this.player);
-                this.window.w = window.innerWidth;
-                this.window.h = window.innerHeight;
-                if (this.player)
-                    this.player.camera.radius = Math.sqrt((this.window.w / 2) ** 2 + (this.window.h / 2) ** 2)
-                canvas.width = this.window.w;
-                canvas.height = this.window.h;
-                this.gameView.w = Math.min(window.innerWidth, 1920);
-                this.gameView.h = Math.min(window.innerHeight, 1080);
             }
 
             // handle each player's controller
@@ -179,17 +199,6 @@
                      /__/\___|_||_\__,_|  \_,_| .__/\__,_\__,_|\__\___|
                                               |_|
                     */
-                    // Adaptive network update rate based on entity count
-                    const entityCount = this.match.characters.length + this.match.map.bullets.length + 
-                                      this.match.map.blocks.filter(b => b.type === 'pickup' || b.type === 'weapon').length;
-                    
-                    // Adjust update rate based on entity count
-                    if (entityCount > this.networkConfig.entityThreshold) {
-                        this.networkConfig.updateInterval = this.networkConfig.minUpdateInterval;
-                    } else if (entityCount < this.networkConfig.entityThreshold / 2) {
-                        this.networkConfig.updateInterval = this.networkConfig.maxUpdateInterval;
-                    }
-                    
                     if (this.time.ticks % this.networkConfig.updateInterval == 0) {
                         this.networkConfig.sequenceNumber++;
                         
@@ -207,6 +216,7 @@
                                 powerups: powerups,
                                 weapons: weapons,
                                 time: Date.now(),
+                                serverTick: this.time.ticks,
                                 seq: this.networkConfig.sequenceNumber
                             });
                         }
@@ -405,39 +415,78 @@
             character.aim.x = aimX;
             character.aim.y = aimY;
             character.aim.z = aimZ;
-            
-            // Apply other actions
-            if (inputState.fire && character.inventory[character.item]) {
-                character.inventory[character.item].use(character, aimX, aimY, aimZ, 'primary');
-            }
         }
 
-        reconcileWithServer(character, serverPos, inputSeq) {
-            // For now, use simple reconciliation without input replay
-            // The character movement is already being predicted naturally through the game loop
-            
-            // Check if there's a significant difference between client and server
-            const predictionError = Math.sqrt(
-                Math.pow(character.HB.pos.x - serverPos.x, 2) + 
-                Math.pow(character.HB.pos.y - serverPos.y, 2) + 
-                Math.pow(character.HB.pos.z - serverPos.z, 2)
-            );
-            
-            // If prediction error is too large, smoothly correct towards server position
-            if (predictionError > 50) {
-                // Smooth correction instead of snap
-                const correctionFactor = 0.5;
-                character.HB.pos.x += (serverPos.x - character.HB.pos.x) * correctionFactor;
-                character.HB.pos.y += (serverPos.y - character.HB.pos.y) * correctionFactor;
-                character.HB.pos.z += (serverPos.z - character.HB.pos.z) * correctionFactor;
-                
-                // Log large corrections
-                if (typeof networkStats !== 'undefined') {
-                    networkStats.detectAnomaly('Large Prediction Error', { 
-                        error: predictionError, 
-                        serverPos: serverPos,
-                        clientPos: { x: character.HB.pos.x, y: character.HB.pos.y, z: character.HB.pos.z }
-                    });
+        reconcileWithServer(character, serverPos, inputSeq, serverSpeed = null, ackAdvanced = false) {
+            if (!this.player || !this.player.controller || !Number.isFinite(inputSeq)) {
+                return;
+            }
+            // During heavy frame hitches, skip local reconciliation this frame.
+            // Applying correction while the client is stalled causes visible rubber-banding.
+            if (typeof window !== 'undefined' && this.debugPerf.lastRawDelta > 3) {
+                return;
+            }
+
+            const dx = serverPos.x - character.HB.pos.x;
+            const dy = serverPos.y - character.HB.pos.y;
+            const dz = serverPos.z - character.HB.pos.z;
+            const error = Math.sqrt((dx * dx) + (dy * dy) + (dz * dz));
+            this.debugPerf.reconcileCalls++;
+            if (!ackAdvanced) {
+                this.debugPerf.reconcileNoAckCalls++;
+            }
+            if (error > this.debugPerf.maxReconcileError) {
+                this.debugPerf.maxReconcileError = error;
+            }
+            if (ackAdvanced) {
+                // While inputs are actively being acknowledged, keep correction gentle.
+                if (error > 260) {
+                    character.HB.pos.x = serverPos.x;
+                    character.HB.pos.y = serverPos.y;
+                    character.HB.pos.z = serverPos.z;
+                    this.debugPerf.reconcileSnapCount++;
+                } else if (error > 12) {
+                    const correctionFactor = 0.06;
+                    const maxCorrectionStep = 3.5;
+                    const intendedStep = error * correctionFactor;
+                    const clampedStep = Math.min(intendedStep, maxCorrectionStep);
+                    const correctionScale = clampedStep / error;
+                    character.HB.pos.x += dx * correctionScale;
+                    character.HB.pos.y += dy * correctionScale;
+                    character.HB.pos.z += dz * correctionScale;
+                }
+
+                if (serverSpeed && error > 24) {
+                    const speedBlend = 0.08;
+                    character.speed.x += (serverSpeed.x - character.speed.x) * speedBlend;
+                    character.speed.y += (serverSpeed.y - character.speed.y) * speedBlend;
+                    character.speed.z += (serverSpeed.z - character.speed.z) * speedBlend;
+                }
+
+                this.player.controller.discardInputsUpTo(inputSeq);
+            } else {
+                // No new local input acked: converge faster so drift resolves even while coasting.
+                if (error > 60) {
+                    character.HB.pos.x = serverPos.x;
+                    character.HB.pos.y = serverPos.y;
+                    character.HB.pos.z = serverPos.z;
+                    this.debugPerf.reconcileSnapCount++;
+                } else if (error > 8) {
+                    const correctionFactor = 0.12;
+                    const maxCorrectionStep = 6;
+                    const intendedStep = error * correctionFactor;
+                    const clampedStep = Math.min(intendedStep, maxCorrectionStep);
+                    const correctionScale = clampedStep / error;
+                    character.HB.pos.x += dx * correctionScale;
+                    character.HB.pos.y += dy * correctionScale;
+                    character.HB.pos.z += dz * correctionScale;
+                }
+
+                if (serverSpeed && error > 12) {
+                    const speedBlend = 0.18;
+                    character.speed.x += (serverSpeed.x - character.speed.x) * speedBlend;
+                    character.speed.y += (serverSpeed.y - character.speed.y) * speedBlend;
+                    character.speed.z += (serverSpeed.z - character.speed.z) * speedBlend;
                 }
             }
         }

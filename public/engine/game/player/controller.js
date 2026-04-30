@@ -121,6 +121,10 @@
             return this.inputHistory.filter(input => input.sequence > sequence);
         }
 
+        discardInputsUpTo(sequence) {
+            this.inputHistory = this.inputHistory.filter(input => input.sequence > sequence);
+        }
+
         resetButtons() {
             this.buttons = {
                 moveRight: { current: 0, last: 0 },
