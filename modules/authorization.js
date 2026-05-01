@@ -8,6 +8,9 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 // module for sending emails
 const nodemailer = require('nodemailer');
+// template rendering for HTML emails
+const ejs = require('ejs');
+const path = require('path');
 
 const transporter = nodemailer.createTransport({
     host: config.EMAIL_HOST, // Replace with your SMTP host
@@ -24,7 +27,8 @@ function sendVerificationEmail(userEmail, displayName) {
     const token = jwt.sign({ email: userEmail }, config.SS_SECRET, { expiresIn: '1h' });
     const url = `${config.buildThisUrl('/verify')}?token=${token}`;
 
-    ejs.renderFile(__dirname + '/views/email.ejs', { displayName: displayName, url: url }, (err, renderedTemplate) => {
+    const emailTemplatePath = path.join(__dirname, '..', 'views', 'email.ejs');
+    ejs.renderFile(emailTemplatePath, { displayName: displayName, url: url }, (err, renderedTemplate) => {
         if (err) {
             console.error('Error rendering template:', err);
         } else {
@@ -191,7 +195,7 @@ exports.signupPOST = (req, res) => {
 
 exports.verifyGET = (req, res) => {
     if (req.query.token) {
-        jwt.verify(req.query.token, SS_SECRET, (err, decoded) => {
+        jwt.verify(req.query.token, config.SS_SECRET, (err, decoded) => {
             if (err) {
                 console.error(err);
                 res.render('error', { error: `Error verifying token: ${err}` });
