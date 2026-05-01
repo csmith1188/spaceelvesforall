@@ -7,6 +7,7 @@ const config = require('./modules/config.js');
 const auth = require('./modules/authorization.js');
 // load modules/gameServer.js
 const game = require('./modules/gameServer.js');
+const { createGameStatusHub } = require('./modules/gameStatusHub.js');
 
 // Create a new express application
 const app = express();
@@ -17,6 +18,7 @@ app.use(config.sessionMiddleware);
 
 // WebSocket
 require('./modules/chat.js')(app, wss);
+const gameStatusHub = createGameStatusHub({ app, wss });
 
 // set the express view engine to ejs
 app.set('view engine', 'ejs');
@@ -41,12 +43,9 @@ function isVerified(req, res, next) {
 
 // Define a route handler for the default home page
 app.get('/', (req, res) => {
-    // make a list of game server ports
     let gamesList = [];
     if (req.session.token) {
-        game.gameServers.forEach((server) => {
-            gamesList.push(server.PORT);
-        });
+        gamesList = gameStatusHub.getPublicGames();
     }
     res.render('index', { this_url: config.buildThisUrl('/login'), gamesList: gamesList, token: req.session.token });
 });

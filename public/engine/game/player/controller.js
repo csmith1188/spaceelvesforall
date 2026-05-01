@@ -23,13 +23,83 @@
 
     let utils = {
         lastDevice: null,
+        _listening: false,
+        _gamepadPollTimer: null,
+        setLastDevice: (device) => {
+            utils.lastDevice = device;
+        },
+        isModifierKey: (event) => {
+            const key = event.key;
+            return key === "Alt" ||
+                key === "AltGraph" ||
+                key === "Control" ||
+                key === "Meta" ||
+                key === "Shift" ||
+                key === "F10";
+        },
+        blockModifierHotkeys: (event) => {
+            if (utils.isModifierKey(event)) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        },
+        gamepadHasActivity: (gamepad) => {
+            if (!gamepad) return false;
+            const axisThreshold = 0.25;
+            if (Array.isArray(gamepad.axes)) {
+                for (const axis of gamepad.axes) {
+                    if (Math.abs(axis) >= axisThreshold) return true;
+                }
+            }
+            if (Array.isArray(gamepad.buttons)) {
+                for (const button of gamepad.buttons) {
+                    if (button && (button.pressed || button.value > 0.5)) return true;
+                }
+            }
+            return false;
+        },
         listenLastDevice: () => {
-            document.addEventListener("keyup", () => {
-                utils.lastDevice = "keyboard";
-            });
+            if (utils._listening) return;
+            utils._listening = true;
+            document.addEventListener("keydown", (event) => {
+                utils.blockModifierHotkeys(event);
+                utils.setLastDevice("keyboard");
+            }, { capture: true });
+            document.addEventListener("keyup", (event) => {
+                utils.blockModifierHotkeys(event);
+                utils.setLastDevice("keyboard");
+            }, { capture: true });
+            window.addEventListener("mousedown", () => {
+                utils.setLastDevice("keyboard");
+            }, { passive: true });
+            window.addEventListener("mousemove", () => {
+                utils.setLastDevice("keyboard");
+            }, { passive: true });
+            window.addEventListener("wheel", () => {
+                utils.setLastDevice("keyboard");
+            }, { passive: true });
             window.addEventListener("touchstart", () => {
-                utils.lastDevice = "touch";
+                utils.setLastDevice("touch");
+            }, { passive: true });
+            window.addEventListener("touchmove", () => {
+                utils.setLastDevice("touch");
+            }, { passive: true });
+            window.addEventListener("gamepadconnected", (event) => {
+                if (event && event.gamepad) {
+                    utils.setLastDevice(event.gamepad.index);
+                }
             });
+            window.addEventListener("blur", () => {
+                utils.lastDevice = null;
+            });
+            utils._gamepadPollTimer = setInterval(() => {
+                const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+                for (const gp of gamepads) {
+                    if (utils.gamepadHasActivity(gp)) {
+                        utils.setLastDevice(gp.index);
+                    }
+                }
+            }, 80);
         }
     };
 
@@ -97,28 +167,39 @@
             }
         }
 
+        syncNewStateFromButtons() {
+            this.newState = {};
+            for (const button in this.buttons) {
+                this.newState[button] = this.buttons[button].current;
+            }
+            // Only send changed inputs over network
+            for (const button in this.newState) {
+                if (this.newState[button] == this.buttons[button].last) {
+                    delete this.newState[button];
+                }
+            }
+        }
+
         // Store input for client-side prediction
         storeInput(inputState, aimX, aimY, aimZ) {
             this.lastInputSequence++;
+            const now = Date.now();
             const input = {
                 sequence: this.lastInputSequence,
                 state: { ...inputState },
                 aimX: aimX,
                 aimY: aimY,
                 aimZ: aimZ,
-                timestamp: Date.now()
+                timestamp: now
             };
             
             this.inputHistory.push(input);
             
-            // Keep only recent inputs (last 2 seconds)
-            const cutoff = Date.now() - 2000;
-            this.inputHistory = this.inputHistory.filter(input => input.timestamp > cutoff);
-        }
-
-        // Get inputs since a specific sequence number
-        getInputsSince(sequence) {
-            return this.inputHistory.filter(input => input.sequence > sequence);
+            // Keep only recent inputs (last 2 seconds) without reallocating the array each tick.
+            const cutoff = now - 2000;
+            while (this.inputHistory.length && this.inputHistory[0].timestamp <= cutoff) {
+                this.inputHistory.shift();
+            }
         }
 
         discardInputsUpTo(sequence) {
@@ -339,6 +420,7 @@
         }
 
         setupInputs() {
+            super.setupInputs();
             window.addEventListener('gamepaddisconnected', (event) => {
                 this.gamepadIndex = null;
             });
@@ -348,6 +430,10 @@
             super.read();
             if (this.gamepadIndex != null) {
                 let gp = navigator.getGamepads()[this.gamepadIndex];
+                if (!gp) return;
+                if (utils.gamepadHasActivity(gp)) {
+                    utils.setLastDevice(this.gamepadIndex);
+                }
                 // Get AXES
                 // Move Right
                 if (gp.axes[0] > this.deadzone) this.buttons.moveRight.current = gp.axes[0];
@@ -415,6 +501,7 @@
                     game.player.camera.angle = 1;
                 }
             }
+            this.syncNewStateFromButtons();
         }
 
         draw() {
@@ -476,6 +563,7 @@
     
         */
         setupInputs() {
+            super.setupInputs();
             window.addEventListener('touchstart', (event) => {
                 event.preventDefault();
                 event.stopImmediatePropagation();
@@ -607,6 +695,7 @@
             }
             this.touch.event = {};
             this.touch.eventType = {};
+            this.syncNewStateFromButtons();
         }
 
         /*

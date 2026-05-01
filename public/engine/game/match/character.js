@@ -417,7 +417,10 @@
                   \___\_, |_|_|_||_\__,_\___|_|
                       |__/
                 */
-                for (let c of game.match.characters) {
+                const nearbyCharacters = (game.match.map && typeof game.match.map.getNearbyCharacters === 'function')
+                    ? game.match.map.getNearbyCharacters(this.HB, this)
+                    : game.match.characters;
+                for (let c of nearbyCharacters) {
                     if (c === this) //Don't collide with yourself
                         continue;
                     c = c; //Get the character from the bot
@@ -496,7 +499,10 @@
                  |___/_\___/\__|_\_\/__/
     
                 */
-                for (const c of game.match.map.blocks) { //For each block
+                const nearbyBlocks = (game.match.map && typeof game.match.map.getNearbyBlocks === 'function')
+                    ? game.match.map.getNearbyBlocks(this.HB)
+                    : game.match.map.blocks;
+                for (const c of nearbyBlocks) { //For each block
                     if (this.HB.above(c.HB) && c.solid) { //If you are above the block and the block is not solid
                         this.floor = c.HB.pos.z + c.HB.volume.z; //Set the floor to the block's height
                     }

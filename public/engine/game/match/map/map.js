@@ -42,6 +42,15 @@
             this.lastBlock = () => { return this.blocks[this.blocks.length - 1]; }
             this.bullets = [];
             this.debris = [];
+            this.renderCache = {
+                npcs: [],
+                entities: []
+            };
+            this.spatialIndex = {
+                cellSize: 192,
+                characters: new globalThis.Map(),
+                blocks: new globalThis.Map()
+            };
 
             this.lightValue = [0, 0, 24, 0.15];
 
@@ -223,12 +232,125 @@
                 if (!(e.cleanup && !e.active)) this.debris[writeDebris++] = e;
             }
             this.debris.length = writeDebris;
+            const maxDebris = 400;
+            if (this.debris.length > maxDebris) {
+                this.debris.splice(0, this.debris.length - maxDebris);
+            }
 
             // Run all runFunc
             for (const func of this.runFunc) {
                 func();
             }
 
+        }
+
+        clearSpatialBuckets(bucketMap) {
+            bucketMap.clear();
+        }
+
+        addToSpatialBucket(bucketMap, key, entity) {
+            let bucket = bucketMap.get(key);
+            if (!bucket) {
+                bucket = [];
+                bucketMap.set(key, bucket);
+            }
+            bucket.push(entity);
+        }
+
+        entityBounds(entity) {
+            if (!entity || !entity.HB) {
+                return null;
+            }
+            if (entity.HB.volume) {
+                return {
+                    minX: entity.HB.pos.x,
+                    minY: entity.HB.pos.y,
+                    maxX: entity.HB.pos.x + entity.HB.volume.x,
+                    maxY: entity.HB.pos.y + entity.HB.volume.y
+                };
+            }
+            const radius = Number.isFinite(entity.HB.radius) ? entity.HB.radius : 0;
+            return {
+                minX: entity.HB.pos.x - radius,
+                minY: entity.HB.pos.y - radius,
+                maxX: entity.HB.pos.x + radius,
+                maxY: entity.HB.pos.y + radius
+            };
+        }
+
+        indexEntity(bucketMap, entity) {
+            const bounds = this.entityBounds(entity);
+            if (!bounds) {
+                return;
+            }
+            const size = this.spatialIndex.cellSize;
+            const minCellX = Math.floor(bounds.minX / size);
+            const maxCellX = Math.floor(bounds.maxX / size);
+            const minCellY = Math.floor(bounds.minY / size);
+            const maxCellY = Math.floor(bounds.maxY / size);
+            for (let gx = minCellX; gx <= maxCellX; gx++) {
+                for (let gy = minCellY; gy <= maxCellY; gy++) {
+                    this.addToSpatialBucket(bucketMap, `${gx},${gy}`, entity);
+                }
+            }
+        }
+
+        rebuildSpatialIndex(characters = [], blocks = this.blocks) {
+            this.clearSpatialBuckets(this.spatialIndex.characters);
+            this.clearSpatialBuckets(this.spatialIndex.blocks);
+            for (const chara of characters) {
+                if (chara && chara.active !== false) {
+                    this.indexEntity(this.spatialIndex.characters, chara);
+                }
+            }
+            for (const block of blocks) {
+                if (block && block.active !== false) {
+                    this.indexEntity(this.spatialIndex.blocks, block);
+                }
+            }
+        }
+
+        collectNearby(bucketMap, hb, exclude = null) {
+            if (!hb) {
+                return [];
+            }
+            const radiusX = Number.isFinite(hb.radius) ? hb.radius : (hb.volume ? hb.volume.x / 2 : 0);
+            const radiusY = Number.isFinite(hb.radius) ? hb.radius : (hb.volume ? hb.volume.y / 2 : 0);
+            const minX = hb.pos.x - radiusX;
+            const maxX = hb.pos.x + radiusX;
+            const minY = hb.pos.y - radiusY;
+            const maxY = hb.pos.y + radiusY;
+            const size = this.spatialIndex.cellSize;
+            const minCellX = Math.floor(minX / size);
+            const maxCellX = Math.floor(maxX / size);
+            const minCellY = Math.floor(minY / size);
+            const maxCellY = Math.floor(maxY / size);
+            const out = [];
+            const seen = new Set();
+            for (let gx = minCellX; gx <= maxCellX; gx++) {
+                for (let gy = minCellY; gy <= maxCellY; gy++) {
+                    const bucket = bucketMap.get(`${gx},${gy}`);
+                    if (!bucket) {
+                        continue;
+                    }
+                    for (const entity of bucket) {
+                        if (!entity || entity === exclude || seen.has(entity.id)) {
+                            continue;
+                        }
+                        seen.add(entity.id);
+                        out.push(entity);
+                    }
+                }
+            }
+            return out;
+        }
+
+        getNearbyCharacters(hb, exclude = null) {
+            return this.collectNearby(this.spatialIndex.characters, hb, exclude);
+        }
+
+        getNearbyBlocks(hb) {
+            return this.collectNearby(this.spatialIndex.blocks, hb, null);
         }
 
         /*
@@ -288,18 +410,23 @@
              |__/
              */
             //Put Bot player characters into a list
-            let npcs = [];
+            const npcs = this.renderCache.npcs;
+            npcs.length = 0;
             for (const npc in game.match.bots) {
                 npcs.push(game.match.bots[npc].character);
             }
 
-            let renderList =
-                [...game.match.characters, ...npcs, ...game.match.map.blocks, ...game.match.map.bullets, ...game.match.map.debris]
-                    .sort((a, b) => {
-                        if (a.HB.pos.y < b.HB.pos.y + b.HB.pos.z) return -1;
-                        if (a.HB.pos.y > b.HB.pos.y + b.HB.pos.z) return 1;
-                        return 0;
-                    });
+            const renderList = this.renderCache.entities;
+            renderList.length = 0;
+            renderList.push(...game.match.characters, ...npcs, ...game.match.map.blocks, ...game.match.map.bullets, ...game.match.map.debris);
+            if (renderList.length > 1) {
+                renderList.sort((a, b) => {
+                    if (a.HB.pos.y < b.HB.pos.y + b.HB.pos.z) return -1;
+                    if (a.HB.pos.y > b.HB.pos.y + b.HB.pos.z) return 1;
+                    return 0;
+                });
+            }
+            let visibleEntities = 0;
             for (const entity of renderList) {
                 // if the entity is within the camera's viewable radius
                 let compareX = game.player.camera.x - entity.HB.pos.x;
@@ -318,9 +445,12 @@
                     boundsX = diameter;
                     boundsY = diameter + (entity.HB.height || 0) + Math.max(0, entity.HB.pos.z || 0);
                 }
-                if (game.player.camera.radius + boundsX > Math.abs(compareX) && game.player.camera.radius + boundsY > Math.abs(compareY) - horizonCalc)
+                if (game.player.camera.radius + boundsX > Math.abs(compareX) && game.player.camera.radius + boundsY > Math.abs(compareY) - horizonCalc) {
                     entity.draw(game.player.character);
+                    visibleEntities++;
+                }
             }
+            game.debugPerf.visibleEntities = visibleEntities;
 
             /*
       ___                         _                _                                   _
@@ -624,34 +754,50 @@
             if (game.player.camera._3D) {
                 this.draw3D();
             } else {
-                // For every column that the map can make from the total space
                 let count = 0;
-                const rows = this.grid.length
-                for (let y = 0; y < rows; y++) {
+                const rows = this.grid.length;
+                if (!rows) {
+                    game.debugPerf.tileDrawCount = 0;
+                    return;
+                }
+                const colsTotal = this.grid[0].length || 0;
+                const halfViewW = game.gameView.w / 2;
+                const halfViewH = game.gameView.h / 2;
+                const radiusTilesX = Math.ceil(halfViewW / this.tileSize) + 2;
+                const radiusTilesY = Math.ceil(halfViewH / this.tileSize) + 2;
+                const centerTileX = Math.floor(game.player.camera.x / this.tileSize);
+                const centerTileY = Math.floor(game.player.camera.y / this.tileSize);
+                const startY = Math.max(0, centerTileY - radiusTilesY);
+                const endY = Math.min(rows - 1, centerTileY + radiusTilesY);
+                const startX = Math.max(0, centerTileX - radiusTilesX);
+                const endX = Math.min(colsTotal - 1, centerTileX + radiusTilesX);
+                for (let y = startY; y <= endY; y++) {
                     let compareY = game.player.camera.y - (y * this.tileSize);
-                    //For every row
-                    const cols = this.grid[y].length
-                    for (let x = 0; x < cols; x++) {
+                    for (let x = startX; x <= endX; x++) {
                         let compareX = game.player.camera.x - (x * this.tileSize);
-                        //If the tile is within the camera's viewable radius and the horizon
-                        // TODO: horizon count doesn't actually line up with the horizon. sky overdraws it
-                        let horizonCalc = 0;
-                        if (game.player.camera._3D)
-                            horizonCalc = (game.gameView.h / 2) * (1 - game.player.camera.angle)
-                        if (game.player.camera.radius > Math.abs(compareX) && game.player.camera.radius > Math.abs(compareY) - horizonCalc) {
-                            count++;
-                            let tileIMG = this.decodeTile(this.grid[y][x]);
-                            ctx.drawImage(
-                                tileIMG,
-                                game.gameView.w / 2 - compareX,
-                                game.gameView.h / 2 - compareY,
-                                this.tileSize,
-                                this.tileSize
-                            );
+                        const drawX = game.gameView.w / 2 - compareX;
+                        const drawY = game.gameView.h / 2 - compareY;
+                        // Rectangle viewport culling so all tiles in render area are drawn.
+                        if (
+                            drawX + this.tileSize < 0 ||
+                            drawY + this.tileSize < 0 ||
+                            drawX > game.gameView.w ||
+                            drawY > game.gameView.h
+                        ) {
+                            continue;
                         }
+                        count++;
+                        let tileIMG = this.decodeTile(this.grid[y][x]);
+                        ctx.drawImage(
+                            tileIMG,
+                            drawX,
+                            drawY,
+                            this.tileSize,
+                            this.tileSize
+                        );
                     }
                 }
-                // console.log("Drew a total of " + count + " tiles");
+                game.debugPerf.tileDrawCount = count;
             }
         }
 

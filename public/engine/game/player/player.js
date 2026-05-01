@@ -57,6 +57,7 @@
             this.token = {};
             this.inMenu = false;
             this.ready = false;
+            this.spectator = false;
             this.connected = true;
             this.lastProcessedInputSeq = -1;
             if (typeof window === 'undefined') {
@@ -77,18 +78,29 @@
         }
 
         step() {
-            if (typeof window !== 'undefined' && !this.controller && game.player == this) {
-                if (Controllers.utils.lastDevice !== null) {
-                    // if the lastDevice was keyboard, touch, pad or something else
-                    if (Controllers.utils.lastDevice == "keyboard") {
-                        this.controller = new Controllers.Keyboard(this);
-                    } else if (Controllers.utils.lastDevice == "touch") {
-                        this.controller = new Controllers.Touch(this);
-                    } else {
-                        this.controller = new Controllers.GamePad(this, Controllers.utils.lastDevice);
+            if (typeof window !== 'undefined' && game.player == this) {
+                const lastDevice = Controllers.utils.lastDevice;
+                if (lastDevice !== null) {
+                    if (lastDevice === "keyboard") {
+                        if (!this.controller || this.controller.type !== "keyboard") {
+                            this.controller = new Controllers.Keyboard(this);
+                        }
+                    } else if (lastDevice === "touch") {
+                        if (!this.controller || this.controller.type !== "touch") {
+                            this.controller = new Controllers.Touch(this);
+                        }
+                    } else if (Number.isInteger(lastDevice)) {
+                        const isMatchingPad = this.controller &&
+                            this.controller.type === "gamepad" &&
+                            this.controller.gamepadIndex === lastDevice;
+                        if (!isMatchingPad) {
+                            this.controller = new Controllers.GamePad(this, lastDevice);
+                        }
                     }
                     Controllers.utils.lastDevice = null;
-                    // this.awaitingInput = false;
+                } else if (!this.controller) {
+                    // Default to keyboard/mouse if no device has reported activity yet.
+                    this.controller = new Controllers.Keyboard(this);
                 }
             }
         }

@@ -125,7 +125,10 @@
                 \___\_, |_|_|_||_\__,_\___|_|
                 |__/
                 */
-                for (let c of game.match.characters) {
+                const nearbyCharacters = (game.match.map && typeof game.match.map.getNearbyCharacters === 'function')
+                    ? game.match.map.getNearbyCharacters(this.HB, this.user)
+                    : game.match.characters;
+                for (let c of nearbyCharacters) {
                     if (c === this.user) //Don't collide with yourself
                         continue;
                     let side = this.HB.collide(c.HB); //Check for collision
@@ -162,7 +165,10 @@
                 |___/_\___/\__|_\_\/__/
                 
                 */
-                for (const c of game.match.map.blocks) { //For each block
+                const nearbyBlocks = (game.match.map && typeof game.match.map.getNearbyBlocks === 'function')
+                    ? game.match.map.getNearbyBlocks(this.HB)
+                    : game.match.map.blocks;
+                for (const c of nearbyBlocks) { //For each block
                     let side = this.HB.collide(c.HB); //Check for collision
                     if (c.solid && side) { //If the block is solid and you collided
                         switch (side) { //see which side you collided on
@@ -628,7 +634,10 @@
                 \___\_, |_|_|_||_\__,_\___|_|
                 |__/
                 */
-                for (let c of game.match.characters) {
+                const nearbyCharacters = (game.match.map && typeof game.match.map.getNearbyCharacters === 'function')
+                    ? game.match.map.getNearbyCharacters(this.HB, this.user)
+                    : game.match.characters;
+                for (let c of nearbyCharacters) {
                     if (c === this.user) //Don't collide with yourself
                         continue;
                     let side = this.HB.collide(c.HB); //Check for collision
@@ -711,7 +720,10 @@
                 |___/_\___/\__|_\_\/__/
                 
                 */
-                for (const c of game.match.map.blocks) { //For each block
+                const nearbyBlocks = (game.match.map && typeof game.match.map.getNearbyBlocks === 'function')
+                    ? game.match.map.getNearbyBlocks(this.HB)
+                    : game.match.map.blocks;
+                for (const c of nearbyBlocks) { //For each block
                     let side = this.HB.collide(c.HB); //Check for collision
                     if (c.solid && side) { //If the block is solid and you collided
                         this.active = false;

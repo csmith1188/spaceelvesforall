@@ -76,18 +76,26 @@
   });
 
   function applyCanvasResize() {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    if (canvas.width !== w || canvas.height !== h) {
-      canvas.width = w;
-      canvas.height = h;
+    const windowW = window.innerWidth;
+    const windowH = window.innerHeight;
+    const renderW = Math.min(windowW, 1920);
+    const renderH = Math.min(windowH, 1080);
+    if (canvas.width !== renderW || canvas.height !== renderH) {
+      canvas.width = renderW;
+      canvas.height = renderH;
     }
-    game.window.w = w;
-    game.window.h = h;
-    game.gameView.w = Math.min(w, 1920);
-    game.gameView.h = Math.min(h, 1080);
+    canvas.style.width = `${renderW}px`;
+    canvas.style.height = `${renderH}px`;
+    game.browserWindow.w = windowW;
+    game.browserWindow.h = windowH;
+    game.renderOffset.x = Math.max(0, (windowW - renderW) / 2);
+    game.renderOffset.y = Math.max(0, (windowH - renderH) / 2);
+    game.window.w = renderW;
+    game.window.h = renderH;
+    game.gameView.w = renderW;
+    game.gameView.h = renderH;
     if (game.player) {
-      game.player.camera.radius = Math.sqrt((w / 2) ** 2 + (h / 2) ** 2);
+      game.player.camera.radius = Math.sqrt((renderW / 2) ** 2 + (renderH / 2) ** 2);
     }
   }
 

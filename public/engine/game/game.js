@@ -30,6 +30,14 @@
                 cx: () => { return this.w / 2 },
                 cy: () => { return this.h / 2 }
             };
+            this.browserWindow = {
+                w: 0,
+                h: 0
+            };
+            this.renderOffset = {
+                x: 0,
+                y: 0
+            };
             this.gameView = {
                 w: 0,
                 h: 0,
@@ -48,23 +56,17 @@
             }
             this.networkConfig = {
                 updateInterval: 2, // fixed ticks between network updates (30Hz at 60fps)
-                maxUpdateInterval: 2,
-                minUpdateInterval: 2,
-                entityThreshold: 20, // switch to higher rate when entity count exceeds this
-                lastEntityCount: 0,
                 sequenceNumber: 0,
-                lastSentState: new Map(), // entityId -> last sent state
-                lastBroadcastAt: 0
+                lastSentState: new Map() // entityId -> last sent state
             }
             this.debugPerf = {
-                lastClientPerfSentAt: 0,
-                slowFrameCount: 0,
-                deltaClampCount: 0,
                 lastRawDelta: 0,
-                reconcileCalls: 0,
-                reconcileNoAckCalls: 0,
-                reconcileSnapCount: 0,
-                maxReconcileError: 0
+                stepMs: 0,
+                drawMs: 0,
+                frameMs: 0,
+                lastFrameStamp: 0,
+                visibleEntities: 0,
+                tileDrawCount: 0
             };
             // loop through the options and add them to the game
             for (let key in options) {
@@ -75,6 +77,11 @@
         }
 
         step() {
+            const stepStart = performance.now();
+            if (typeof window !== 'undefined' && this.debugPerf.lastFrameStamp > 0) {
+                this.debugPerf.frameMs = stepStart - this.debugPerf.lastFrameStamp;
+            }
+            this.debugPerf.lastFrameStamp = stepStart;
             this.time.ticks++;
             this.time.diff = performance.now() - this.time.last;
             const rawDelta = this.time.diff / this.time.tickRate;
@@ -85,7 +92,6 @@
                 const maxClientDelta = 1.2;
                 if (rawDelta > maxClientDelta) {
                     this.time.delta = maxClientDelta;
-                    this.debugPerf.deltaClampCount++;
                 } else {
                     this.time.delta = rawDelta;
                 }
@@ -98,10 +104,6 @@
                 this.time.avgList.shift();
                 this.time.avg = this.time.avgList.reduce((a, b) => a + b, 0) / this.time.avgList.length;
             }
-            if (typeof window !== 'undefined' && this.time.diff > 25) {
-                this.debugPerf.slowFrameCount++;
-            }
-            
             // Update network statistics
             if (typeof window !== 'undefined' && typeof networkStats !== 'undefined') {
                 const entityCount = this.match ? 
@@ -183,7 +185,9 @@
                 this.match.step();
                 if (typeof window !== 'undefined') {
                     if (this.player) {
+                        const drawStart = performance.now();
                         this.match.draw();
+                        this.debugPerf.drawMs = performance.now() - drawStart;
                         this.player.camera.update(this.player); // Update the camera
                         
                         // Draw sync debug overlay
@@ -207,14 +211,22 @@
                         let bullets = this.getChangedBullets();
                         let powerups = this.getChangedPowerups();
                         let weapons = this.getChangedWeapons();
+                        let matchState = (this.match && typeof this.match.pack === 'function') ? this.match.pack() : {};
                         
                         // Only send if there are changes
-                        if (characters.length > 0 || bullets.length > 0 || powerups.length > 0 || weapons.length > 0) {
+                        if (
+                            characters.length > 0 ||
+                            bullets.length > 0 ||
+                            powerups.length > 0 ||
+                            weapons.length > 0 ||
+                            Object.keys(matchState).length > 0
+                        ) {
                             this.broadcast(this.wss, {
                                 characters: characters,
                                 bullets: bullets,
                                 powerups: powerups,
                                 weapons: weapons,
+                                match: matchState,
                                 time: Date.now(),
                                 serverTick: this.time.ticks,
                                 seq: this.networkConfig.sequenceNumber
@@ -224,6 +236,7 @@
 
                 }
             }
+            this.debugPerf.stepMs = performance.now() - stepStart;
         }
 
         countConnections() {
@@ -345,34 +358,6 @@
         hasEntityChanged(lastState, currentState) {
             // Always send updates for characters (they're fast-moving and need accurate sync)
             if (currentState.t === 'c') {
-                // Send if position changed at all (even tiny drifts)
-                if (lastState.p && currentState.p) {
-                    const dx = Math.abs(lastState.p.x - currentState.p.x);
-                    const dy = Math.abs(lastState.p.y - currentState.p.y);
-                    const dz = Math.abs(lastState.p.z - currentState.p.z);
-                    
-                    // Capture even 0.1 pixel changes (slow drift)
-                    if (dx > 0.1 || dy > 0.1 || dz > 0.1) return true;
-                }
-                
-                // Send if speed changed (important for drift detection)
-                if (lastState.s && currentState.s) {
-                    if (Math.abs(lastState.s.x - currentState.s.x) > 0.01) return true;
-                    if (Math.abs(lastState.s.y - currentState.s.y) > 0.01) return true;
-                    if (Math.abs(lastState.s.z - currentState.s.z) > 0.01) return true;
-                }
-                
-                // Send if momentum changed (important for facing direction)
-                if (lastState.m && currentState.m) {
-                    if (Math.abs(lastState.m.x - currentState.m.x) > 0.01) return true;
-                    if (Math.abs(lastState.m.y - currentState.m.y) > 0.01) return true;
-                    if (Math.abs(lastState.m.z - currentState.m.z) > 0.01) return true;
-                }
-                
-                // Send if input state changed
-                if (currentState.inp) return true;
-                
-                // Always send character updates at least occasionally
                 return true;
             }
             
@@ -402,21 +387,6 @@
             return false;
         }
 
-        // Client-side prediction methods
-        applyInputToCharacter(character, inputState, aimX, aimY, aimZ) {
-            // Apply movement input immediately for responsive feel
-            if (inputState.moveRight) character.speed.x = Math.min(character.speed.x + character.accel.x, character.maxSpeed.x);
-            if (inputState.moveLeft) character.speed.x = Math.max(character.speed.x - character.accel.x, -character.maxSpeed.x);
-            if (inputState.moveUp) character.speed.y = Math.min(character.speed.y + character.accel.y, character.maxSpeed.y);
-            if (inputState.moveDown) character.speed.y = Math.max(character.speed.y - character.accel.y, -character.maxSpeed.y);
-            if (inputState.jump) character.speed.z = Math.min(character.speed.z + character.accel.z, character.maxSpeed.z);
-            
-            // Apply aim
-            character.aim.x = aimX;
-            character.aim.y = aimY;
-            character.aim.z = aimZ;
-        }
-
         reconcileWithServer(character, serverPos, inputSeq, serverSpeed = null, ackAdvanced = false) {
             if (!this.player || !this.player.controller || !Number.isFinite(inputSeq)) {
                 return;
@@ -431,20 +401,12 @@
             const dy = serverPos.y - character.HB.pos.y;
             const dz = serverPos.z - character.HB.pos.z;
             const error = Math.sqrt((dx * dx) + (dy * dy) + (dz * dz));
-            this.debugPerf.reconcileCalls++;
-            if (!ackAdvanced) {
-                this.debugPerf.reconcileNoAckCalls++;
-            }
-            if (error > this.debugPerf.maxReconcileError) {
-                this.debugPerf.maxReconcileError = error;
-            }
             if (ackAdvanced) {
                 // While inputs are actively being acknowledged, keep correction gentle.
                 if (error > 260) {
                     character.HB.pos.x = serverPos.x;
                     character.HB.pos.y = serverPos.y;
                     character.HB.pos.z = serverPos.z;
-                    this.debugPerf.reconcileSnapCount++;
                 } else if (error > 12) {
                     const correctionFactor = 0.06;
                     const maxCorrectionStep = 3.5;
@@ -470,7 +432,6 @@
                     character.HB.pos.x = serverPos.x;
                     character.HB.pos.y = serverPos.y;
                     character.HB.pos.z = serverPos.z;
-                    this.debugPerf.reconcileSnapCount++;
                 } else if (error > 8) {
                     const correctionFactor = 0.12;
                     const maxCorrectionStep = 6;

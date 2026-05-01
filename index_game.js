@@ -12,6 +12,7 @@ const SQLiteStore = require('connect-sqlite3')(session);
 const args = process.argv.slice(2);
 // Import the API routes
 const api_router = require('./modules/game_api.js');
+const WebSocket = require('ws');
 
 var PORT = 10000;
 var DEBUG = false;
@@ -72,6 +73,131 @@ if (DEBUG) {
 }
 game.loadMatch('ForHonorMP');
 
+const gameStartedAt = Date.now();
+const gameId = `game-${PORT}`;
+const masterSecret = process.env.MASTER_SERVER_SECRET || '';
+const statusIntervalMs = 1000;
+let statusWs = null;
+let statusInterval = null;
+let reconnectTimer = null;
+let reconnectDelayMs = 500;
+let shuttingDown = false;
+
+function getMasterStatusWsUrl() {
+    const masterHostRaw = process.env.THIS_URL || 'localhost';
+    const masterPort = process.env.PORT || 3000;
+    const secure = masterHostRaw.startsWith('https://');
+    const host = masterHostRaw.replace(/^https?:\/\//, '').split('/')[0].split(':')[0];
+    const protocol = secure ? 'wss' : 'ws';
+    return `${protocol}://${host}:${masterPort}/master/game-status`;
+}
+
+function getConnectedUsernames() {
+    const usernames = [];
+    for (const player of game.players) {
+        if (player.connected === true && player.token && player.token.displayName) {
+            usernames.push(player.token.displayName);
+        }
+    }
+    return usernames;
+}
+
+function getMatchStatusPayload(messageType = 'game.heartbeat') {
+    const usernames = getConnectedUsernames();
+    const maxPlayers = game.match && game.match.playerLimit ? game.match.playerLimit.max : 0;
+    const matchStatus = usernames.length > 0 ? 'in_progress' : 'waiting';
+    return {
+        type: messageType,
+        secret: masterSecret,
+        gameId,
+        port: PORT,
+        status: 'online',
+        startedAt: gameStartedAt,
+        timeUpMs: Date.now() - gameStartedAt,
+        players: {
+            current: usernames.length,
+            max: maxPlayers,
+            usernames
+        },
+        match: {
+            type: game.match && game.match.matchType ? game.match.matchType : 'ForHonorMP',
+            status: matchStatus,
+            score: { teamA: 0, teamB: 0 }
+        },
+        timestamp: Date.now()
+    };
+}
+
+function sendStatusMessage(message) {
+    if (!statusWs || statusWs.readyState !== WebSocket.OPEN) return;
+    statusWs.send(JSON.stringify(message));
+}
+
+function startStatusHeartbeat() {
+    if (statusInterval) clearInterval(statusInterval);
+    statusInterval = setInterval(() => {
+        sendStatusMessage(getMatchStatusPayload('game.heartbeat'));
+    }, statusIntervalMs);
+}
+
+function connectToMasterStatus() {
+    if (shuttingDown) return;
+    const statusWsUrl = getMasterStatusWsUrl();
+    statusWs = new WebSocket(statusWsUrl);
+
+    statusWs.on('open', () => {
+        reconnectDelayMs = 500;
+        sendStatusMessage(getMatchStatusPayload('game.register'));
+        startStatusHeartbeat();
+    });
+
+    statusWs.on('close', () => {
+        if (statusInterval) {
+            clearInterval(statusInterval);
+            statusInterval = null;
+        }
+        if (shuttingDown) return;
+        reconnectTimer = setTimeout(() => {
+            connectToMasterStatus();
+        }, reconnectDelayMs);
+        reconnectDelayMs = Math.min(reconnectDelayMs * 2, 5000);
+    });
+
+    statusWs.on('error', () => {
+        if (statusWs && statusWs.readyState === WebSocket.OPEN) {
+            statusWs.close();
+        }
+    });
+}
+
+function requestShutdown(reason) {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    running = false;
+    if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+    }
+    if (statusInterval) {
+        clearInterval(statusInterval);
+        statusInterval = null;
+    }
+
+    sendStatusMessage({
+        ...getMatchStatusPayload('game.ending'),
+        reason,
+        status: 'ending'
+    });
+
+    if (statusWs && statusWs.readyState === WebSocket.OPEN) {
+        statusWs.close();
+    }
+
+    setTimeout(() => process.exit(0), 50);
+}
+
+connectToMasterStatus();
+
 // Define a route handler for the default home page
 app.get('/', (req, res) => {
     if (req.session.token) {
@@ -126,12 +252,27 @@ app.listen(PORT, '0.0.0.0', () => {
 const tickInterval = global.game.time.tickRate; // ~16ms for 60Hz
 let lastTick = Date.now();
 let running = true;
+const emptyServerTimeoutMs = 10000;
+let emptySince = Date.now();
 
 function gameLoop() {
     if (!running) return;
 
     const now = Date.now();
     const delta = now - lastTick;
+    const activePlayers = global.game.countConnections();
+
+    if (activePlayers === 0) {
+        if (!emptySince) {
+            emptySince = now;
+        } else if (now - emptySince >= emptyServerTimeoutMs) {
+            console.info(`No connected players for ${emptyServerTimeoutMs}ms. Ending game server on port ${PORT}.`);
+            requestShutdown('idle_timeout');
+            return;
+        }
+    } else {
+        emptySince = null;
+    }
 
     if (delta >= tickInterval) {
         lastTick = now - (delta % tickInterval); // Adjust for drift
@@ -145,12 +286,10 @@ gameLoop();
 
 // Graceful shutdown
 process.on('SIGINT', () => {
-    running = false;
-    process.exit(); 
+    requestShutdown('shutdown_signal_sigint');
 });
 process.on('SIGTERM', () => {
-    running = false;
-    process.exit();
+    requestShutdown('shutdown_signal_sigterm');
 });
 
 // const gameLoop = setInterval(() => {

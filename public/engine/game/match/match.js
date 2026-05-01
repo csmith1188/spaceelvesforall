@@ -104,6 +104,9 @@
                     default:
                         break;
                 }
+                if (this.map && typeof this.map.rebuildSpatialIndex === 'function') {
+                    this.map.rebuildSpatialIndex(this.characters, this.map.blocks);
+                }
 
                 // Check for players without characters and create them (late joiners)
                 // This is disabled for now, as we don't want it in the only available match type (for honor)

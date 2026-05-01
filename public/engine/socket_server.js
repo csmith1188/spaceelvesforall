@@ -26,17 +26,18 @@ function gameHandler(ws, req) {
     let findPlayer = game.players.find(player => player.token.id === ws.token.id);
     if (!findPlayer) {
         console.info('Player not found. Creating new player', ws.token.displayName);
-        // if the game is full, close the connection
+        let spectator = false;
         if (game.match) {
-            if (game.players.length >= game.match.playerLimit.max) {
-                console.error('Game server is full');
-                ws.send(JSON.stringify({ debug: 'Game server is full' }));
-                ws.close();
-                return;
+            const activePlayers = game.players.filter(player => !player.spectator).length;
+            if (activePlayers >= game.match.playerLimit.max) {
+                spectator = true;
+                console.info(`Game full, joining spectator: ${ws.token.displayName}`);
             }
         }
-        // create a new player
-        game.players.push(new Players.Player({ token: ws.token, ws: ws }));
+        game.players.push(new Players.Player({ token: ws.token, ws: ws, spectator }));
+        if (spectator) {
+            ws.send(JSON.stringify({ debug: 'Joined as spectator' }));
+        }
     } else {
         console.info('Player found. Reconnecting player.', ws.token.displayName);
         findPlayer.ws = ws;

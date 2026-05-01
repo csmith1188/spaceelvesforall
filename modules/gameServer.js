@@ -8,6 +8,15 @@ exports.spawnGameServer = (req, res) => {
     // Start another Node.js script with the port argument
     const child = spawn('node', ['index_game.js', '-p ' + exports.gameServerCount]); // add { detached: true } to run in the background
     child.PORT = exports.gameServerCount;
+    child.gameId = `game-${child.PORT}`;
+    let removedFromMasterList = false;
+
+    const removeFromMasterList = () => {
+        if (removedFromMasterList) return;
+        removedFromMasterList = true;
+        exports.gameServers = exports.gameServers.filter((server) => server !== child);
+        console.info(`Removed game server ${child.PORT} from master list`);
+    };
 
     // Listen for standard output (stdout) data from the child process
     child.stdout.on('data', (data) => {
@@ -22,6 +31,7 @@ exports.spawnGameServer = (req, res) => {
     // Listen for the child process to close (when it finishes or exits)
     child.on('close', (code) => {
         console.info(`Server ${child.PORT} exited with code ${code}`);
+        removeFromMasterList();
     });
 
     // Optional: Listen for exit events in case the process is terminated unexpectedly
@@ -31,6 +41,7 @@ exports.spawnGameServer = (req, res) => {
         } else {
             console.info(`Server ${child.PORT} exited with code: ${code}`);
         }
+        removeFromMasterList();
     });
 
     const host = process.env.THIS_URL || 'localhost';

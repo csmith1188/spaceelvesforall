@@ -22,7 +22,6 @@
 // Determine WebSocket protocol based on current page protocol
 const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 const gameWSS = new WebSocket(`${wsProtocol}//${window.location.hostname}:${PORT}/game`);
-let debugLastSnapshotAt = 0;
 
 gameWSS.addEventListener('open', () => {
     console.log('Connected to Game WSS');
@@ -56,10 +55,16 @@ gameWSS.addEventListener('message', (event) => {
                 if (!game.players.find(p => p.token.displayName === player.token.displayName)) {
                     // if this player's token's id is the same as the client's token id
                     if (player.token.displayName === token.displayName) {
-                        game.players.push(new Players.Player({ token: token }));
+                        game.players.push(new Players.Player({ ...player, token: token }));
                         game.players[game.players.length - 1].camera = new Camera({ owner: game.players[game.players.length - 1] });
                     } else {
                         game.players.push(new Players.Player(player));
+                    }
+                } else {
+                    const existingPlayer = game.players.find(p => p.token.displayName === player.token.displayName);
+                    if (existingPlayer) {
+                        existingPlayer.spectator = !!player.spectator;
+                        if (player.connected !== undefined) existingPlayer.connected = player.connected;
                     }
                 }
                 // if a player is in the game.players array but not in the message, remove the player
@@ -75,10 +80,19 @@ gameWSS.addEventListener('message', (event) => {
         }
 
         if (game.match) {
+            if (message.match) {
+                if (message.match.stage !== undefined) game.match.stage = message.match.stage;
+                if (message.match.scoreboard !== undefined) game.match.scoreboard = message.match.scoreboard;
+                if (message.match.playerReady !== undefined) game.match.playerReady = message.match.playerReady;
+                if (message.match.participantIds !== undefined) game.match.participantIds = message.match.participantIds;
+                if (message.match.banner !== undefined) game.match.banner = message.match.banner;
+                if (message.match.roundsTotal !== undefined) game.match.roundsTotal = message.match.roundsTotal;
+                if (message.match.winsToTakeSeries !== undefined) game.match.winsToTakeSeries = message.match.winsToTakeSeries;
+                if (message.match.lastWinner !== undefined) game.match.lastWinner = message.match.lastWinner;
+                if (message.match.matchWinner !== undefined) game.match.matchWinner = message.match.matchWinner;
+            }
+
             if (message.characters) {
-                const now = Date.now();
-                const snapshotIntervalMs = debugLastSnapshotAt ? now - debugLastSnapshotAt : 0;
-                debugLastSnapshotAt = now;
                 for (let character of message.characters) {
                     let c = game.match.characters.find(c => c.id === character.i);
                     if (c) {
@@ -97,33 +111,22 @@ gameWSS.addEventListener('message', (event) => {
                         c.serverPos.time = message.serverTick || message.time;
 
                         c.snapshotBuffer = c.snapshotBuffer || [];
-                        c.lastSnapshotSeq = Number.isFinite(c.lastSnapshotSeq) ? c.lastSnapshotSeq : null;
                         const snapshotReceiveTime = Date.now();
-                        const incomingSeq = Number.isFinite(message.seq) ? message.seq : null;
-                        if (incomingSeq !== null) {
-                            c.lastSnapshotSeq = (c.lastSnapshotSeq === null) ? incomingSeq : Math.max(c.lastSnapshotSeq, incomingSeq);
-                        }
                         const snapshotEntry = {
                             time: snapshotReceiveTime,
                             pos: { x: character.p.x, y: character.p.y, z: character.p.z },
                             speed: character.s ? { x: character.s.x, y: character.s.y, z: character.s.z } : null,
                             mom: character.m ? { x: character.m.x, y: character.m.y, z: character.m.z } : null
                         };
-                        if (c.snapshotBuffer.length >= (c.maxSnapshotBuffer || 20)) {
-                            c.snapshotBuffer[0] = snapshotEntry;
-                            c.snapshotBuffer.push(c.snapshotBuffer.shift());
-                        } else {
-                            c.snapshotBuffer.push(snapshotEntry);
+                        const maxSnapshots = c.maxSnapshotBuffer || 20;
+                        if (c.snapshotBuffer.length >= maxSnapshots) {
+                            c.snapshotBuffer.shift();
                         }
+                        c.snapshotBuffer.push(snapshotEntry);
                         
                         // Reconcile local predicted player using server input acknowledgement.
                         if (c.parent && c.parent === game.player && Number.isFinite(character.isq)) {
                             const ackAdvanced = character.isq > c.lastServerInputSeq;
-                            const localError = Math.sqrt(
-                                Math.pow(character.p.x - c.HB.pos.x, 2) +
-                                Math.pow(character.p.y - c.HB.pos.y, 2) +
-                                Math.pow(character.p.z - c.HB.pos.z, 2)
-                            );
                             game.reconcileWithServer(c, character.p, character.isq, character.s, ackAdvanced);
                             c.lastServerInputSeq = Math.max(c.lastServerInputSeq, character.isq);
                         }
@@ -166,93 +169,50 @@ gameWSS.addEventListener('message', (event) => {
                             c.item = character.item;
                         }
                         
+                        const createWeaponInstance = (weaponType) => {
+                            switch (weaponType) {
+                                case 'pistol':
+                                    return new Items.Pistol();
+                                case 'rifle':
+                                    return new Items.Rifle();
+                                case 'lance':
+                                    return new Items.Lance();
+                                case 'flamer':
+                                    return new Items.Flamer();
+                                case 'sword':
+                                    return new Items.Sword();
+                                default:
+                                    return new Items.Pistol();
+                            }
+                        };
+
                         // Sync inventory weapons and ammo
                         if (character.inv && Array.isArray(character.inv)) {
-                            // Sync each weapon in inventory
+                            // Hard-replace inventory to prevent stale local weapon state after resets.
+                            c.inventory = [];
                             for (let i = 0; i < character.inv.length; i++) {
                                 const weaponType = character.inv[i].w;
                                 const weaponAmmo = character.inv[i].a || 0;
                                 const weaponNextCool = character.inv[i].nc;
                                 const weaponReloading = character.inv[i].r;
-                                
-                                if (c.inventory[i]) {
-                                    // Update existing weapon's ammo and type
-                                    if (c.inventory[i].weapon === weaponType) {
-                                        // Same weapon, just update ammo and cooldown
-                                        c.inventory[i].ammo = weaponAmmo;
-                                        if (weaponNextCool !== undefined) {
-                                            // Convert relative cooldown time to absolute using client's tick counter
-                                            c.inventory[i].nextCool = game.match.time.ticks + weaponNextCool;
-                                        }
-                                        if (weaponReloading !== undefined) {
-                                            c.inventory[i].reloading = weaponReloading;
-                                        }
-                                    } else {
-                                        // Different weapon, replace it
-                                        let weaponInstance;
-                                        switch(weaponType) {
-                                            case 'pistol':
-                                                weaponInstance = new Items.Pistol();
-                                                break;
-                                            case 'rifle':
-                                                weaponInstance = new Items.Rifle();
-                                                break;
-                                            case 'lance':
-                                                weaponInstance = new Items.Lance();
-                                                break;
-                                            case 'flamer':
-                                                weaponInstance = new Items.Flamer();
-                                                break;
-                                            default:
-                                                weaponInstance = new Items.Pistol();
-                                        }
-                                        weaponInstance.ammo = weaponAmmo;
-                                        if (weaponNextCool !== undefined) {
-                                            // Convert relative cooldown time to absolute using client's tick counter
-                                            weaponInstance.nextCool = game.match.time.ticks + weaponNextCool;
-                                        }
-                                        if (weaponReloading !== undefined) {
-                                            weaponInstance.reloading = weaponReloading;
-                                        }
-                                        weaponInstance.owner = c;
-                                        c.inventory[i] = weaponInstance;
-                                    }
-                                } else {
-                                    // Add new weapon to inventory
-                                    let weaponInstance;
-                                    switch(weaponType) {
-                                        case 'pistol':
-                                            weaponInstance = new Items.Pistol();
-                                            break;
-                                        case 'rifle':
-                                            weaponInstance = new Items.Rifle();
-                                            break;
-                                        case 'lance':
-                                            weaponInstance = new Items.Lance();
-                                            break;
-                                        case 'flamer':
-                                            weaponInstance = new Items.Flamer();
-                                            break;
-                                        default:
-                                            weaponInstance = new Items.Pistol();
-                                    }
-                                    weaponInstance.ammo = weaponAmmo;
-                                    if (weaponNextCool !== undefined) {
-                                        // Convert relative cooldown time to absolute using client's tick counter
-                                        weaponInstance.nextCool = game.match.time.ticks + weaponNextCool;
-                                    }
-                                    if (weaponReloading !== undefined) {
-                                        weaponInstance.reloading = weaponReloading;
-                                    }
-                                    weaponInstance.owner = c;
-                                    c.inventory.push(weaponInstance);
+
+                                let weaponInstance = createWeaponInstance(weaponType);
+                                weaponInstance.ammo = weaponAmmo;
+                                if (weaponNextCool !== undefined) {
+                                    weaponInstance.nextCool = game.match.time.ticks + weaponNextCool;
                                 }
+                                if (weaponReloading !== undefined) {
+                                    weaponInstance.reloading = weaponReloading;
+                                }
+                                weaponInstance.owner = c;
+                                c.inventory.push(weaponInstance);
                             }
-                            
-                            // Remove extra weapons if server has fewer
-                            if (c.inventory.length > character.inv.length) {
-                                c.inventory.length = character.inv.length;
+                            if (c.inventory.length === 0) {
+                                const fallback = new Items.Sword();
+                                fallback.owner = c;
+                                c.inventory.push(fallback);
                             }
+                            c.item = Math.max(0, Math.min(c.item || 0, c.inventory.length - 1));
                         }
                         
                     } else {

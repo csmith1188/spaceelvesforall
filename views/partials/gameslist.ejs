@@ -1,25 +1,96 @@
 <h2>Games</h2>
 <div id="gameList">
   <div class="headerRow">
-    <div class="colCell colCellDouble">Server Name</div>
-    <div class="colCell">Status</div>
+    <div class="colCell colCellDouble">Server</div>
+    <div class="colCell">Match</div>
     <div class="colCell">Players</div>
+    <div class="colCell colCellDouble">Usernames</div>
+    <div class="colCell">Score</div>
+    <div class="colCell">Time Up</div>
   </div>
   <div class="listRow">
     <div class="colCell colCellDouble"><a href="/newgame">Start a new Game</a></div>
     <div class="colCell">---</div>
     <div class="colCell">---</div>
+    <div class="colCell colCellDouble">---</div>
+    <div class="colCell">---</div>
+    <div class="colCell">---</div>
   </div>
-  <% if (gamesList.length > 0) { %>
-  <% gamesList.forEach(game => { %>
-  <div class="listRow">
-    <%# <div style="flex: 1;">game.serverName</div> #%>
-    <%# <div style="flex: 1;">game.players</div> #%>
-    <%# <div style="flex: 1;">game.status</div> #%>
-    <div class="colCell colCellDouble"><a href="<%- this_url.split('://')[0] %>://<%- this_url.split('://')[1].split(':')[0] %>:<%- game %>/">Game <%- game %></a></div>
-    <div class="colCell">Probably Online</div>
-    <div class="colCell">Probably None</div>
-  </div>
-  <% }); %>
-  <% } %>
+  <div id="gamesRows"></div>
 </div>
+
+<script>
+  const initialGames = <%- JSON.stringify(gamesList || []) %>;
+  const gamesRows = document.getElementById('gamesRows');
+  const gamesById = new Map((initialGames || []).map(game => [game.gameId || `game-${game.port}`, game]));
+
+  function formatTimeUp(ms) {
+    const totalSeconds = Math.floor((ms || 0) / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}m ${seconds}s`;
+  }
+
+  function scoreText(game) {
+    const score = game?.match?.score || { teamA: 0, teamB: 0 };
+    return `${score.teamA ?? 0}-${score.teamB ?? 0}`;
+  }
+
+  function serverUrl(game) {
+    if (game.url) return game.url;
+    const protocol = window.location.protocol;
+    return `${protocol}//${window.location.hostname}:${game.port}/`;
+  }
+
+  function renderGamesRows() {
+    const games = Array.from(gamesById.values()).sort((a, b) => a.port - b.port);
+    gamesRows.innerHTML = '';
+    for (const game of games) {
+      const usernames = (game.players?.usernames || []).join(', ') || 'None';
+      const row = document.createElement('div');
+      row.classList.add('listRow');
+      row.innerHTML = `
+        <div class="colCell colCellDouble"><a href="${serverUrl(game)}">Game ${game.port}</a></div>
+        <div class="colCell">${game.match?.status || game.status || 'unknown'}</div>
+        <div class="colCell">${game.players?.current || 0}/${game.players?.max || 0}</div>
+        <div class="colCell colCellDouble">${usernames}</div>
+        <div class="colCell">${scoreText(game)}</div>
+        <div class="colCell">${formatTimeUp(game.timeUpMs)}</div>
+      `;
+      gamesRows.appendChild(row);
+    }
+  }
+
+  renderGamesRows();
+
+  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const lobbyWs = new WebSocket(`${wsProtocol}//${window.location.host}/master/games-live`);
+
+  lobbyWs.onmessage = (event) => {
+    let message;
+    try {
+      message = JSON.parse(event.data);
+    } catch (error) {
+      return;
+    }
+
+    if (message.type === 'games.snapshot' && Array.isArray(message.games)) {
+      gamesById.clear();
+      for (const game of message.games) {
+        gamesById.set(game.gameId || `game-${game.port}`, game);
+      }
+      renderGamesRows();
+      return;
+    }
+
+    if (message.type === 'games.patch' && message.game) {
+      const gameKey = message.game.gameId || `game-${message.game.port}`;
+      if (message.action === 'removed') {
+        gamesById.delete(gameKey);
+      } else {
+        gamesById.set(gameKey, message.game);
+      }
+      renderGamesRows();
+    }
+  };
+</script>
