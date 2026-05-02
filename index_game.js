@@ -62,13 +62,17 @@ let reconnectTimer = null;
 let reconnectDelayMs = 500;
 let shuttingDown = false;
 
+/**
+ * Game → master WebSocket must hit the process listening for upgrades (loopback), not the public :443/:3440 URL.
+ */
 function getMasterStatusWsUrl() {
-    const masterHostRaw = process.env.THIS_URL || 'localhost';
-    const masterPort = process.env.PORT || 3000;
-    const secure = masterHostRaw.startsWith('https://');
-    const host = masterHostRaw.replace(/^https?:\/\//, '').split('/')[0].split(':')[0];
-    const protocol = secure ? 'wss' : 'ws';
-    return `${protocol}://${host}:${masterPort}/master/game-status`;
+    if (process.env.MASTER_WS_URL) {
+        const base = process.env.MASTER_WS_URL.trim().replace(/\/+$/, '');
+        return `${base}/master/game-status`;
+    }
+    const bind = process.env.MASTER_BIND || '127.0.0.1';
+    const masterListen = parseInt(process.env.MASTER_LISTEN_PORT || process.env.PORT || '3000', 10);
+    return `ws://${bind}:${masterListen}/master/game-status`;
 }
 
 function getConnectedUsernames() {
@@ -179,48 +183,21 @@ connectToMasterStatus();
 
 // Define a route handler for the default home page
 app.get('/', (req, res) => {
+    const masterUrl = pathConfig.buildThisOrigin();
     if (req.session.token) {
-        const masterHost = process.env.THIS_URL || 'localhost';
-        const masterPort = process.env.PORT || 3000;
-        
-        // Build master URL properly, handling cases where hostname might include protocol
-        let masterUrl;
-        if (masterHost.startsWith('http://') || masterHost.startsWith('https://')) {
-            // If hostname already has protocol, extract just the hostname and rebuild
-            const hostname = masterHost.replace(/^https?:\/\//, '').split(':')[0];
-            const protocol = masterHost.startsWith('https://') ? 'https' : 'http';
-            masterUrl = `${protocol}://${hostname}:${masterPort}`;
-        } else {
-            // If no protocol, add http
-            masterUrl = `http://${masterHost}:${masterPort}`;
-        }
-        
         const gameWsPath = pathConfig.gamePublicPrefix
             ? `/${pathConfig.gamePublicPrefix}/${PORT}/game`
             : null;
-        res.render('client', { 
-            token: req.session.token, 
-            PORT: PORT, 
-            THIS_URL: masterHost, 
-            MASTER_PORT: masterPort,
-            masterUrl: masterUrl,
+        res.render('client', {
+            token: req.session.token,
+            PORT: PORT,
+            THIS_URL: process.env.THIS_URL || 'localhost',
+            MASTER_PORT: pathConfig.getPublicBrowserPort(),
+            masterUrl,
             gameWsPath: gameWsPath
         });
     } else {
-        const masterHost = process.env.THIS_URL || 'localhost';
-        const masterPort = process.env.PORT || 3000;
-        
-        // Build redirect URL properly
-        let redirectUrl;
-        if (masterHost.startsWith('http://') || masterHost.startsWith('https://')) {
-            const hostname = masterHost.replace(/^https?:\/\//, '').split(':')[0];
-            const protocol = masterHost.startsWith('https://') ? 'https' : 'http';
-            redirectUrl = `${protocol}://${hostname}:${masterPort}`;
-        } else {
-            redirectUrl = `http://${masterHost}:${masterPort}`;
-        }
-        
-        res.redirect(redirectUrl);
+        res.redirect(masterUrl || '/');
     }
 });
 
