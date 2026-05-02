@@ -40,10 +40,40 @@ function buildUrl(hostname, port, path = '', protocol = null) {
 }
 
 const THIS_HOST = normalizeHostname(process.env.THIS_URL);
-const AUTH_HOST = normalizeHostname(process.env.AUTH_URL);
 const THIS_PROTOCOL = extractProtocol(process.env.THIS_URL);
-const AUTH_PROTOCOL = extractProtocol(process.env.AUTH_URL);
 const PORT = process.env.PORT || 3000;
+
+/** Formbar / auth server base URL, without trailing /oauth (supports env with or without /oauth). */
+function formbarHttpBase() {
+    let u = (process.env.AUTH_URL || 'http://localhost:420').trim();
+    u = u.replace(/\/+$/, '');
+    if (u.endsWith('/oauth')) {
+        u = u.slice(0, -'/oauth'.length);
+    }
+    return u;
+}
+
+const AUTH_BASE = formbarHttpBase();
+const AUTH_HOST = normalizeHostname(AUTH_BASE);
+const AUTH_PROTOCOL = extractProtocol(AUTH_BASE);
+
+const SESSION_SECRET = process.env.SESSION_SECRET || process.env.SS_SECRET || 'secret';
+const API_KEY = (process.env.API_KEY || '').trim();
+
+/** Path segment for path-based game URLs (e.g. gs → https://host/gs/<port>/). Empty = use :port in browser. */
+const gamePublicPrefix = (process.env.GAME_PUBLIC_PREFIX || '').trim().replace(/^\/+|\/+$/g, '');
+
+/**
+ * Public HTTP URL for a spawned game process (lobby links and redirects).
+ */
+function buildPublicGameUrl(port) {
+    const host = normalizeHostname(process.env.THIS_URL);
+    const protocol = extractProtocol(process.env.THIS_URL);
+    if (gamePublicPrefix) {
+        return `${protocol}://${host}/${gamePublicPrefix}/${port}/`;
+    }
+    return buildUrl(process.env.THIS_URL, port, '/');
+}
 
 module.exports = {
     // Load the settings from the environment variables
@@ -51,41 +81,41 @@ module.exports = {
     // and add lines like this: PORT=3000
     // The port to run this on
     PORT: PORT,
-    // The hostname for the Formbar authentication server
+    gamePublicPrefix,
+    buildPublicGameUrl,
+    /** Normalized Formbar server hostname (no path). */
     AUTH_URL: AUTH_HOST,
+    /** Full base URL for Formbar HTTP/Socket (no /oauth suffix). */
+    AUTH_BASE,
     // The hostname for this server for the oauth callback
     THIS_URL: THIS_HOST,
     // Helper functions for URL construction
     buildThisUrl: (path = '') => buildUrl(process.env.THIS_URL, PORT, path),
-    buildAuthUrl: (path = '') => {
-        // For auth URL, use the port from the original URL or no port if not specified
-        const authUrl = process.env.AUTH_URL;
-        if (authUrl && authUrl.includes(':')) {
-            // If port is already specified in the URL, use it as-is
-            const cleanPath = path.startsWith('/') ? path : `/${path}`;
-            return `${authUrl}${cleanPath}`;
-        } else {
-            // If no port specified, don't add one
-            return buildUrl(authUrl, '', path);
-        }
-    },
+    /**
+     * Redirect user to Formbar OAuth; after login Formbar sends them back to redirectUrl with ?token=…
+     */
+    buildFormbarOAuthRedirect: (redirectUrl) =>
+        `${AUTH_BASE}/oauth?redirectURL=${encodeURIComponent(redirectUrl)}`,
+    SESSION_SECRET,
+    /** Optional Formbar websocket API key (socket.io-client). */
+    API_KEY,
     // Protocol information
     THIS_PROTOCOL: THIS_PROTOCOL,
     AUTH_PROTOCOL: AUTH_PROTOCOL,
-    // The secret for the session data
-    SS_SECRET: process.env.SS_SECRET || 'secret',
+    // Legacy alias — prefer SESSION_SECRET in .env
+    SS_SECRET: SESSION_SECRET,
     // The host, email and password for the email server
     EMAIL_HOST: process.env.EMAIL_HOST,
     EMAIL_USER: process.env.EMAIL_USER,
     EMAIL_PASS: process.env.EMAIL_PASS,
     // create a session middleware with a secret key using in memory store
     sessionMiddleware: session({
-        store: new SQLiteStore(),
-        secret: process.env.SS_SECRET || 'secret',
+        store: new SQLiteStore({ db: 'sessions.db', dir: './data' }),
+        secret: SESSION_SECRET,
         resave: false,
-        saveUninitialized: true,
+        saveUninitialized: false,
         cookie: {
-            secure: false,
+            secure: process.env.NODE_ENV === 'production',
             httpOnly: true,
             sameSite: 'Lax',
             maxAge: 24 * 60 * 60 * 1000 // 24 hours

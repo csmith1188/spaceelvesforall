@@ -1,13 +1,10 @@
 // Start an express server with websockets
 const express = require('express');
-// import express session module
-const session = require('express-session');
 // import the express-ws module
 const expressWs = require('express-ws')
 // import local environment variables
 require('dotenv').config();
-// sqlite3 session store
-const SQLiteStore = require('connect-sqlite3')(session);
+const pathConfig = require('./modules/config.js');
 // Retrieve all command-line arguments starting from the third element
 const args = process.argv.slice(2);
 // Import the API routes
@@ -30,9 +27,6 @@ args.forEach((arg, index) => {
     }
 });
 
-// The secret for the session data
-const SS_SECRET = process.env.SS_SECRET || 'secret';
-
 const app = express();
 
 // set the express view engine to ejs
@@ -44,22 +38,7 @@ app.use(express.static(__dirname + '/public'));
 // Use the imported routes
 app.use('/api', api_router);
 
-// create a session middleware with a secret key using in memory store
-const sessionMiddleware = session({
-    store: new SQLiteStore(),
-    secret: SS_SECRET,
-    resave: false,
-    saveUninitialized: true,
-    cookie: {
-        secure: false,
-        httpOnly: true,
-        sameSite: 'Lax',
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    }
-});
-
-// use the session middleware in express
-app.use(sessionMiddleware);
+app.use(pathConfig.sessionMiddleware);
 
 // use the express-ws module to add websockets to express
 const wss = expressWs(app);
@@ -216,12 +195,16 @@ app.get('/', (req, res) => {
             masterUrl = `http://${masterHost}:${masterPort}`;
         }
         
+        const gameWsPath = pathConfig.gamePublicPrefix
+            ? `/${pathConfig.gamePublicPrefix}/${PORT}/game`
+            : null;
         res.render('client', { 
             token: req.session.token, 
             PORT: PORT, 
             THIS_URL: masterHost, 
             MASTER_PORT: masterPort,
-            masterUrl: masterUrl
+            masterUrl: masterUrl,
+            gameWsPath: gameWsPath
         });
     } else {
         const masterHost = process.env.THIS_URL || 'localhost';

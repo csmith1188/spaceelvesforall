@@ -1,6 +1,8 @@
 const HEARTBEAT_TIMEOUT_MS = 5000;
 const PRUNE_INTERVAL_MS = 1000;
 
+const config = require('./config.js');
+
 function normalizeHost(rawHost) {
     if (!rawHost) return 'localhost';
     return rawHost.replace(/^https?:\/\//, '').split('/')[0].split(':')[0];
@@ -63,12 +65,10 @@ function createGameStatusHub({ app, wss }) {
         const now = Date.now();
         const gameId = message.gameId || `game-${message.port}`;
         const existing = gameStatusMap.get(gameId);
-        const host = normalizeHost(process.env.THIS_URL);
-        const protocol = process.env.THIS_URL && process.env.THIS_URL.startsWith('https://') ? 'https' : 'http';
         const next = {
             gameId,
             port: message.port,
-            url: `${protocol}://${host}:${message.port}/`,
+            url: config.buildPublicGameUrl(message.port),
             status: message.type === 'game.ending' ? 'ending' : (message.status || 'online'),
             players: {
                 current: message.players?.current || 0,

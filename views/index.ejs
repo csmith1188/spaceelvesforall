@@ -1,10 +1,10 @@
 <%- include('partials/header') %>
-<%- include('partials/user', { token: token, this_url: this_url }) %>
-<% if (token) { %>
+<%- include('partials/user', { token: token, user: typeof user !== 'undefined' ? user : null, this_url: this_url }) %>
+<% if (token || user) { %>
 <%- include('partials/gameslist', { gamesList: gamesList }) %>
 <%- include('partials/chat', { token: token }) %>
 
 <% } else { %>
-<p>Space Elves roam the universe, fighthing the nihilistic Dark Elves. Only those who validate their identity are authorized to know of their whereabouts. Please log in.</p>
+<p>Space Elves roam the universe, fighting the nihilistic Dark Elves. Log in with Formbar to join matches and chat.</p>
 <% } %>
 <%- include('partials/footer') %>

@@ -21,7 +21,11 @@
 
 // Determine WebSocket protocol based on current page protocol
 const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-const gameWSS = new WebSocket(`${wsProtocol}//${window.location.hostname}:${PORT}/game`);
+const gameWsUrl =
+    typeof GAME_WS_PATH === 'string' && GAME_WS_PATH.length
+        ? `${wsProtocol}//${window.location.host}${GAME_WS_PATH}`
+        : `${wsProtocol}//${window.location.hostname}:${PORT}/game`;
+const gameWSS = new WebSocket(gameWsUrl);
 
 gameWSS.addEventListener('open', () => {
     console.log('Connected to Game WSS');
