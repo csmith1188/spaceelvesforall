@@ -13,6 +13,7 @@ const WebSocket = require('ws');
 
 var PORT = 10000;
 var DEBUG = false;
+let MATCH_TYPE = 'ForHonorMP';
 
 // Example: Log each argument
 args.forEach((arg, index) => {
@@ -24,6 +25,13 @@ args.forEach((arg, index) => {
     if (arg.split(" ")[0] === '-dev') {
         DEBUG = true;
         console.info(`DEBUG: ${DEBUG}`);
+    }
+    if (arg.split(" ")[0] === '-m') {
+        const parsed = arg.split(" ")[1];
+        if (parsed === 'ForHonorMP' || parsed === 'ForEver') {
+            MATCH_TYPE = parsed;
+        }
+        console.info(`MATCH_TYPE: ${MATCH_TYPE}`);
     }
 });
 
@@ -50,7 +58,7 @@ game = new Games.Game({wss: wss, broadcast: Sockets.broadcast});
 if (DEBUG) {
     game.debug = true;
 }
-game.loadMatch('ForHonorMP');
+game.loadMatch(MATCH_TYPE);
 
 const gameStartedAt = Date.now();
 const gameId = `game-${PORT}`;
@@ -103,7 +111,7 @@ function getMatchStatusPayload(messageType = 'game.heartbeat') {
             usernames
         },
         match: {
-            type: game.match && game.match.matchType ? game.match.matchType : 'ForHonorMP',
+            type: game.match && game.match.matchType ? game.match.matchType : MATCH_TYPE,
             status: matchStatus,
             score: { teamA: 0, teamB: 0 }
         },

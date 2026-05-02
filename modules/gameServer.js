@@ -6,8 +6,12 @@ exports.gameServerCount = 10000;
 exports.gameServers = [];
 
 exports.spawnGameServer = (req, res) => {
+    const requestedMatchType = req.query.matchType;
+    const matchType = (requestedMatchType === 'ForHonorMP' || requestedMatchType === 'ForEver')
+        ? requestedMatchType
+        : 'ForHonorMP';
     // Start another Node.js script with the port argument
-    const child = spawn('node', ['index_game.js', '-p ' + exports.gameServerCount]); // add { detached: true } to run in the background
+    const child = spawn('node', ['index_game.js', '-p ' + exports.gameServerCount, '-m ' + matchType]); // add { detached: true } to run in the background
     child.PORT = exports.gameServerCount;
     child.gameId = `game-${child.PORT}`;
     let removedFromMasterList = false;

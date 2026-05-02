@@ -103,8 +103,7 @@
                 func();
             }
 
-            // find the match's character with the same id as the player
-            let character = game.match.characters.find(p => p.parent === this.player);
+            let character = Utils.ownedActiveCharacter(this.player);
             if (!character) return;
 
             // The normal HUD in every game mode

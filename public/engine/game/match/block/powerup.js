@@ -23,6 +23,23 @@
     ###         ########    ###   ###   ########## ###    ###         ########  ###
     */
 
+    /**
+     * Apply snapshot/network options without replacing typed fields that JSON turns into plain objects.
+     * Otherwise `HB` breaks `instanceof Utils.Cube` in Block.draw; broken `img` breaks sprite draws.
+     */
+    function assignHydratedPickupProps(target, options) {
+        if (typeof options !== 'object' || !options) return;
+        const skip = new Set([
+            'runFunc', 'drawFunc',
+            'HB',
+            'img', 'imgSide', 'shadow', '_tilePatternTop', '_tilePatternSide'
+        ]);
+        for (const key of Object.keys(options)) {
+            if (skip.has(key)) continue;
+            target[key] = options[key];
+        }
+    }
+
     /*
      ######
      #     # #  ####  #    # #    # #####
@@ -46,15 +63,7 @@
                     this.HB.pos.z = Utils.sineAnimate(5, 0.05) + 10;
                 }
             ]
-            if (typeof options === 'object')
-                for (var key of Object.keys(options)) {
-                    if (key == 'runFunc') {
-                    }
-                    else if (key == 'drawFunc') {
-                    } else {
-                        this[key] = options[key];
-                    }
-                }
+            assignHydratedPickupProps(this, options);
 
             // this.HB = new Utils.Cube(new Utils.Vect3(spawnPos.x, spawnPos.y, spawnPos.z + 16), new Utils.Vect3(32, 32, 32));
 
@@ -155,15 +164,7 @@
                     }
                 }
             });
-            if (typeof options === 'object')
-                for (var key of Object.keys(options)) {
-                    if (key == 'runFunc') {
-                    }
-                    else if (key == 'drawFunc') {
-                    } else {
-                        this[key] = options[key];
-                    }
-                }
+            assignHydratedPickupProps(this, options);
             if (typeof window !== 'undefined') {
                 this.img.src = this.imgFile;
                 this.imgSide.src = this.imgFileSide;
@@ -207,15 +208,7 @@
                     }
                 }
             });
-            if (typeof options === 'object')
-                for (var key of Object.keys(options)) {
-                    if (key == 'runFunc') {
-                    }
-                    else if (key == 'drawFunc') {
-                    } else {
-                        this[key] = options[key];
-                    }
-                }
+            assignHydratedPickupProps(this, options);
             if (typeof window !== 'undefined') {
                 this.img.src = this.imgFile;
                 this.imgSide.src = this.imgFileSide;
@@ -273,15 +266,7 @@
                     }
                 }
             });
-            if (typeof options === 'object')
-                for (var key of Object.keys(options)) {
-                    if (key == 'runFunc') {
-                    }
-                    else if (key == 'drawFunc') {
-                    } else {
-                        this[key] = options[key];
-                    }
-                }
+            assignHydratedPickupProps(this, options);
             if (typeof window !== 'undefined') {
                 this.img.src = this.imgFile;
                 this.imgSide.src = this.imgFileSide;
@@ -312,16 +297,29 @@
             if (typeof window !== 'undefined') this.touchSFX = Sounds.pickup_weapon;
             this.runFunc = [(actor, side) => {
                 if (actor) {
-                    if (this.pickupDelay < game.time.ticks) {
+                    // Use authoritative match tick source for pickup gating.
+                    if (this.pickupDelay < game.match.time.ticks) {
                         if (game.match.characters.includes(actor)) {
+                            // Compact sparse inventory entries so "empty slot" behaves as expected.
+                            actor.inventory = actor.inventory.filter(Boolean);
                             if (actor.inventory.length < 2) {
                                 if (!actor.muted && typeof window !== 'undefined')
                                     this.touchSFX.play().catch(err => {});
-                                this.item.owner = actor.parent;
+                                this.item.owner = actor;
                                 actor.inventory.push(this.item); // Add to inventory
                             }
                             else {
-                                this.active = true; // Turn this back on if the player is full inventory
+                                // Forever mode starts with sword + pistol; allow weapon pickups by
+                                // swapping slot 2 (keep sword in slot 1).
+                                if (game.match && game.match.matchType === 'ForEver' && actor.inventory.length >= 2) {
+                                    if (!actor.muted && typeof window !== 'undefined')
+                                        this.touchSFX.play().catch(err => {});
+                                    this.item.owner = actor;
+                                    actor.inventory[1] = this.item;
+                                    actor.item = 1;
+                                } else {
+                                    this.active = true; // Turn this back on if the player is full inventory
+                                }
                             }
                         }
                     }
@@ -338,15 +336,7 @@
                 }
             }];
 
-            if (typeof options === 'object')
-                for (var key of Object.keys(options)) {
-                    if (key == 'runFunc') {
-                    }
-                    else if (key == 'drawFunc') {
-                    } else {
-                        this[key] = options[key];
-                    }
-                }
+            assignHydratedPickupProps(this, options);
 
             if (this.weapon == 'pistol') {
                 this.item = new Items.Pistol();

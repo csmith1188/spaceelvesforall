@@ -385,5 +385,19 @@
         return typeof window !== 'undefined';
     }
 
-    return { Vect2, Vect3, Rect, Cube, Cylinder, generateHB, sineAnimate, easeout, easeinout, uuidGen, isClient };
+    /**
+     * Prefer the latest active character owned by `owner`. After wipes/respawns the roster may
+     * still contain inactive Characters with the same parent; `.find()` by parent alone returns the wrong one.
+     */
+    function ownedActiveCharacter(owner) {
+        if (typeof game === 'undefined' || !game || !game.match || !Array.isArray(game.match.characters)) return null;
+        let last = null;
+        for (let i = 0; i < game.match.characters.length; i++) {
+            const ch = game.match.characters[i];
+            if (ch.parent === owner && ch.active) last = ch;
+        }
+        return last;
+    }
+
+    return { Vect2, Vect3, Rect, Cube, Cylinder, generateHB, sineAnimate, easeout, easeinout, uuidGen, isClient, ownedActiveCharacter };
 }));

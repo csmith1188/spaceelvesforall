@@ -1,15 +1,16 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        define([], factory);
+        define(['Utils'], factory);
     } else if (typeof module === 'object' && module.exports) {
         // Nodejs
-        module.exports = factory();
+        const Utils = require('../../utils.js');
+        module.exports = factory(Utils);
     } else {
         // Browser globals (root is window)
-        root.Camera = factory();
+        root.Camera = factory(root.Utils);
     }
-}(typeof self !== 'undefined' ? self : this, function () {
+}(typeof self !== 'undefined' ? self : this, function (Utils) {
 
     class Camera {
         constructor(options) {
@@ -55,21 +56,14 @@
                 }
             }
 
-            // find the game's match's character whose parent is this camera's owner
-            this.target = game.match.characters.find(character => character.parent == this.owner);
+            // Same parent can appear twice (dead + new jetbike); never use .find() alone.
+            this.target = Utils.ownedActiveCharacter(this.owner);
             if (this.target) {
-                if (this.target.active) {
-                    this.x = this.target.HB.pos.x;
-                    this.y = this.target.HB.pos.y;
-                } else if (game.match && game.match.map) {
-                    this.x = game.match.map.w / 2;
-                    this.y = game.match.map.h / 2;
-                }
-            } else {
-                if (game.match && game.match.map) {
-                    this.x = game.match.map.w / 2;
-                    this.y = game.match.map.h / 2;
-                }
+                this.x = this.target.HB.pos.x;
+                this.y = this.target.HB.pos.y;
+            } else if (game.match && game.match.map) {
+                this.x = game.match.map.w / 2;
+                this.y = game.match.map.h / 2;
             }
             /*
             // Move camera to next sensible target when player character is inactive or missing
