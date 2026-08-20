@@ -5,7 +5,9 @@
     } else if (typeof module === 'object' && module.exports) {
         // Node.js
         const Matches = require('./match/match.js');
+        require('./player/bot_ai.js');
         require('./match/match_forhonormp.js');
+        require('./match/for_ever.js');
         module.exports = factory(Matches);
     } else {
         // Browser globals: attach each export directly to the global scope
@@ -260,6 +262,10 @@
                     case 'ForHonorMP':
                         console.log('For Honor Multiplayer');
                         this.match = new Matches.ForHonorMP(match);
+                        break;
+                    case 'ForEver':
+                        console.log('Forever');
+                        this.match = new Matches.ForEver(match);
                         break;
                     default:
                         this.match = new Matches.Match(match);

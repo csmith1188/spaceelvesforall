@@ -1,11 +1,7 @@
 <div id="userControls">
-<% if (token) { %>
-  <p><%- token.displayName %> || <a href="/logout">Log Out</a></p>
-  <% } else { %>
-  <a href="<%- this_url %>">Log In </a>
-  or
-  <a href="/signup">Sign Up</a>
-  or
-  <a href="<%- this_url %>?formbar=true">Log In With Formbar</a>
-  <% } %>
+<% if (token || user) { %>
+  <p><%- token ? token.displayName : user %> || <a href="/logout">Log Out</a></p>
+<% } else { %>
+  <a href="<%- this_url %>">Log in with Formbar</a>
+<% } %>
 </div>

@@ -38,9 +38,14 @@
                 key === "F10";
         },
         blockModifierHotkeys: (event) => {
+            // Allow pure modifier key presses (Shift/Alt/Ctrl/etc.) to reach game controls.
+            // Only block browser shortcut combos that include a modifier + another key.
             if (utils.isModifierKey(event)) {
+                return;
+            }
+            const hasShortcutModifier = event.ctrlKey || event.metaKey || event.altKey;
+            if (hasShortcutModifier || event.key === "F10") {
                 event.preventDefault();
-                event.stopPropagation();
             }
         },
         gamepadHasActivity: (gamepad) => {

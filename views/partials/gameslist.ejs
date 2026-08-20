@@ -1,4 +1,13 @@
 <h2>Games</h2>
+<div id="newGameSection">
+  <h3>New Game</h3>
+  <label for="newGameMatchType">Match type</label>
+  <select id="newGameMatchType" aria-label="Match type">
+    <option value="ForHonorMP">For Honor</option>
+    <option value="ForEver">For Ever</option>
+  </select>
+  <button id="launchGameBtn" type="button">Launch</button>
+</div>
 <div id="gameList">
   <div class="headerRow">
     <div class="colCell colCellDouble">Server</div>
@@ -7,14 +16,6 @@
     <div class="colCell colCellDouble">Usernames</div>
     <div class="colCell">Score</div>
     <div class="colCell">Time Up</div>
-  </div>
-  <div class="listRow">
-    <div class="colCell colCellDouble"><a href="/newgame">Start a new Game</a></div>
-    <div class="colCell">---</div>
-    <div class="colCell">---</div>
-    <div class="colCell colCellDouble">---</div>
-    <div class="colCell">---</div>
-    <div class="colCell">---</div>
   </div>
   <div id="gamesRows"></div>
 </div>
@@ -51,7 +52,7 @@
       row.classList.add('listRow');
       row.innerHTML = `
         <div class="colCell colCellDouble"><a href="${serverUrl(game)}">Game ${game.port}</a></div>
-        <div class="colCell">${game.match?.status || game.status || 'unknown'}</div>
+        <div class="colCell">${game.match?.type || game.match?.status || game.status || 'unknown'}</div>
         <div class="colCell">${game.players?.current || 0}/${game.players?.max || 0}</div>
         <div class="colCell colCellDouble">${usernames}</div>
         <div class="colCell">${scoreText(game)}</div>
@@ -62,6 +63,15 @@
   }
 
   renderGamesRows();
+
+  const newGameMatchType = document.getElementById('newGameMatchType');
+  const launchGameBtn = document.getElementById('launchGameBtn');
+  if (launchGameBtn && newGameMatchType) {
+    launchGameBtn.addEventListener('click', () => {
+      const selectedType = newGameMatchType.value || 'ForHonorMP';
+      window.location.href = `/newgame?matchType=${encodeURIComponent(selectedType)}`;
+    });
+  }
 
   const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const lobbyWs = new WebSocket(`${wsProtocol}//${window.location.host}/master/games-live`);

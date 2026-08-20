@@ -82,10 +82,14 @@
             // block.serverPos = { pos: block.pos, time: block.time };
             // delete block.pos;
             // delete block.vol;
-            // Find character by user ID for bullets/projectiles, or by block ID for other entities
-            let character = block.user && block.user.i 
-                ? game.match.characters.find(c => c.id === block.user.i)
-                : game.match.characters.find(c => c.id === block.id);
+            // Find character by user ID for bullets/projectiles, or by block ID for other entities.
+            // During match construction (before game.match is assigned), game.match can be null.
+            const matchCharacters = (typeof game !== 'undefined' && game.match && Array.isArray(game.match.characters))
+                ? game.match.characters
+                : [];
+            let character = block.user && block.user.i
+                ? matchCharacters.find(c => c.id === block.user.i)
+                : matchCharacters.find(c => c.id === block.id);
             if (block.type == "block") {
                 this.blocks.push(new Blocks.Block(
                     {
@@ -446,7 +450,8 @@
                     boundsY = diameter + (entity.HB.height || 0) + Math.max(0, entity.HB.pos.z || 0);
                 }
                 if (game.player.camera.radius + boundsX > Math.abs(compareX) && game.player.camera.radius + boundsY > Math.abs(compareY) - horizonCalc) {
-                    entity.draw(game.player.character);
+                    const viewer = Utils.ownedActiveCharacter(game.player);
+                    entity.draw(viewer);
                     visibleEntities++;
                 }
             }
@@ -612,10 +617,12 @@
                 let ran1 = function () { return Math.floor(Math.random() * 3) + 1 }
                 let ran2 = function () { return Math.floor(Math.random() * 3) + 1 }
                 let ran3 = function () { return Math.floor(Math.random() * 3) + 1 }
-                this.blocks.push(new Blocks.Block(
-                    new Utils.Vect3(Math.round(Math.random() * this.w), Math.round(Math.random() * this.h), 0),
-                    new Utils.Vect3(ran1() * 48, ran2() * 48, ran3() * 48),
-                    { imgFile: 'img/tiles/wall_top.png', imgFileSide: 'img/tiles/wall_side.png' }))
+                this.blocks.push(new Blocks.Block({
+                    spawnPos: new Utils.Vect3(Math.round(Math.random() * this.w), Math.round(Math.random() * this.h), 0),
+                    spawnVol: new Utils.Vect3(ran1() * 48, ran2() * 48, ran3() * 48),
+                    imgFile: 'img/tiles/wall_top.png',
+                    imgFileSide: 'img/tiles/wall_side.png'
+                }))
             }
         }
     }

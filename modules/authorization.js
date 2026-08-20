@@ -1,9 +1,18 @@
-// load the configuration file
-const config = require('./config.js');
-// load the database module
-const { db } = require('./database.js');
-// load the jsonwebtoken module
 const jwt = require('jsonwebtoken');
+const config = require('./config.js');
+const { db } = require('./database.js');
+
+function sessionFromFormbarToken(tokenData) {
+    if (!tokenData || typeof tokenData !== 'object') return null;
+    const displayName = tokenData.displayName || tokenData.name || tokenData.username;
+    if (!displayName) return null;
+    return {
+        ...tokenData,
+        displayName,
+        verified: true
+    };
+}
+
 // load the crypto module
 const crypto = require('crypto');
 // module for sending emails
@@ -88,58 +97,61 @@ exports.loginGET = (req, res) => {
             //render local login page
             res.render('login', { this_url: config.buildThisUrl('/login') });
         }
+
     };
 }
 
+/**
+ * Formbar OAuth callback: GET /login?token=… — align with formbarboilerplate session shape.
+ */
+exports.loginGET = (req, res) => {
+    if (req.query.token) {
+        const raw = jwt.decode(req.query.token);
+        const normalized = sessionFromFormbarToken(raw);
+        if (!normalized) {
+            return res.status(400).render('error', { error: 'Invalid or incomplete login token.' });
+        }
 
-exports.loginPOST = (req, res) => {
-    if (req.body.displayName && req.body.password) {
-        db.get("SELECT * FROM users WHERE displayName=?;", req.body.displayName, (err, row) => {
+        req.session.token = normalized;
+        req.session.user = normalized.displayName;
+
+        const uid = normalized.id != null ? String(normalized.id) : '';
+        db.get('SELECT * FROM users WHERE fb_displayName=? OR displayName=?;', [normalized.displayName, normalized.displayName], (err, row) => {
             if (err) {
                 console.error(err);
-                res.render('error', { error: `Database error: ${err}` });
-            } else if (!row) {
-                console.error("User not found");
-                res.render('error', { error: "User not found. You must <a href='/signup'>make an account</a> first." });
-            } else {
-                // Compare stored password with provided password
-                crypto.pbkdf2(req.body.password, row.salt, 1000, 64, "sha512", (err, derivedKey) => {
-                    if (err) {
-                        console.error(err);
-                        res.render('error', { error: `Error hashing password: ${err}` });
-                    } else {
-                        const hashedPassword = derivedKey.toString("hex");
-                        if (row.hash === hashedPassword) {
-                            req.session.token = {
-                                displayName: row.displayName || row.fb_displayName,
-                                verified: row.validated
-                            }
-                            res.redirect("/");
-                        } else {
-                            console.info("Incorrect password");
-                            res.render('error', { error: "Incorrect password" });
+                return res.render('error', { error: `Database error: ${err.message}` });
+            }
+            if (!row) {
+                db.run(
+                    'INSERT INTO users (displayName, fb_id, fb_displayName, validated) VALUES (?, ?, ?, ?);',
+                    [normalized.displayName, uid, normalized.displayName, 1],
+                    (insertErr) => {
+                        if (insertErr) {
+                            console.error(insertErr);
+                            return res.render('error', { error: `Database error: ${insertErr.message}` });
                         }
+                        console.info(`New user ${normalized.displayName} created (Formbar)`);
+                        res.redirect('/');
                     }
-                });
+                );
+            } else {
+                res.redirect('/');
             }
         });
-    } else {
-        console.info("No displayName and password provided");
-        res.render('error', { error: "No displayName and password provided" });
+        return;
     }
-}
 
-// Define a route handler for logging out
+    const returnUrl = config.buildThisUrl('/login');
+    res.redirect(config.buildFormbarOAuthRedirect(returnUrl));
+};
+
 exports.logoutGET = (req, res) => {
-    // Destroy the session
     req.session.destroy((err) => {
         if (err) {
             console.error('Session destruction error:', err);
             return res.status(500).send('Could not log out.');
         }
-        // Optionally, clear the session cookie
-        res.clearCookie('connect.sid'); // Adjust the cookie name if different
-        // Redirect the user to the home page or login page
+        res.clearCookie('connect.sid');
         res.redirect('/');
     });
 }
@@ -217,3 +229,4 @@ exports.verifyGET = (req, res) => {
         res.render('error', { error: "No token provided" });
     }
 }
+

@@ -23,6 +23,11 @@ module.exports = (app, wss) => {
     app.ws('/chat', (ws, req) => {
         console.info(`Client connected, ${new Date()}`);
 
+        if (!req.session.token || !req.session.token.displayName) {
+            ws.close();
+            return;
+        }
+
         // see if there is a ws with a token that matches the session token
         for (const client of wss.getWss().clients) {
             if (client.token && client.token.displayName === req.session.token.displayName) {

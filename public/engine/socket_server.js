@@ -85,7 +85,33 @@ function gameHandler(ws, req) {
 
             if (message.getCharacter) {
                 let character = game.match.characters.find(character => character.id == message.getCharacter);
-                if (character) ws.send(JSON.stringify({ character: character.fullPack() }));
+                // Send a spawn-safe payload (no circular refs like target->character->parent->controller->owner).
+                if (character) {
+                    const characterPayload = {
+                        id: character.id,
+                        type: character.type,
+                        name: character.name,
+                        team: character.team,
+                        active: character.active,
+                        visible: character.visible,
+                        solid: character.solid,
+                        cleanup: character.cleanup,
+                        spawnPos: {
+                            x: character.HB.pos.x,
+                            y: character.HB.pos.y,
+                            z: character.HB.pos.z
+                        },
+                        gfx: character.gfx,
+                        parent: character.parent && typeof character.parent.pack === 'function'
+                            ? character.parent.pack()
+                            : { token: { id: character.parent?.token?.id } },
+                        inventory: (character.inventory || []).map((item) => ({
+                            weapon: item.weapon || item.type || 'sword',
+                            ammo: item.ammo
+                        }))
+                    };
+                    ws.send(JSON.stringify({ character: characterPayload }));
+                }
             }
 
         } catch (error) {

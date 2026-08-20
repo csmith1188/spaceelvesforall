@@ -1,12 +1,17 @@
 // import child process handler
 const { spawn } = require('child_process');
+const config = require('./config.js');
 
 exports.gameServerCount = 10000;
 exports.gameServers = [];
 
 exports.spawnGameServer = (req, res) => {
+    const requestedMatchType = req.query.matchType;
+    const matchType = (requestedMatchType === 'ForHonorMP' || requestedMatchType === 'ForEver')
+        ? requestedMatchType
+        : 'ForHonorMP';
     // Start another Node.js script with the port argument
-    const child = spawn('node', ['index_game.js', '-p ' + exports.gameServerCount]); // add { detached: true } to run in the background
+    const child = spawn('node', ['index_game.js', '-p ' + exports.gameServerCount, '-m ' + matchType]); // add { detached: true } to run in the background
     child.PORT = exports.gameServerCount;
     child.gameId = `game-${child.PORT}`;
     let removedFromMasterList = false;
@@ -44,20 +49,7 @@ exports.spawnGameServer = (req, res) => {
         removeFromMasterList();
     });
 
-    const host = process.env.THIS_URL || 'localhost';
-    
-    // Build redirect URL properly, handling cases where hostname might include protocol
-    let redirectUrl;
-    if (host.startsWith('http://') || host.startsWith('https://')) {
-        // If hostname already has protocol, extract just the hostname and rebuild
-        const hostname = host.replace(/^https?:\/\//, '').split(':')[0];
-        const protocol = host.startsWith('https://') ? 'https' : 'http';
-        redirectUrl = `${protocol}://${hostname}:${child.PORT}/`;
-    } else {
-        // If no protocol, add http
-        redirectUrl = `http://${host}:${child.PORT}/`;
-    }
-    
+    const redirectUrl = config.buildPublicGameUrl(child.PORT);
     res.redirect(redirectUrl);
 
     exports.gameServers.push(child);

@@ -294,7 +294,7 @@
             this.buttons = [
                 new Menu_Button(new Utils.Rect(0, 0, 150, 30), "For Speed", function () { game.match = new Match_ForSpeed(); game.menu = null; game.paused = false; }),
                 new Menu_Button(new Utils.Rect(0, 40, 150, 30), "For Honor", function () { game.match = new Match_ForHonor(); game.menu = null; game.paused = false; }),
-                new Menu_Button(new Utils.Rect(0, 80, 150, 30), "For Ever", function () { game.match = new Match_ForEver(); game.menu = null; game.paused = false; }),
+                new Menu_Button(new Utils.Rect(0, 80, 150, 30), "For Ever", function () { game.loadMatch('ForEver'); game.menu = null; game.paused = false; }),
                 new Menu_Button(new Utils.Rect(0, 120, 150, 30), "debugmode", function () { game.match = new DebugMatch(); game.menu = null; game.paused = false; }),
                 new Menu_Button(new Utils.Rect(0, 160, 150, 30), "Exit", function () { window.close(); })
             ]

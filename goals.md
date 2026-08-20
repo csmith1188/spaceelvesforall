@@ -1,3 +1,7 @@
+# Immediate
+- Sword/bullet instant no animation
+- modifier keys no longer work
+
 # Master Server
 - ~~Spawn a game server~~
 - ~~redirect user to game server~~

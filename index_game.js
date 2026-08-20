@@ -1,13 +1,10 @@
 // Start an express server with websockets
 const express = require('express');
-// import express session module
-const session = require('express-session');
 // import the express-ws module
 const expressWs = require('express-ws')
 // import local environment variables
 require('dotenv').config();
-// sqlite3 session store
-const SQLiteStore = require('connect-sqlite3')(session);
+const pathConfig = require('./modules/config.js');
 // Retrieve all command-line arguments starting from the third element
 const args = process.argv.slice(2);
 // Import the API routes
@@ -16,6 +13,7 @@ const WebSocket = require('ws');
 
 var PORT = 10000;
 var DEBUG = false;
+let MATCH_TYPE = 'ForHonorMP';
 
 // Example: Log each argument
 args.forEach((arg, index) => {
@@ -28,10 +26,14 @@ args.forEach((arg, index) => {
         DEBUG = true;
         console.info(`DEBUG: ${DEBUG}`);
     }
+    if (arg.split(" ")[0] === '-m') {
+        const parsed = arg.split(" ")[1];
+        if (parsed === 'ForHonorMP' || parsed === 'ForEver') {
+            MATCH_TYPE = parsed;
+        }
+        console.info(`MATCH_TYPE: ${MATCH_TYPE}`);
+    }
 });
-
-// The secret for the session data
-const SS_SECRET = process.env.SS_SECRET || 'secret';
 
 const app = express();
 
@@ -44,22 +46,7 @@ app.use(express.static(__dirname + '/public'));
 // Use the imported routes
 app.use('/api', api_router);
 
-// create a session middleware with a secret key using in memory store
-const sessionMiddleware = session({
-    store: new SQLiteStore(),
-    secret: SS_SECRET,
-    resave: false,
-    saveUninitialized: true,
-    cookie: {
-        secure: false,
-        httpOnly: true,
-        sameSite: 'Lax',
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    }
-});
-
-// use the session middleware in express
-app.use(sessionMiddleware);
+app.use(pathConfig.sessionMiddleware);
 
 // use the express-ws module to add websockets to express
 const wss = expressWs(app);
@@ -71,7 +58,7 @@ game = new Games.Game({wss: wss, broadcast: Sockets.broadcast});
 if (DEBUG) {
     game.debug = true;
 }
-game.loadMatch('ForHonorMP');
+game.loadMatch(MATCH_TYPE);
 
 const gameStartedAt = Date.now();
 const gameId = `game-${PORT}`;
@@ -83,13 +70,17 @@ let reconnectTimer = null;
 let reconnectDelayMs = 500;
 let shuttingDown = false;
 
+/**
+ * Game → master WebSocket must hit the process listening for upgrades (loopback), not the public :443/:3440 URL.
+ */
 function getMasterStatusWsUrl() {
-    const masterHostRaw = process.env.THIS_URL || 'localhost';
-    const masterPort = process.env.PORT || 3000;
-    const secure = masterHostRaw.startsWith('https://');
-    const host = masterHostRaw.replace(/^https?:\/\//, '').split('/')[0].split(':')[0];
-    const protocol = secure ? 'wss' : 'ws';
-    return `${protocol}://${host}:${masterPort}/master/game-status`;
+    if (process.env.MASTER_WS_URL) {
+        const base = process.env.MASTER_WS_URL.trim().replace(/\/+$/, '');
+        return `${base}/master/game-status`;
+    }
+    const bind = process.env.MASTER_BIND || '127.0.0.1';
+    const masterListen = parseInt(process.env.MASTER_LISTEN_PORT || process.env.PORT || '3000', 10);
+    return `ws://${bind}:${masterListen}/master/game-status`;
 }
 
 function getConnectedUsernames() {
@@ -120,7 +111,7 @@ function getMatchStatusPayload(messageType = 'game.heartbeat') {
             usernames
         },
         match: {
-            type: game.match && game.match.matchType ? game.match.matchType : 'ForHonorMP',
+            type: game.match && game.match.matchType ? game.match.matchType : MATCH_TYPE,
             status: matchStatus,
             score: { teamA: 0, teamB: 0 }
         },
@@ -200,44 +191,21 @@ connectToMasterStatus();
 
 // Define a route handler for the default home page
 app.get('/', (req, res) => {
+    const masterUrl = pathConfig.buildThisOrigin();
     if (req.session.token) {
-        const masterHost = process.env.THIS_URL || 'localhost';
-        const masterPort = process.env.PORT || 3000;
-        
-        // Build master URL properly, handling cases where hostname might include protocol
-        let masterUrl;
-        if (masterHost.startsWith('http://') || masterHost.startsWith('https://')) {
-            // If hostname already has protocol, extract just the hostname and rebuild
-            const hostname = masterHost.replace(/^https?:\/\//, '').split(':')[0];
-            const protocol = masterHost.startsWith('https://') ? 'https' : 'http';
-            masterUrl = `${protocol}://${hostname}:${masterPort}`;
-        } else {
-            // If no protocol, add http
-            masterUrl = `http://${masterHost}:${masterPort}`;
-        }
-        
-        res.render('client', { 
-            token: req.session.token, 
-            PORT: PORT, 
-            THIS_URL: masterHost, 
-            MASTER_PORT: masterPort,
-            masterUrl: masterUrl
+        const gameWsPath = pathConfig.gamePublicPrefix
+            ? `/${pathConfig.gamePublicPrefix}/${PORT}/game`
+            : null;
+        res.render('client', {
+            token: req.session.token,
+            PORT: PORT,
+            THIS_URL: process.env.THIS_URL || 'localhost',
+            MASTER_PORT: pathConfig.getPublicBrowserPort(),
+            masterUrl,
+            gameWsPath: gameWsPath
         });
     } else {
-        const masterHost = process.env.THIS_URL || 'localhost';
-        const masterPort = process.env.PORT || 3000;
-        
-        // Build redirect URL properly
-        let redirectUrl;
-        if (masterHost.startsWith('http://') || masterHost.startsWith('https://')) {
-            const hostname = masterHost.replace(/^https?:\/\//, '').split(':')[0];
-            const protocol = masterHost.startsWith('https://') ? 'https' : 'http';
-            redirectUrl = `${protocol}://${hostname}:${masterPort}`;
-        } else {
-            redirectUrl = `http://${masterHost}:${masterPort}`;
-        }
-        
-        res.redirect(redirectUrl);
+        res.redirect(masterUrl || '/');
     }
 });
 

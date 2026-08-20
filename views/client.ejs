@@ -43,6 +43,7 @@
   var THIS_URL = <%- JSON.stringify(THIS_URL) %>;
   var MASTER_PORT = <%- JSON.stringify(MASTER_PORT) %>;
   var masterUrl = <%- JSON.stringify(masterUrl) %>;
+  var GAME_WS_PATH = <%- JSON.stringify(typeof gameWsPath !== 'undefined' ? gameWsPath : null) %>;
   var client = true;
 </script>
 
@@ -59,10 +60,12 @@
 <script src="engine/game/match/character.js"></script>
 <script src="engine/game/match/map/map.js"></script>
 <script src="engine/game/match/match.js"></script>
-<script src="engine/game/match/match_forhonormp.js"></script>
 <script src="engine/game/player/controller.js"></script>
 <script src="engine/game/player/camera.js"></script>
 <script src="engine/game/player/player.js"></script>
+<script src="engine/game/player/bot_ai.js"></script>
+<script src="engine/game/match/match_forhonormp.js"></script>
+<script src="engine/game/match/for_ever.js"></script>
 <script src="engine/socket_client.js"></script>
 <script src="engine/game/game.js"></script>
 

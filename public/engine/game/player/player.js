@@ -77,6 +77,23 @@
             }
         }
 
+        /**
+         * Minimal sync payload for broadcasts (e.g. disconnect). Must include connection state
+         * so clients can drop duelists from the ready UI when disconnected.
+         */
+        pack() {
+            return {
+                id: this.id,
+                token: {
+                    displayName: this.token.displayName,
+                    id: this.token.id
+                },
+                connected: this.connected === true,
+                spectator: !!this.spectator,
+                ready: !!this.ready
+            };
+        }
+
         step() {
             if (typeof window !== 'undefined' && game.player == this) {
                 const lastDevice = Controllers.utils.lastDevice;

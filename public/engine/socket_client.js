@@ -21,7 +21,11 @@
 
 // Determine WebSocket protocol based on current page protocol
 const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-const gameWSS = new WebSocket(`${wsProtocol}//${window.location.hostname}:${PORT}/game`);
+const gameWsUrl =
+    typeof GAME_WS_PATH === 'string' && GAME_WS_PATH.length
+        ? `${wsProtocol}//${window.location.host}${GAME_WS_PATH}`
+        : `${wsProtocol}//${window.location.hostname}:${PORT}/game`;
+const gameWSS = new WebSocket(gameWsUrl);
 
 gameWSS.addEventListener('open', () => {
     console.log('Connected to Game WSS');
@@ -64,7 +68,12 @@ gameWSS.addEventListener('message', (event) => {
                     const existingPlayer = game.players.find(p => p.token.displayName === player.token.displayName);
                     if (existingPlayer) {
                         existingPlayer.spectator = !!player.spectator;
-                        if (player.connected !== undefined) existingPlayer.connected = player.connected;
+                        if (player.connected !== undefined) {
+                            existingPlayer.connected = player.connected === true;
+                        }
+                        if (player.ready !== undefined) {
+                            existingPlayer.ready = !!player.ready;
+                        }
                     }
                 }
                 // if a player is in the game.players array but not in the message, remove the player
@@ -90,6 +99,27 @@ gameWSS.addEventListener('message', (event) => {
                 if (message.match.winsToTakeSeries !== undefined) game.match.winsToTakeSeries = message.match.winsToTakeSeries;
                 if (message.match.lastWinner !== undefined) game.match.lastWinner = message.match.lastWinner;
                 if (message.match.matchWinner !== undefined) game.match.matchWinner = message.match.matchWinner;
+                if (message.match.duelBotActive !== undefined) game.match.duelBotActive = message.match.duelBotActive;
+                if (message.match.forHonorBotTokenId !== undefined) game.match.forHonorBotTokenId = message.match.forHonorBotTokenId;
+                if (message.match.foreverSpawnedIds !== undefined) game.match.foreverSpawnedIds = message.match.foreverSpawnedIds;
+                if (message.match.waves !== undefined) game.match.waves = message.match.waves;
+                if (message.match.waveTime !== undefined) game.match.waveTime = message.match.waveTime;
+                if (message.match.nextWaveAtTick !== undefined) game.match.nextWaveAtTick = message.match.nextWaveAtTick;
+                if (message.match.matchStartTick !== undefined) game.match.matchStartTick = message.match.matchStartTick;
+                if (message.match.finalWaveSummary !== undefined) game.match.finalWaveSummary = message.match.finalWaveSummary;
+                if (message.match.finalElapsedTicks !== undefined) game.match.finalElapsedTicks = message.match.finalElapsedTicks;
+                if (message.match.despawnTimer !== undefined) game.match.despawnTimer = message.match.despawnTimer;
+                // Character deltas often omit removed entities; drop CPU duelist when roster says so.
+                const botTok = message.match.forHonorBotTokenId || game.match.forHonorBotTokenId || '__for_honor_duel_bot__';
+                let stripCpu = message.match.duelBotActive === false;
+                if (message.match.participantIds !== undefined && Array.isArray(game.match.participantIds)) {
+                    stripCpu = stripCpu || !game.match.participantIds.includes(botTok);
+                }
+                if (stripCpu && game.match.characters && game.match.characters.length) {
+                    game.match.characters = game.match.characters.filter(c =>
+                        !(c.parent && c.parent.token && c.parent.token.id === botTok)
+                    );
+                }
             }
 
             if (message.characters) {
