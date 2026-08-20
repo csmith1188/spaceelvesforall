@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+<<<<<<< Updated upstream
 const config = require('./config.js');
 const { db } = require('./database.js');
 
@@ -13,6 +14,9 @@ function sessionFromFormbarToken(tokenData) {
     };
 }
 
+=======
+<<<<<<< HEAD
+>>>>>>> Stashed changes
 // load the crypto module
 const crypto = require('crypto');
 // module for sending emails
@@ -97,7 +101,23 @@ exports.loginGET = (req, res) => {
             //render local login page
             res.render('login', { this_url: config.buildThisUrl('/login') });
         }
+<<<<<<< Updated upstream
 
+=======
+=======
+const config = require('./config.js');
+const { db } = require('./database.js');
+
+function sessionFromFormbarToken(tokenData) {
+    if (!tokenData || typeof tokenData !== 'object') return null;
+    const displayName = tokenData.displayName || tokenData.name || tokenData.username;
+    if (!displayName) return null;
+    return {
+        ...tokenData,
+        displayName,
+        verified: true
+>>>>>>> db09eebc152f8b2399e7457049dd2b69fe95c446
+>>>>>>> Stashed changes
     };
 }
 
@@ -154,6 +174,7 @@ exports.logoutGET = (req, res) => {
         res.clearCookie('connect.sid');
         res.redirect('/');
     });
+<<<<<<< HEAD
 }
 
 exports.signupGET = (req, res) => {
@@ -229,4 +250,10 @@ exports.verifyGET = (req, res) => {
         res.render('error', { error: "No token provided" });
     }
 }
+<<<<<<< Updated upstream
 
+=======
+=======
+};
+>>>>>>> db09eebc152f8b2399e7457049dd2b69fe95c446
+>>>>>>> Stashed changes

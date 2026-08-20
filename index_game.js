@@ -215,6 +215,8 @@ app.ws('/game', Sockets.gameHandler);
 app.listen(PORT, '0.0.0.0', () => {
     const host = process.env.THIS_URL || 'localhost';
     console.info(`Game server started on http://${host}:${PORT}`);
+    // Explicit marker so the master can wait for listen before redirecting
+    console.info(`READY port=${PORT}`);
 });
 
 const tickInterval = global.game.time.tickRate; // ~16ms for 60Hz
