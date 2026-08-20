@@ -1,14 +1,7 @@
 // import child process handler
 const { spawn } = require('child_process');
-<<<<<<< Updated upstream
-const config = require('./config.js');
-=======
-<<<<<<< HEAD
 const net = require('net');
-=======
 const config = require('./config.js');
->>>>>>> db09eebc152f8b2399e7457049dd2b69fe95c446
->>>>>>> Stashed changes
 
 exports.gameServerCount = 10000;
 exports.gameServers = [];
@@ -41,27 +34,18 @@ function waitForPort(port, timeoutMs) {
 }
 
 exports.spawnGameServer = (req, res) => {
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
     const port = exports.gameServerCount++;
-    const child = spawn('node', ['index_game.js', '-p ' + port], {
+    const requestedMatchType = req.query.matchType;
+    const matchType = (requestedMatchType === 'ForHonorMP' || requestedMatchType === 'ForEver')
+        ? requestedMatchType
+        : 'ForHonorMP';
+
+    const child = spawn('node', ['index_game.js', '-p ' + port, '-m ' + matchType], {
         env: process.env,
     });
     child.PORT = port;
     child.gameId = `game-${port}`;
 
-=======
->>>>>>> Stashed changes
-    const requestedMatchType = req.query.matchType;
-    const matchType = (requestedMatchType === 'ForHonorMP' || requestedMatchType === 'ForEver')
-        ? requestedMatchType
-        : 'ForHonorMP';
-    // Start another Node.js script with the port argument
-    const child = spawn('node', ['index_game.js', '-p ' + exports.gameServerCount, '-m ' + matchType]); // add { detached: true } to run in the background
-    child.PORT = exports.gameServerCount;
-    child.gameId = `game-${child.PORT}`;
->>>>>>> db09eebc152f8b2399e7457049dd2b69fe95c446
     let removedFromMasterList = false;
     let settled = false;
 
@@ -72,7 +56,7 @@ exports.spawnGameServer = (req, res) => {
         console.info(`Removed game server ${port} from master list`);
     };
 
-    const redirectUrl = `/gs/${port}/`;
+    const redirectUrl = config.buildPublicGameUrl(port);
 
     const failStartup = (reason) => {
         if (settled || res.headersSent) return;
@@ -112,15 +96,6 @@ exports.spawnGameServer = (req, res) => {
         failStartup(signal ? `killed with signal ${signal}` : `exited with code ${code}`);
     });
 
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
-=======
->>>>>>> Stashed changes
-    const redirectUrl = config.buildPublicGameUrl(child.PORT);
-    res.redirect(redirectUrl);
-
->>>>>>> db09eebc152f8b2399e7457049dd2b69fe95c446
     exports.gameServers.push(child);
 
     waitForPort(port, STARTUP_TIMEOUT_MS)
