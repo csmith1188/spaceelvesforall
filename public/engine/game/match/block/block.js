@@ -312,8 +312,11 @@
     
         */
         draw3D() {
-            let compareX = game.player.camera.x - this.HB.pos.x;
-            let compareY = game.player.camera.y - this.HB.pos.y;
+            const compareX = game.player.camera.x - this.HB.pos.x;
+            const compareY = game.player.camera.y - this.HB.pos.y;
+            const angle = game.player.camera.angle;
+            const halfW = game.window.w / 2;
+            const halfH = game.window.h / 2;
             /*
                              _                           _ _         _
                           __| |_ _ __ ___ __ __  __ _  _| (_)_ _  __| |___ _ _
@@ -322,48 +325,57 @@
                                                     |__/
                         */
             if (this.HB instanceof Utils.Cylinder) {
-                // Draw shadow
-                if (this.shadowDraw) {
+                const groundY = halfH - (compareY * angle);
+                const lift = this.HB.pos.z * (1 - angle);
+                const sideH = this.HB.height * (1 - angle);
+                const topY = groundY - sideH - lift;
+                if (this.shadowDraw && this.shadow) {
                     ctx.globalAlpha = 0.4;
                     ctx.drawImage(
                         this.shadow,
-                        game.window.w / 2 - compareX,
-                        game.window.h / 2 - compareY,
-                        this.HB.radius,
-                        this.HB.radius
+                        halfW - compareX - this.HB.radius,
+                        groundY - this.HB.radius * angle,
+                        this.HB.radius * 2,
+                        this.HB.radius * 2 * angle
                     );
                     ctx.globalAlpha = 1;
                 }
-                if (this.imgFile) {
-                    ctx.drawImage(this.img, game.window.w / 2 - compareX, game.window.h / 2 - compareY - this.HB.pos.z, this.HB.radius, this.HB.radius);
+                if (this.imgFile && this.img) {
+                    ctx.drawImage(
+                        this.img,
+                        halfW - compareX - this.HB.radius,
+                        topY,
+                        this.HB.radius * 2,
+                        this.HB.radius * 2 * angle
+                    );
                 } else {
                     //SIDE
                     ctx.beginPath();
                     ctx.fillStyle = `rgba(${this.colorSide[0]}, ${this.colorSide[1]}, ${this.colorSide[2]}, ${this.opacity})`;
                     ctx.ellipse(
-                        game.window.w / 2 - compareX,
-                        game.window.h / 2 - (compareY * game.player.camera.angle) - (this.HB.pos.z * (1 - game.player.camera.angle)),
+                        halfW - compareX,
+                        groundY - lift,
                         this.HB.radius,
-                        this.HB.radius * game.player.camera.angle,
+                        this.HB.radius * angle,
                         0, 0, 2 * Math.PI
                     );
                     ctx.fill();
                     ctx.beginPath();
                     ctx.fillRect(
-                        game.window.w / 2 - compareX - this.HB.radius,
-                        game.window.h / 2 - (compareY * game.player.camera.angle) - (this.HB.height * (1 - game.player.camera.angle)) - (this.HB.pos.z * (1 - game.player.camera.angle)),
+                        halfW - compareX - this.HB.radius,
+                        topY,
                         this.HB.radius * 2,
-                        this.HB.height * (1 - game.player.camera.angle)
+                        sideH
                     );
                     ctx.fill();
                     //TOP
                     ctx.beginPath();
                     ctx.fillStyle = `rgba(${this.color[0]}, ${this.color[1]}, ${this.color[2]}, ${this.opacity})`;
                     ctx.ellipse(
-                        game.window.w / 2 - compareX,
-                        game.window.h / 2 - (compareY * game.player.camera.angle) - (this.HB.height * (1 - game.player.camera.angle)) - (this.HB.pos.z * (1 - game.player.camera.angle)),
+                        halfW - compareX,
+                        topY,
                         this.HB.radius,
-                        this.HB.radius * game.player.camera.angle,
+                        this.HB.radius * angle,
                         0, 0, 2 * Math.PI
                     );
                     ctx.fill();
@@ -377,38 +389,44 @@
      
             */
             if (this.HB instanceof Utils.Cube) {
-                // Draw shadow
-                if (this.shadowDraw) {
+                const topX = halfW - compareX;
+                const topY = halfH - (compareY * angle)
+                    - (this.HB.volume.z * (1 - angle))
+                    - (this.HB.pos.z * (1 - angle));
+                const topW = this.HB.volume.x;
+                const topH = this.HB.volume.y * angle;
+                const sideY = topY + topH;
+                const sideH = this.HB.volume.z * (1 - angle);
+
+                if (this.shadowDraw && this.shadow) {
                     ctx.globalAlpha = 0.4;
                     ctx.drawImage(
                         this.shadow,
-                        game.window.w / 2 - compareX,
-                        game.window.h / 2 - (compareY * game.player.camera.angle),
-                        this.HB.volume.x,
-                        this.HB.volume.y * game.player.camera.angle
+                        topX,
+                        halfH - (compareY * angle),
+                        topW,
+                        this.HB.volume.y * angle
                     );
                     ctx.globalAlpha = 1;
                 }
-                if (this.imgFile) {
-                    // ctx.drawImage(this.img, game.window.w / 2 - compareX, game.window.h / 2 - compareY - this.HB.pos.z, this.HB.volume.x, this.HB.volume.y);
+                if (this.imgFile && this.img) {
+                    // Prefer blits over createPattern+transform — far cheaper under foreshortening.
+                    ctx.drawImage(this.img, topX, topY, topW, topH);
+                    if (this.imgSide && sideH > 0) {
+                        ctx.drawImage(this.imgSide, topX, sideY, topW, sideH);
+                    }
                 } else if (this.color) {
                     ctx.fillStyle = `rgba(${this.color[0]}, ${this.color[1]}, ${this.color[2]}, ${this.opacity})`;
-                    ctx.fillRect(
-                        game.window.w / 2 - compareX,
-                        game.window.h / 2 - (compareY * game.player.camera.angle) - (this.HB.volume.z * (1 - game.player.camera.angle)) - (this.HB.pos.z * (1 - game.player.camera.angle)),
-                        this.HB.volume.x,
-                        this.HB.volume.y * game.player.camera.angle
-                    );
-                    if (this.colorSide) {
+                    ctx.fillRect(topX, topY, topW, topH);
+                    if (this.colorSide && sideH > 0) {
                         ctx.fillStyle = `rgba(${this.colorSide[0]}, ${this.colorSide[1]}, ${this.colorSide[2]}, ${this.opacity})`;
-                        ctx.fillRect(
-                            game.window.w / 2 - compareX,
-                            game.window.h / 2 - (compareY * game.player.camera.angle) - (this.HB.pos.z * (1 - game.player.camera.angle)) - (this.HB.volume.z * (1 - game.player.camera.angle)) + (this.HB.volume.y * game.player.camera.angle),
-                            this.HB.volume.x,
-                            this.HB.volume.z * (1 - game.player.camera.angle)
-                        );
+                        ctx.fillRect(topX, sideY, topW, sideH);
                     }
                 }
+            }
+
+            for (const func of this.drawFunc) {
+                func();
             }
         }
 

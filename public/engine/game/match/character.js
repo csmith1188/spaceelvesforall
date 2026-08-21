@@ -1096,7 +1096,7 @@
                 ctx.drawImage(
                     this.img,
                     game.window.w / 2 - compareX - this.HB.radius,
-                    game.window.h / 2 - (compareY * game.player.camera.angle) - this.HB.height - (this.HB.pos.z * (1 - game.player.camera.angle)) - ((sineAnimate(1, 0.1) * (1 - game.player.camera.angle))),
+                    game.window.h / 2 - (compareY * game.player.camera.angle) - this.HB.height - (this.HB.pos.z * (1 - game.player.camera.angle)) - ((Utils.sineAnimate(1, 0.1) * (1 - game.player.camera.angle))),
                     this.HB.radius * 2,
                     this.HB.height
                 );
@@ -1104,7 +1104,7 @@
                 ctx.drawImage(
                     this.img,
                     game.window.w / 2 - compareX - this.HB.radius,
-                    game.window.h / 2 - (compareY * game.player.camera.angle) - (this.HB.height * (1 - game.player.camera.angle)) - (this.HB.pos.z * (1 - game.player.camera.angle)) - ((sineAnimate(1, 0.1) * (1 - game.player.camera.angle))),
+                    game.window.h / 2 - (compareY * game.player.camera.angle) - (this.HB.height * (1 - game.player.camera.angle)) - (this.HB.pos.z * (1 - game.player.camera.angle)) - ((Utils.sineAnimate(1, 0.1) * (1 - game.player.camera.angle))),
                     this.HB.radius * 2,
                     this.HB.height * (1 - game.player.camera.angle)
                 );

@@ -284,11 +284,14 @@
                 // Find where the user is on the camera
                 let compareX = game.player.camera.x - this.user.HB.pos.x;
                 let compareY = game.player.camera.y - this.user.HB.pos.y;
+                const angle = game.player.camera._3D ? game.player.camera.angle : 1;
+                const zLift = this.user.HB.pos.z * (game.player.camera._3D ? (1 - angle) : 1);
+                const heightLift = (this.user.HB.height / 2) * (game.player.camera._3D ? (1 - angle) : 1);
                 
                 // Start point at user's position
                 ctx.moveTo(
                     game.window.w / 2 - compareX,
-                    game.window.h / 2 - compareY - this.user.HB.pos.z - this.user.HB.height / 2
+                    game.window.h / 2 - (compareY * angle) - zLift - heightLift
                 );
                 
                 // Use the fixed sword direction (from this.speed) to calculate end point
@@ -303,7 +306,7 @@
                     // Draw line extending in the sword's fixed direction
                     ctx.lineTo(
                         game.window.w / 2 - compareX + dirX,
-                        game.window.h / 2 - compareY + dirY - this.user.HB.pos.z - this.user.HB.height / 2
+                        game.window.h / 2 - ((compareY - dirY) * angle) - zLift - heightLift
                     );
                 }
                 
@@ -528,11 +531,14 @@
                 // Find where the user is on the camera
                 let compareX = game.player.camera.x - this.user.HB.pos.x;
                 let compareY = game.player.camera.y - this.user.HB.pos.y;
+                const angle = game.player.camera._3D ? game.player.camera.angle : 1;
+                const zLift = this.user.HB.pos.z * (game.player.camera._3D ? (1 - angle) : 1);
+                const heightLift = (this.user.HB.height / 2) * (game.player.camera._3D ? (1 - angle) : 1);
                 
                 // Start point at user's position
                 ctx.moveTo(
                     game.window.w / 2 - compareX,
-                    game.window.h / 2 - compareY - this.user.HB.pos.z - this.user.HB.height / 2
+                    game.window.h / 2 - (compareY * angle) - zLift - heightLift
                 );
                 
                 // Use the fixed lance direction (from this.speed) to calculate end point
@@ -547,7 +553,7 @@
                     // Draw line extending in the lance's fixed direction
                     ctx.lineTo(
                         game.window.w / 2 - compareX + dirX,
-                        game.window.h / 2 - compareY + dirY - this.user.HB.pos.z - this.user.HB.height / 2
+                        game.window.h / 2 - ((compareY - dirY) * angle) - zLift - heightLift
                     );
                 }
                 
@@ -558,16 +564,20 @@
                     // Find where the hitbox center is on the camera
                     let hbCompareX = game.player.camera.x - this.HB.pos.x;
                     let hbCompareY = game.player.camera.y - this.HB.pos.y;
+                    const hbZLift = this.HB.pos.z * (game.player.camera._3D ? (1 - angle) : 1);
+                    const hbHeightLift = (this.HB.height / 2) * (game.player.camera._3D ? (1 - angle) : 1);
                     
                     // Draw hitbox circle at midpoint of z height
                     ctx.beginPath();
                     ctx.strokeStyle = 'rgba(255, 255, 0, 0.7)'; // Yellow
                     ctx.fillStyle = 'rgba(255, 255, 0, 0.1)'; // Semi-transparent yellow fill
                     ctx.lineWidth = 2;
-                    ctx.arc(
+                    ctx.ellipse(
                         game.window.w / 2 - hbCompareX,
-                        game.window.h / 2 - hbCompareY - this.HB.pos.z - this.HB.height / 2,
+                        game.window.h / 2 - (hbCompareY * angle) - hbZLift - hbHeightLift,
                         this.HB.radius,
+                        this.HB.radius * angle,
+                        0,
                         0,
                         Math.PI * 2
                     );
@@ -579,7 +589,7 @@
                     ctx.beginPath();
                     ctx.arc(
                         game.window.w / 2 - hbCompareX,
-                        game.window.h / 2 - hbCompareY - this.HB.pos.z - this.HB.height / 2,
+                        game.window.h / 2 - (hbCompareY * angle) - hbZLift - hbHeightLift,
                         3,
                         0,
                         Math.PI * 2
