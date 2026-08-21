@@ -121,14 +121,14 @@ function gameHandler(ws, req) {
 
     // listen for disconnects
     ws.on('close', () => {
-        // set the player to disconnected
-        let player = game.players.find(player => player.token.id === ws.token.id);
+        let player = game.players.find(p => p.token && p.token.id === ws.token.id);
+        // Stale close from a socket replaced by reconnect — do not mark active session idle.
+        if (!player || (player.ws && player.ws !== ws)) return;
         player.connected = Date.now();
         let playersList = [];
-        for (const player of game.players) {
-            playersList.push(player.pack());
+        for (const pl of game.players) {
+            playersList.push(pl.pack());
         }
-        // broadcast the new player list
         broadcast(game.wss, { debug: 'Player disconnected', players: playersList });
     });
 

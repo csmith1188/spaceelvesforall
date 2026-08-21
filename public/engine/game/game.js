@@ -277,6 +277,12 @@
                 this.time.avgList.shift();
                 this.time.avg = this.time.avgList.reduce((a, b) => a + b, 0) / this.time.avgList.length;
             }
+
+            // Server: eject disconnected players (incl. spectators) before match logic.
+            if (typeof window === 'undefined') {
+                this._disconnectPurgeHappened = this.purgeDisconnectedPlayersPastGrace();
+            }
+
             // Update network statistics
             if (typeof window !== 'undefined' && typeof networkStats !== 'undefined') {
                 const entityCount = this.match ? 
@@ -323,29 +329,25 @@
                 player.step();
                 if (player.controller) {
                     player.controller.read();
-                    if (typeof window !== 'undefined') {
-                        //if the newState has at least one property
-                        if (Object.keys(player.controller.newState).length > 0) {
-                            // Store input for client-side prediction
-                            player.controller.storeInput(player.controller.newState, player.controller.aimX, player.controller.aimY, player.controller.aimZ);
-                            
-                            // Note: Local player input is already applied by character.step()
-                            // Client-side prediction happens naturally through normal game simulation
-                            
-                            // send newState to server
-                            const message = JSON.stringify({ 
-                                controller: player.controller.newState, 
-                                aimX: player.controller.aimX, 
-                                aimY: player.controller.aimY, 
-                                aimZ: player.controller.aimZ,
-                                inputSeq: player.controller.lastInputSequence
-                            });
-                            gameWSS.send(message);
-                            
-                            // Record network statistics
-                            if (typeof networkStats !== 'undefined') {
-                                networkStats.recordPacket(message.length, 'up');
-                            }
+                    // Local client: send absolute input every tick. Delta-only sends were
+                    // lossy over WebSocket — a dropped "key up" left the server moving forever.
+                    if (typeof window !== 'undefined' && player === this.player && typeof gameWSS !== 'undefined' && gameWSS.readyState === 1) {
+                        const absoluteState = player.controller.getAbsoluteNetworkState
+                            ? player.controller.getAbsoluteNetworkState()
+                            : player.controller.newState;
+                        player.controller.storeInput(absoluteState, player.controller.aimX, player.controller.aimY, player.controller.aimZ);
+
+                        const message = JSON.stringify({
+                            controller: absoluteState,
+                            aimX: player.controller.aimX,
+                            aimY: player.controller.aimY,
+                            aimZ: player.controller.aimZ,
+                            inputSeq: player.controller.lastInputSequence
+                        });
+                        gameWSS.send(message);
+
+                        if (typeof networkStats !== 'undefined') {
+                            networkStats.recordPacket(message.length, 'up');
                         }
                     }
                 }
@@ -416,38 +418,72 @@
             this.debugPerf.stepMs = performance.now() - stepStart;
         }
 
+        /**
+         * Server: drop anyone disconnected longer than graceMs (includes spectators).
+         * Strips their characters, runs match.onPlayerEjected, and broadcasts roster.
+         * @returns {boolean} true if at least one player was removed
+         */
+        purgeDisconnectedPlayersPastGrace(graceMs = 10000) {
+            if (typeof window !== 'undefined') return false;
+            const now = Date.now();
+            const removed = [];
+            this.players = this.players.filter(p => {
+                if (!p) return false;
+                if (p.connected === true) return true;
+                if (typeof p.connected !== 'number') return true;
+                if (now - p.connected <= graceMs) return true;
+                removed.push(p);
+                return false;
+            });
+            if (removed.length === 0) return false;
+
+            for (const p of removed) {
+                if (this.match && Array.isArray(this.match.characters)) {
+                    this.match.characters = this.match.characters.filter(c => c.parent !== p);
+                }
+                if (this.match && typeof this.match.onPlayerEjected === 'function') {
+                    this.match.onPlayerEjected(p);
+                }
+                try {
+                    if (p.ws && typeof p.ws.close === 'function') p.ws.close();
+                } catch (e) { /* noop */ }
+            }
+
+            if (typeof this.broadcast === 'function' && this.wss) {
+                this.broadcast(this.wss, {
+                    debug: 'Player ejected (disconnect grace)',
+                    players: this.players.map(pl => (typeof pl.pack === 'function' ? pl.pack() : pl))
+                });
+            }
+            return true;
+        }
+
         countConnections() {
             let count = 0;
             for (let player of this.players) {
                 if (player.connected === true) count++;
-                else if (Date.now() - player.connected > 10000) player.ws.close();
-            }   
-
+            }
             return count;
         }
 
         loadMatch(match) {
-            try {
-                if (typeof match === 'string')
-                    match = { matchType: match };
-                switch (match.matchType) {
-                    case 'Match':
-                        this.match = new Matches.Match(match);
-                        break;
-                    case 'ForHonorMP':
-                        console.log('For Honor Multiplayer');
-                        this.match = new Matches.ForHonorMP(match);
-                        break;
-                    case 'ForEver':
-                        console.log('Forever');
-                        this.match = new Matches.ForEver(match);
-                        break;
-                    default:
-                        this.match = new Matches.Match(match);
-                        break;
-                }
-            } catch (error) {
-                console.log(error);
+            if (typeof match === 'string')
+                match = { matchType: match };
+            switch (match.matchType) {
+                case 'Match':
+                    this.match = new Matches.Match(match);
+                    break;
+                case 'ForHonorMP':
+                    console.log('For Honor Multiplayer');
+                    this.match = new Matches.ForHonorMP(match);
+                    break;
+                case 'ForEver':
+                    console.log('Forever');
+                    this.match = new Matches.ForEver(match);
+                    break;
+                default:
+                    this.match = new Matches.Match(match);
+                    break;
             }
         }
 

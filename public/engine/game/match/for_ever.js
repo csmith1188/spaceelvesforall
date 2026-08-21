@@ -16,19 +16,18 @@
         factory(root.BotAI, root.Characters, root.Utils, root.Maps, root.Matches, root.Items, root.Powerups, root.Players);
     }
 }(typeof self !== 'undefined' ? self : this, function (BotAI, Characters, Utils, Maps, Matches, Items, Powerups, Players) {
-    /** Same grace window as For Honor / game.countConnections before eject (ms). */
-    const DISCONNECT_EJECT_MS = 10000;
-    /** Match simulation steps per second (`waveTime` / interval comments assume this). */
-    const MATCH_TICKS_PER_SEC = 60;
-    /** Seconds before the first wave spawn (wave 0 “quiet” period). */
-    const WAVE0_DURATION_SEC = 20;
-    /** Seconds dropped weapons stay on the ground (`character.js` uses `game.match.despawnTimer`). */
-    const DROPPED_WEAPON_LIVETIME_SEC = 60;
     /**
      * Endless waves on Field City: 1–4 duelists, ready gate, drop-in/out, permadeath → spectator,
      * full wipe → summary → jump restarts a new match (same session).
      */
     class ForEver extends Matches.Match {
+        /** Match simulation steps per second (`waveTime` / interval comments assume this). */
+        static TICKS_PER_SEC = 60;
+        /** Seconds before the first wave spawn (wave 0 quiet period). */
+        static WAVE0_DURATION_SEC = 20;
+        /** Seconds dropped weapons stay on the ground (`character.js` uses `game.match.despawnTimer`). */
+        static DROPPED_WEAPON_LIVETIME_SEC = 60;
+
         constructor(options) {
             super(options);
             this.matchType = 'ForEver';
@@ -47,7 +46,7 @@
             /** Snapshot for end screen (authoritative). */
             this.finalWaveSummary = 0;
             this.finalElapsedTicks = 0;
-            this.despawnTimer = MATCH_TICKS_PER_SEC * DROPPED_WEAPON_LIVETIME_SEC;
+            this.despawnTimer = ForEver.TICKS_PER_SEC * ForEver.DROPPED_WEAPON_LIVETIME_SEC;
 
             if (typeof options === 'object') {
                 if (options.stage !== undefined) this.stage = options.stage;
@@ -172,25 +171,12 @@
             return false;
         }
 
-        /** Drop disconnected duelists past grace; clear ready + spawned tracking for removed tokens. */
-        purgeDisconnectedDuelistsPastGrace() {
-            const now = Date.now();
-            game.players = game.players.filter(p => {
-                if (!p || p.spectator) return true;
-                if (p.connected === true) return true;
-                if (typeof p.connected !== 'number') return true;
-                if (now - p.connected <= DISCONNECT_EJECT_MS) return true;
-                this.characters = this.characters.filter(c => c.parent !== p);
-                if (p.token && p.token.id) {
-                    delete this.playerReady[p.token.id];
-                    const ix = this.foreverSpawnedIds.indexOf(p.token.id);
-                    if (ix >= 0) this.foreverSpawnedIds.splice(ix, 1);
-                }
-                try {
-                    if (p.ws && typeof p.ws.close === 'function') p.ws.close();
-                } catch (e) { /* noop */ }
-                return false;
-            });
+        /** Mode cleanup when Game ejects a disconnected player past grace. */
+        onPlayerEjected(player) {
+            if (!player || !player.token || !player.token.id) return;
+            delete this.playerReady[player.token.id];
+            const ix = this.foreverSpawnedIds.indexOf(player.token.id);
+            if (ix >= 0) this.foreverSpawnedIds.splice(ix, 1);
         }
 
         /** Spawn jetbikes for every ready duelist under the player cap who lacks a character. */
@@ -286,7 +272,6 @@
          */
         step() {
             if (typeof window === 'undefined') {
-                this.purgeDisconnectedDuelistsPastGrace();
                 // Feed synthetic controls before physics so bot characters actually move/fire.
                 this.updateWaveBotsAI();
                 // Cap at four non-spectator duelists: overflow → spectator, strip their characters.
@@ -352,7 +337,7 @@
                     return;
                 }
                 this.matchStartTick = this.time.ticks;
-                this.nextWaveAtTick = this.time.ticks + MATCH_TICKS_PER_SEC * WAVE0_DURATION_SEC;
+                this.nextWaveAtTick = this.time.ticks + ForEver.TICKS_PER_SEC * ForEver.WAVE0_DURATION_SEC;
                 this.waves = 0;
                 this.stage = 'inRound';
                 return;

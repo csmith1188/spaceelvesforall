@@ -20,8 +20,6 @@
     }
 }(typeof self !== 'undefined' ? self : this, function (BotAI, Characters, Utils, Maps, Matches, Items, Powerups, Players) {
     const FOR_HONOR_BOT_TOKEN_ID = '__for_honor_duel_bot__';
-    /** Same grace window as `game.countConnections` before forcing WS close (ms). */
-    const DISCONNECT_EJECT_MS = 10000;
 
     /*
      #######                  #     #
@@ -154,14 +152,16 @@
             this.banner.subline = '';
             this.banner.untilTick = 0;
 
-            // Remove pickups / weapons from previous round; keep static geometry only.
+            // Remove pickups / weapons / projectiles from previous round; keep static geometry only.
             this.map.blocks = this.map.blocks.filter(function (el) { return el.type === 'block'; });
+            this.clearTransientProjectiles();
 
             for (let i = 0; i < this.characters.length; i++) {
                 const chara = this.characters[i];
                 chara.active = true;
                 chara.visible = true;
                 chara.solid = true;
+                chara.cleanup = false;
                 // Split spawns on opposite sides of center so duelists start apart.
                 chara.HB.pos.x = (this.map.w / 2) + (i % 2 ? 800 : -800);
                 chara.HB.pos.y = (this.map.h / 2);
@@ -309,8 +309,26 @@
             return 'Press jump to ready up';
         }
 
+        /** Drop in-flight bullets / debris (round KO, reset, or empty lobby). */
+        clearTransientProjectiles() {
+            if (!this.map) return;
+            this.map.bullets = [];
+            this.map.debris = [];
+        }
+
         /** Serialize mode state for game snapshots / network sync. */
         pack() {
+            const playerStates = [];
+            if (typeof game !== 'undefined' && Array.isArray(game.players)) {
+                for (const player of game.players) {
+                    if (!player || !player.token || !player.token.id) continue;
+                    playerStates.push({
+                        id: player.token.id,
+                        spectator: !!player.spectator,
+                        ready: !!player.ready
+                    });
+                }
+            }
             return {
                 stage: this.stage,
                 scoreboard: this.scoreboard,
@@ -322,7 +340,10 @@
                 lastWinner: this.lastWinner,
                 matchWinner: this.matchWinner,
                 duelBotActive: !!this.duelBotParent,
-                forHonorBotTokenId: FOR_HONOR_BOT_TOKEN_ID
+                forHonorBotTokenId: FOR_HONOR_BOT_TOKEN_ID,
+                // Authoritative roster so clients can drop entities delta sync never removes.
+                characterIds: this.characters.map(c => c.id),
+                playerStates: playerStates
             };
         }
 
@@ -361,6 +382,7 @@
         /** Second human joined during a bot match: abort and reset series for a fair human-vs-human gate. */
         dismissDuelBotAndResetForHumans() {
             this.removeDuelBotFully();
+            this.clearTransientProjectiles();
             this.participantIds = [];
             this.lastWinner = null;
             this.matchWinner = null;
@@ -382,33 +404,15 @@
         }
 
         /**
-         * Remove non-spectators who stayed disconnected past the grace period (see DISCONNECT_EJECT_MS).
-         * Drops their characters from this match and clears ready/score keys for their token.
+         * Mode cleanup when Game ejects a disconnected player past grace.
+         * Drops ready/score keys; characters already stripped by Game.
          */
-        purgeDisconnectedDuelistsPastGrace() {
-            const now = Date.now();
-            let removed = false;
-            this._disconnectPurgeHappened = false;
-            game.players = game.players.filter(p => {
-                if (!p || p.spectator) return true;
-                if (p.connected === true) return true;
-                if (typeof p.connected !== 'number') return true;
-                if (now - p.connected <= DISCONNECT_EJECT_MS) return true;
-                this.characters = this.characters.filter(c => c.parent !== p);
-                if (p.token && p.token.id) {
-                    delete this.playerReady[p.token.id];
-                    if (this.scoreboard && Object.prototype.hasOwnProperty.call(this.scoreboard, p.token.id)) {
-                        delete this.scoreboard[p.token.id];
-                    }
-                }
-                try {
-                    if (p.ws && typeof p.ws.close === 'function') p.ws.close();
-                } catch (e) { /* noop */ }
-                removed = true;
-                return false;
-            });
-            this._disconnectPurgeHappened = removed;
-            return removed;
+        onPlayerEjected(player) {
+            if (!player || !player.token || !player.token.id) return;
+            delete this.playerReady[player.token.id];
+            if (this.scoreboard && Object.prototype.hasOwnProperty.call(this.scoreboard, player.token.id)) {
+                delete this.scoreboard[player.token.id];
+            }
         }
 
         /** True when the lone connected human should be snapped into an immediate CPU duel (no ready gate). */
@@ -442,6 +446,7 @@
         handleNoHumanDuelists() {
             this.removeDuelBotFully();
             this.characters = [];
+            this.clearTransientProjectiles();
             this.participantIds = [];
             for (const k of Object.keys(this.scoreboard)) {
                 delete this.scoreboard[k];
@@ -482,7 +487,7 @@
             }
             if (humans.length !== 1 || !this.shouldSnapSoloHumanToCpuMatch()) return;
             const rosterBroken = this.participantIdsReferenceRemovedPlayers();
-            const soloAfterPurge = this._disconnectPurgeHappened === true;
+            const soloAfterPurge = game._disconnectPurgeHappened === true;
             if (!rosterBroken && !soloAfterPurge) return;
             this.transitionSoloHumanToImmediateCpuDuel();
         }
@@ -554,7 +559,6 @@
          */
         step() {
             if (typeof window === 'undefined') {
-                this.purgeDisconnectedDuelistsPastGrace();
                 this.maybeTransitionSoloAfterAbandonment();
                 this.maybeInterruptForSecondHuman();
                 this.updateDuelBotAI();
@@ -591,6 +595,7 @@
                 this.resetReadyState();
                 // Freeze combat until the next ready gate after players acknowledge the banner.
                 this.setCharactersCombatEnabled(false);
+                this.clearTransientProjectiles();
 
                 if (this.scoreboard[winnerId] >= this.winsToTakeSeries) {
                     this.matchWinner = winningCharacter.name;

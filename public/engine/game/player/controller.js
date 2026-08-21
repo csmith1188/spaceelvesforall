@@ -174,17 +174,19 @@
             }
         }
 
-        syncNewStateFromButtons() {
-            this.newState = {};
+        /** Absolute button snapshot for the wire — never delta-compress held inputs. */
+        getAbsoluteNetworkState() {
+            const state = {};
             for (const button in this.buttons) {
-                this.newState[button] = this.buttons[button].current;
+                state[button] = this.buttons[button].current;
             }
-            // Only send changed inputs over network
-            for (const button in this.newState) {
-                if (this.newState[button] == this.buttons[button].last) {
-                    delete this.newState[button];
-                }
-            }
+            return state;
+        }
+
+        syncNewStateFromButtons() {
+            // Keep full absolute state. Delta compression over an unreliable channel
+            // drops release packets and leaves the server holding keys forever.
+            this.newState = this.getAbsoluteNetworkState();
         }
 
         // Store input for client-side prediction
@@ -262,8 +264,75 @@
             this.type = "keyboard";
         }
 
+        clearHeldInputs() {
+            this.upKey = 0;
+            this.leftKey = 0;
+            this.downKey = 0;
+            this.rightKey = 0;
+            this.spaceKey = 0;
+            this.shiftKey = 0;
+            this.altKey = 0;
+            this.inventory1Key = 0;
+            this.inventory2Key = 0;
+            this.throwKey = 0;
+            this.startKey = 0;
+            this.clickButton = 0;
+            this.rclickButton = 0;
+            this.wheelUp = 0;
+            this.wheelDown = 0;
+        }
+
+        applyKeyCode(code, pressed) {
+            const value = pressed ? 1 : 0;
+            switch (code) {
+                case "KeyW":
+                case "ArrowUp":
+                    this.upKey = value;
+                    break;
+                case "KeyA":
+                case "ArrowLeft":
+                    this.leftKey = value;
+                    break;
+                case "KeyS":
+                case "ArrowDown":
+                    this.downKey = value;
+                    break;
+                case "KeyD":
+                case "ArrowRight":
+                    this.rightKey = value;
+                    break;
+                case "Space":
+                    this.spaceKey = value;
+                    break;
+                case "KeyQ":
+                    this.inventory1Key = value;
+                    break;
+                case "KeyE":
+                    this.inventory2Key = value;
+                    break;
+                case "KeyF":
+                    this.throwKey = value;
+                    break;
+                case "Escape":
+                    this.startKey = value;
+                    break;
+                case "ShiftLeft":
+                case "ShiftRight":
+                    this.shiftKey = value;
+                    break;
+                case "AltLeft":
+                case "AltRight":
+                    this.altKey = value;
+                    break;
+                default:
+                    break;
+            }
+        }
+
         setupInputs() {
             super.setupInputs();
+            this.clearHeldInputs();
+
             /*
               _  __         ___
              | |/ /___ _  _|   \ _____ __ ___ _  ___
@@ -271,26 +340,14 @@
              |_|\_\___|\_, |___/\___/\_/\_/|_||_/__/
                        |__/
             */
+            // Prefer event.code (physical key) so releases still match after Shift/Alt/layout changes.
+            // Clear all held state on blur/visibility loss — browsers often drop keyup in those cases.
             document.addEventListener("keydown", function (event) {
-                if (event.shiftKey) {
-                    this.shiftKey = Number(event.shiftKey)
-                }
-                if (event.altKey) {
+                if (event.altKey && event.code !== "AltLeft" && event.code !== "AltRight") {
                     event.preventDefault();
-                    this.altKey = Number(event.altKey)
                 }
-                if (event.key.toLocaleLowerCase() === "q") this.inventory1Key = 1;
-                if (event.key.toLocaleLowerCase() === "e") this.inventory2Key = 1;
-                if (event.key.toLocaleLowerCase() === "f") this.throwKey = 1;
-                // if (event.key.toLocaleLowerCase() === "3") game.player.character.item = 2;
-                // if (event.key.toLocaleLowerCase() === "4") game.player.character.item = 3;
-                if (event.key.toLocaleLowerCase() === "w" || event.key === "ArrowUp") this.upKey = 1;
-                if (event.key.toLocaleLowerCase() === "a" || event.key === "ArrowLeft") this.leftKey = 1;
-                if (event.key.toLocaleLowerCase() === "s" || event.key === "ArrowDown") this.downKey = 1;
-                if (event.key.toLocaleLowerCase() === "d" || event.key === "ArrowRight") this.rightKey = 1;
-                if (event.key.toLocaleLowerCase() === " ") this.spaceKey = 1;
-                if (event.key === "Escape" || event.key === "Escape") this.startKey = 1;
-
+                if (event.repeat) return;
+                this.applyKeyCode(event.code, true);
             }.bind(this));
             /*
               _  __         _   _
@@ -300,18 +357,17 @@
                        |__/      |_|
             */
             document.addEventListener("keyup", function (event) {
-                this.shiftKey = Number(event.shiftKey)
-                this.altKey = Number(event.altKey)
-                if (event.key.toLocaleLowerCase() === "q") this.inventory1Key = 0;
-                if (event.key.toLocaleLowerCase() === "e") this.inventory2Key = 0;
-                if (event.key.toLocaleLowerCase() === "f") this.throwKey = 0;
-                if (event.key.toLocaleLowerCase() === "w" || event.key === "ArrowUp") this.upKey = 0;
-                if (event.key.toLocaleLowerCase() === "a" || event.key === "ArrowLeft") this.leftKey = 0;
-                if (event.key.toLocaleLowerCase() === "s" || event.key === "ArrowDown") this.downKey = 0;
-                if (event.key.toLocaleLowerCase() === "d" || event.key === "ArrowRight") this.rightKey = 0;
-                if (event.key.toLocaleLowerCase() === " ") this.spaceKey = 0;
-                if (event.key === "Escape" || event.key === "Escape") this.startKey = 0;
+                this.applyKeyCode(event.code, false);
+                // Modifier flags from event are authoritative after any release.
+                this.shiftKey = Number(event.shiftKey);
+                this.altKey = Number(event.altKey);
             }.bind(this));
+
+            const releaseAll = () => this.clearHeldInputs();
+            window.addEventListener("blur", releaseAll);
+            document.addEventListener("visibilitychange", () => {
+                if (document.visibilityState !== "visible") releaseAll();
+            });
 
             /*
               __  __
@@ -337,6 +393,13 @@
                     this.rclickButton = 1
             }.bind(this));
             window.addEventListener("mouseup", function (event) {
+                if (event.button == 0)
+                    this.clickButton = 0;
+                else if (event.button == 2)
+                    this.rclickButton = 0;
+            }.bind(this));
+            // Mouseup can be lost if the button is released outside the window.
+            window.addEventListener("pointerup", function (event) {
                 if (event.button == 0)
                     this.clickButton = 0;
                 else if (event.button == 2)
@@ -399,12 +462,7 @@
                 this.wheelDown = 0;
             }
             else this.buttons.weaponNext.current = this.newState.weaponNext = 0;
-            // remove all properties in newState whose value match's the buttons's last value
-            for (const button in this.newState) {
-                if (this.newState[button] == this.buttons[button].last) {
-                    delete this.newState[button];
-                }
-            }
+            // Absolute snapshot (no delta strip) — see getAbsoluteNetworkState / game send path.
         }
     }
 
@@ -823,9 +881,13 @@
         }
         read() {
             super.read();
-            // for every property in newState, change buttons current value to the value of newState
-            for (const button in this.newState) {
-                this.buttons[button].current = this.newState[button];
+            // Client sends an absolute button snapshot each tick. Apply every known
+            // button (missing key => released) so a lost prior release cannot stick.
+            if (!this.newState || typeof this.newState !== 'object') return;
+            for (const button in this.buttons) {
+                this.buttons[button].current = Object.prototype.hasOwnProperty.call(this.newState, button)
+                    ? this.newState[button]
+                    : 0;
             }
         }
         draw() { return }

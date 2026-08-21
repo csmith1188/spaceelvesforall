@@ -55,8 +55,15 @@ gameWSS.addEventListener('message', (event) => {
     if (game) {
         if (message.players) {
             for (let player of message.players) {
-                //if a player is in the message but not the game.players array, add a new Player
-                if (!game.players.find(p => p.token.displayName === player.token.displayName)) {
+                const tokenId = player.token && player.token.id;
+                const existingPlayer = game.players.find(p =>
+                    p && p.token && (
+                        (tokenId && p.token.id === tokenId) ||
+                        p.token.displayName === player.token.displayName
+                    )
+                );
+                // if a player is in the message but not the game.players array, add a new Player
+                if (!existingPlayer) {
                     // if this player's token's id is the same as the client's token id
                     if (player.token.displayName === token.displayName) {
                         game.players.push(new Players.Player({ ...player, token: token }));
@@ -65,23 +72,22 @@ gameWSS.addEventListener('message', (event) => {
                         game.players.push(new Players.Player(player));
                     }
                 } else {
-                    const existingPlayer = game.players.find(p => p.token.displayName === player.token.displayName);
-                    if (existingPlayer) {
-                        existingPlayer.spectator = !!player.spectator;
-                        if (player.connected !== undefined) {
-                            existingPlayer.connected = player.connected === true;
-                        }
-                        if (player.ready !== undefined) {
-                            existingPlayer.ready = !!player.ready;
-                        }
+                    existingPlayer.spectator = !!player.spectator;
+                    if (player.connected !== undefined) {
+                        existingPlayer.connected = player.connected === true;
+                    }
+                    if (player.ready !== undefined) {
+                        existingPlayer.ready = !!player.ready;
                     }
                 }
-                // if a player is in the game.players array but not in the message, remove the player
-                if (!message.players.find(p => p.token.displayName === player.token.displayName)) {
-                    game.players = game.players.filter(p => p.token.displayName !== player.token.displayName);
-                }
             }
-
+            // Drop locals the server no longer lists (disconnect grace eject / leave).
+            const aliveIds = new Set(
+                message.players
+                    .map(p => p && p.token && p.token.id)
+                    .filter(Boolean)
+            );
+            game.players = game.players.filter(p => p && p.token && aliveIds.has(p.token.id));
         }
 
         if (message.newMatch) {
@@ -120,7 +126,7 @@ gameWSS.addEventListener('message', (event) => {
                         !(c.parent && c.parent.token && c.parent.token.id === botTok)
                     );
                 }
-                // Forever (and any mode that packs characterIds): prune jetbikes the server wiped.
+                // Forever / For Honor: prune jetbikes the server wiped (delta sync never removes).
                 if (message.match.characterIds !== undefined && Array.isArray(message.match.characterIds) && game.match.characters) {
                     const aliveIds = new Set(message.match.characterIds);
                     game.match.characters = game.match.characters.filter(c => aliveIds.has(c.id));
