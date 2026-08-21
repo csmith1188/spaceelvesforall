@@ -27,6 +27,10 @@
         game.startClientLoop();
         if (typeof window !== 'undefined') {
             window.game = game;
+            // Apply players / newMatch that arrived before Game existed (WS opens early).
+            if (typeof window.flushPendingGameMessages === 'function') {
+                window.flushPendingGameMessages();
+            }
         }
         return game;
     }

@@ -27,49 +27,43 @@ const gameWsUrl =
         : `${wsProtocol}//${window.location.hostname}:${PORT}/game`;
 const gameWSS = new WebSocket(gameWsUrl);
 
-gameWSS.addEventListener('open', () => {
-    console.log('Connected to Game WSS');
-});
+/** Early WS payloads (players / newMatch) can arrive before client_boot creates `game`. */
+const pendingGameMessages = [];
 
-gameWSS.addEventListener('message', (event) => {
-    let message;
-    try {
-        message = JSON.parse(event.data);
-        
-        // Record network statistics
-        if (typeof networkStats !== 'undefined') {
-            networkStats.recordPacket(event.data.length, 'down');
-        }
-    } catch (error) {
-        console.log(error);
-        if (typeof networkStats !== 'undefined') {
-            networkStats.detectAnomaly('Parse Error', { error: error.message, data: event.data });
-        }
-        return;
-    }
+function handleGameMessage(message) {
+    if (!message || typeof message !== 'object') return;
 
     if (message.debug) {
         console.log(message.debug);
     }
 
-    if (game) {
+    // Resolve via window only — a local `const game` would TDZ-shadow and throw
+    // on any earlier `game` / `typeof game` access in this function.
+    const gameInst = (typeof window !== 'undefined' && window.game) ? window.game : null;
+    if (!gameInst) {
+        pendingGameMessages.push(message);
+        return;
+    }
+
         if (message.players) {
             for (let player of message.players) {
                 const tokenId = player.token && player.token.id;
-                const existingPlayer = game.players.find(p =>
+                const existingPlayer = gameInst.players.find(p =>
                     p && p.token && (
                         (tokenId && p.token.id === tokenId) ||
                         p.token.displayName === player.token.displayName
                     )
                 );
-                // if a player is in the message but not the game.players array, add a new Player
+                // if a player is in the message but not the gameInst.players array, add a new Player
                 if (!existingPlayer) {
-                    // if this player's token's id is the same as the client's token id
-                    if (player.token.displayName === token.displayName) {
-                        game.players.push(new Players.Player({ ...player, token: token }));
-                        game.players[game.players.length - 1].camera = new Camera({ owner: game.players[game.players.length - 1] });
+                    // Prefer token id; displayName is a fallback for older payloads.
+                    const isLocal = (tokenId && token.id && tokenId === token.id)
+                        || (player.token && player.token.displayName === token.displayName);
+                    if (isLocal) {
+                        gameInst.players.push(new Players.Player({ ...player, token: token }));
+                        gameInst.players[gameInst.players.length - 1].camera = new Camera({ owner: gameInst.players[gameInst.players.length - 1] });
                     } else {
-                        game.players.push(new Players.Player(player));
+                        gameInst.players.push(new Players.Player(player));
                     }
                 } else {
                     existingPlayer.spectator = !!player.spectator;
@@ -79,6 +73,12 @@ gameWSS.addEventListener('message', (event) => {
                     if (player.ready !== undefined) {
                         existingPlayer.ready = !!player.ready;
                     }
+                    // Local seat must always have a camera so map/ground draw can run.
+                    const isLocal = (tokenId && token.id && tokenId === token.id)
+                        || (existingPlayer.token && existingPlayer.token.displayName === token.displayName);
+                    if (isLocal && !existingPlayer.camera) {
+                        existingPlayer.camera = new Camera({ owner: existingPlayer });
+                    }
                 }
             }
             // Drop locals the server no longer lists (disconnect grace eject / leave).
@@ -87,55 +87,55 @@ gameWSS.addEventListener('message', (event) => {
                     .map(p => p && p.token && p.token.id)
                     .filter(Boolean)
             );
-            game.players = game.players.filter(p => p && p.token && aliveIds.has(p.token.id));
+            gameInst.players = gameInst.players.filter(p => p && p.token && aliveIds.has(p.token.id));
         }
 
         if (message.newMatch) {
-            game.loadMatch(message.newMatch);
+            gameInst.loadMatch(message.newMatch);
         }
 
-        if (game.match) {
+        if (gameInst.match) {
             if (message.match) {
-                if (message.match.stage !== undefined) game.match.stage = message.match.stage;
-                if (message.match.scoreboard !== undefined) game.match.scoreboard = message.match.scoreboard;
-                if (message.match.playerReady !== undefined) game.match.playerReady = message.match.playerReady;
-                if (message.match.participantIds !== undefined) game.match.participantIds = message.match.participantIds;
-                if (message.match.banner !== undefined) game.match.banner = message.match.banner;
-                if (message.match.roundsTotal !== undefined) game.match.roundsTotal = message.match.roundsTotal;
-                if (message.match.winsToTakeSeries !== undefined) game.match.winsToTakeSeries = message.match.winsToTakeSeries;
-                if (message.match.lastWinner !== undefined) game.match.lastWinner = message.match.lastWinner;
-                if (message.match.matchWinner !== undefined) game.match.matchWinner = message.match.matchWinner;
-                if (message.match.duelBotActive !== undefined) game.match.duelBotActive = message.match.duelBotActive;
-                if (message.match.forHonorBotTokenId !== undefined) game.match.forHonorBotTokenId = message.match.forHonorBotTokenId;
-                if (message.match.foreverSpawnedIds !== undefined) game.match.foreverSpawnedIds = message.match.foreverSpawnedIds;
-                if (message.match.waves !== undefined) game.match.waves = message.match.waves;
-                if (message.match.waveTime !== undefined) game.match.waveTime = message.match.waveTime;
-                if (message.match.nextWaveAtTick !== undefined) game.match.nextWaveAtTick = message.match.nextWaveAtTick;
-                if (message.match.matchStartTick !== undefined) game.match.matchStartTick = message.match.matchStartTick;
-                if (message.match.finalWaveSummary !== undefined) game.match.finalWaveSummary = message.match.finalWaveSummary;
-                if (message.match.finalElapsedTicks !== undefined) game.match.finalElapsedTicks = message.match.finalElapsedTicks;
-                if (message.match.despawnTimer !== undefined) game.match.despawnTimer = message.match.despawnTimer;
+                if (message.match.stage !== undefined) gameInst.match.stage = message.match.stage;
+                if (message.match.scoreboard !== undefined) gameInst.match.scoreboard = message.match.scoreboard;
+                if (message.match.playerReady !== undefined) gameInst.match.playerReady = message.match.playerReady;
+                if (message.match.participantIds !== undefined) gameInst.match.participantIds = message.match.participantIds;
+                if (message.match.banner !== undefined) gameInst.match.banner = message.match.banner;
+                if (message.match.roundsTotal !== undefined) gameInst.match.roundsTotal = message.match.roundsTotal;
+                if (message.match.winsToTakeSeries !== undefined) gameInst.match.winsToTakeSeries = message.match.winsToTakeSeries;
+                if (message.match.lastWinner !== undefined) gameInst.match.lastWinner = message.match.lastWinner;
+                if (message.match.matchWinner !== undefined) gameInst.match.matchWinner = message.match.matchWinner;
+                if (message.match.duelBotActive !== undefined) gameInst.match.duelBotActive = message.match.duelBotActive;
+                if (message.match.forHonorBotTokenId !== undefined) gameInst.match.forHonorBotTokenId = message.match.forHonorBotTokenId;
+                if (message.match.foreverSpawnedIds !== undefined) gameInst.match.foreverSpawnedIds = message.match.foreverSpawnedIds;
+                if (message.match.waves !== undefined) gameInst.match.waves = message.match.waves;
+                if (message.match.waveTime !== undefined) gameInst.match.waveTime = message.match.waveTime;
+                if (message.match.nextWaveAtTick !== undefined) gameInst.match.nextWaveAtTick = message.match.nextWaveAtTick;
+                if (message.match.matchStartTick !== undefined) gameInst.match.matchStartTick = message.match.matchStartTick;
+                if (message.match.finalWaveSummary !== undefined) gameInst.match.finalWaveSummary = message.match.finalWaveSummary;
+                if (message.match.finalElapsedTicks !== undefined) gameInst.match.finalElapsedTicks = message.match.finalElapsedTicks;
+                if (message.match.despawnTimer !== undefined) gameInst.match.despawnTimer = message.match.despawnTimer;
                 // Character deltas often omit removed entities; drop CPU duelist when roster says so.
-                const botTok = message.match.forHonorBotTokenId || game.match.forHonorBotTokenId || '__for_honor_duel_bot__';
+                const botTok = message.match.forHonorBotTokenId || gameInst.match.forHonorBotTokenId || '__for_honor_duel_bot__';
                 let stripCpu = message.match.duelBotActive === false;
-                if (message.match.participantIds !== undefined && Array.isArray(game.match.participantIds)) {
-                    stripCpu = stripCpu || !game.match.participantIds.includes(botTok);
+                if (message.match.participantIds !== undefined && Array.isArray(gameInst.match.participantIds)) {
+                    stripCpu = stripCpu || !gameInst.match.participantIds.includes(botTok);
                 }
-                if (stripCpu && game.match.characters && game.match.characters.length) {
-                    game.match.characters = game.match.characters.filter(c =>
+                if (stripCpu && gameInst.match.characters && gameInst.match.characters.length) {
+                    gameInst.match.characters = gameInst.match.characters.filter(c =>
                         !(c.parent && c.parent.token && c.parent.token.id === botTok)
                     );
                 }
                 // Forever / For Honor: prune jetbikes the server wiped (delta sync never removes).
-                if (message.match.characterIds !== undefined && Array.isArray(message.match.characterIds) && game.match.characters) {
+                if (message.match.characterIds !== undefined && Array.isArray(message.match.characterIds) && gameInst.match.characters) {
                     const aliveIds = new Set(message.match.characterIds);
-                    game.match.characters = game.match.characters.filter(c => aliveIds.has(c.id));
+                    gameInst.match.characters = gameInst.match.characters.filter(c => aliveIds.has(c.id));
                 }
                 // Sync spectator / ready flags (not in the regular delta path otherwise).
                 if (message.match.playerStates !== undefined && Array.isArray(message.match.playerStates)) {
                     for (const state of message.match.playerStates) {
                         if (!state || !state.id) continue;
-                        const existingPlayer = game.players.find(p => p && p.token && p.token.id === state.id);
+                        const existingPlayer = gameInst.players.find(p => p && p.token && p.token.id === state.id);
                         if (!existingPlayer) continue;
                         if (state.spectator !== undefined) existingPlayer.spectator = !!state.spectator;
                         if (state.ready !== undefined) existingPlayer.ready = !!state.ready;
@@ -145,7 +145,7 @@ gameWSS.addEventListener('message', (event) => {
 
             if (message.characters) {
                 for (let character of message.characters) {
-                    let c = game.match.characters.find(c => c.id === character.i);
+                    let c = gameInst.match.characters.find(c => c.id === character.i);
                     if (c) {
                         // Update sync debug before changing positions
                         if (typeof syncDebug !== 'undefined' && syncDebug.enabled) {
@@ -176,9 +176,9 @@ gameWSS.addEventListener('message', (event) => {
                         c.snapshotBuffer.push(snapshotEntry);
                         
                         // Reconcile local predicted player using server input acknowledgement.
-                        if (c.parent && c.parent === game.player && Number.isFinite(character.isq)) {
+                        if (c.parent && c.parent === gameInst.player && Number.isFinite(character.isq)) {
                             const ackAdvanced = character.isq > c.lastServerInputSeq;
-                            game.reconcileWithServer(c, character.p, character.isq, character.s, ackAdvanced);
+                            gameInst.reconcileWithServer(c, character.p, character.isq, character.s, ackAdvanced);
                             c.lastServerInputSeq = Math.max(c.lastServerInputSeq, character.isq);
                         }
                         
@@ -250,7 +250,7 @@ gameWSS.addEventListener('message', (event) => {
                                 let weaponInstance = createWeaponInstance(weaponType);
                                 weaponInstance.ammo = weaponAmmo;
                                 if (weaponNextCool !== undefined) {
-                                    weaponInstance.nextCool = game.match.time.ticks + weaponNextCool;
+                                    weaponInstance.nextCool = gameInst.match.time.ticks + weaponNextCool;
                                 }
                                 if (weaponReloading !== undefined) {
                                     weaponInstance.reloading = weaponReloading;
@@ -271,13 +271,13 @@ gameWSS.addEventListener('message', (event) => {
                     }
                     // remove characters not in the message
                     // WARNING! message.characters only sends characters who *have not moved* since the last message
-                    // game.match.characters = game.match.characters.filter(c => character.id === c.id);
+                    // gameInst.match.characters = gameInst.match.characters.filter(c => character.id === c.id);
                 }
             }
 
             if (message.character) {
-                let c = game.match.characters.find(c => c.id === message.character.id);
-                if (!c) game.match.spawnCharacter(message.character);
+                let c = gameInst.match.characters.find(c => c.id === message.character.id);
+                if (!c) gameInst.match.spawnCharacter(message.character);
             }
 
             if (message.bullets !== undefined) {
@@ -287,7 +287,7 @@ gameWSS.addEventListener('message', (event) => {
                 // Update bullets from server
                 for (let bullet of message.bullets) {
                     validBulletIds.add(bullet.i);
-                    let b = game.match.map.bullets.find(b => b.id === bullet.i);
+                    let b = gameInst.match.map.bullets.find(b => b.id === bullet.i);
                     if (b) {
                         //if the bullet is a cube, set the bullet's pos and volume
                         if (bullet.sh == 'c') {
@@ -324,12 +324,12 @@ gameWSS.addEventListener('message', (event) => {
                         };
                         bulletData.serverPos = { pos: { x: bullet.p.x, y: bullet.p.y, z: bullet.p.z }, time: message.time };
                         //if the bullet is not in the game, add it
-                        game.match.map.spawn(bulletData);
+                        gameInst.match.map.spawn(bulletData);
                 }
                 }
                 
                 // Remove bullets not in server update (server only sends active bullets)
-                game.match.map.bullets = game.match.map.bullets.filter(b => validBulletIds.has(b.id));
+                gameInst.match.map.bullets = gameInst.match.map.bullets.filter(b => validBulletIds.has(b.id));
             }
 
             if (message.powerups) {
@@ -337,7 +337,7 @@ gameWSS.addEventListener('message', (event) => {
                 
                 for (let powerup of message.powerups) {
                     validPowerupIds.add(powerup.id);
-                    let p = game.match.map.blocks.find(p => p.id === powerup.id);
+                    let p = gameInst.match.map.blocks.find(p => p.id === powerup.id);
                     if (p) {
                         p.HB.pos.x = powerup.pos.x;
                         p.HB.pos.y = powerup.pos.y;
@@ -351,19 +351,19 @@ gameWSS.addEventListener('message', (event) => {
                             type: "pickup",
                             subtype: powerup.subtype
                         };
-                        game.match.map.spawn(powerupData);
+                        gameInst.match.map.spawn(powerupData);
                     }
                 }
                 
                 // Mark powerups not in server update as inactive (but don't remove yet - let collision happen first)
-                for (let block of game.match.map.blocks) {
+                for (let block of gameInst.match.map.blocks) {
                     if (block.type === 'pickup' && !validPowerupIds.has(block.id)) {
                         block.active = false;
                     }
                 }
                 
                 // Remove powerups that have been inactive (cleanup after collision detection)
-                game.match.map.blocks = game.match.map.blocks.filter(b => 
+                gameInst.match.map.blocks = gameInst.match.map.blocks.filter(b => 
                     b.type !== 'pickup' || b.active || b.cleanup === false
                 );
             }
@@ -373,13 +373,13 @@ gameWSS.addEventListener('message', (event) => {
                 
                 for (let weapon of message.weapons) {
                     validWeaponIds.add(weapon.id);
-                    let p = game.match.map.blocks.find(p => p.id === weapon.id);
+                    let p = gameInst.match.map.blocks.find(p => p.id === weapon.id);
                     if (p) {
                         // Store server position for smooth interpolation
                         if (!p.serverPos) {
                             p.serverPos = { 
                                 pos: { x: weapon.pos.x, y: weapon.pos.y, z: weapon.pos.z },
-                                time: game.match.ticks
+                                time: gameInst.match.ticks
                             };
                             // Initialize at server position to avoid initial jump
                         p.HB.pos.x = weapon.pos.x;
@@ -390,7 +390,7 @@ gameWSS.addEventListener('message', (event) => {
                             p.serverPos.pos.x = weapon.pos.x;
                             p.serverPos.pos.y = weapon.pos.y;
                             p.serverPos.pos.z = weapon.pos.z;
-                            p.serverPos.time = game.match.ticks;
+                            p.serverPos.time = gameInst.match.ticks;
                         }
                         
                         // Add interpolation function to runFunc if not already there
@@ -414,18 +414,52 @@ gameWSS.addEventListener('message', (event) => {
                             type: "weapon",
                             weapon: weapon.weapon || 'pistol'
                         };
-                        game.match.map.spawn(weaponData);
+                        gameInst.match.map.spawn(weaponData);
                     }
                 }
                 
                 // Remove weapons not in server update (picked up or despawned)
-                game.match.map.blocks = game.match.map.blocks.filter(w => w.type !== 'weapon' || validWeaponIds.has(w.id));
+                gameInst.match.map.blocks = gameInst.match.map.blocks.filter(w => w.type !== 'weapon' || validWeaponIds.has(w.id));
             }
         }
+}
+
+/** Drain messages that arrived before `window.game` existed (call from client_boot). */
+function flushPendingGameMessages() {
+    if (!pendingGameMessages.length) return;
+    const queued = pendingGameMessages.splice(0, pendingGameMessages.length);
+    for (const message of queued) {
+        handleGameMessage(message);
     }
+}
+
+gameWSS.addEventListener('open', () => {
+    console.log('Connected to Game WSS');
+});
+
+gameWSS.addEventListener('message', (event) => {
+    let message;
+    try {
+        message = JSON.parse(event.data);
+
+        if (typeof networkStats !== 'undefined') {
+            networkStats.recordPacket(event.data.length, 'down');
+        }
+    } catch (error) {
+        console.log(error);
+        if (typeof networkStats !== 'undefined') {
+            networkStats.detectAnomaly('Parse Error', { error: error.message, data: event.data });
+        }
+        return;
+    }
+
+    handleGameMessage(message);
 });
 
 gameWSS.addEventListener('close', (event) => {
     console.log('Disconnected from Game WSS');
-
 });
+
+if (typeof window !== 'undefined') {
+    window.flushPendingGameMessages = flushPendingGameMessages;
+}

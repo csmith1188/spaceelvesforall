@@ -17,8 +17,8 @@
     }
 }(typeof self !== 'undefined' ? self : this, function (BotAI, Characters, Utils, Maps, Matches, Items, Powerups, Players) {
     /**
-     * Endless waves on Field City: 1–4 duelists, ready gate, drop-in/out, permadeath → spectator,
-     * full wipe → summary → jump restarts a new match (same session).
+     * Endless waves on Field City: 1–4 duelists, all-ready gate, drop-in/out, permadeath → spectator,
+     * full wipe (all dead or disconnected) → summary → jump restarts a new match (same session).
      */
     class ForEver extends Matches.Match {
         /** Match simulation steps per second (`waveTime` / interval comments assume this). */
@@ -160,23 +160,55 @@
             this.stage = 'awaitReady';
         }
 
-        /** At least one duelist must jump-ready before we spawn anyone or start waves. */
-        isMinReadyGateMet() {
+        /**
+         * All connected non-spectator duelists (up to player cap) must jump-ready
+         * before combat starts. Drop-in after `inRound` still uses per-player ready to spawn.
+         */
+        areAllConnectedPlayersReady() {
             const connectedPlayers = this.getConnectedPlayers(false);
             if (connectedPlayers.length === 0) return false;
-            for (const player of connectedPlayers) {
+            const duelists = connectedPlayers.slice(0, this.playerLimit.max);
+            for (const player of duelists) {
                 const pid = player && player.token ? player.token.id : null;
-                if (pid && this.playerReady[pid]) return true;
+                if (!pid || !this.playerReady[pid]) return false;
             }
-            return false;
+            return true;
         }
 
         /** Mode cleanup when Game ejects a disconnected player past grace. */
         onPlayerEjected(player) {
             if (!player || !player.token || !player.token.id) return;
             delete this.playerReady[player.token.id];
-            const ix = this.foreverSpawnedIds.indexOf(player.token.id);
-            if (ix >= 0) this.foreverSpawnedIds.splice(ix, 1);
+            // Keep foreverSpawnedIds so a full disconnect still counts as a wipe
+            // (match ends when every spawned duelist is dead or gone).
+            if (this.stage === 'inRound') {
+                this.maybeEndRoundIfNoSurvivors();
+            }
+        }
+
+        /**
+         * True when every token in foreverSpawnedIds is dead, spectator, or no longer
+         * a connected duelist (disconnected / ejected).
+         */
+        maybeEndRoundIfNoSurvivors() {
+            if (this.stage !== 'inRound') return false;
+            if (!this.foreverSpawnedIds.length) return false;
+            let anySpawnedAlive = false;
+            for (const id of this.foreverSpawnedIds) {
+                const parent = game.players.find(pl => pl && pl.token && pl.token.id === id);
+                if (!parent || parent.spectator || parent.connected !== true) continue;
+                const chara = this.characters.find(c => c.parent === parent);
+                if (chara && chara.active) {
+                    anySpawnedAlive = true;
+                    break;
+                }
+            }
+            if (anySpawnedAlive) return false;
+            this.finalWaveSummary = this.waves;
+            this.finalElapsedTicks = Math.max(0, this.time.ticks - this.matchStartTick);
+            this.clearCombatRoster();
+            this.stage = 'allDead';
+            return true;
         }
 
         /** Spawn jetbikes for every ready duelist under the player cap who lacks a character. */
@@ -326,10 +358,10 @@
                 return;
             }
 
-            // --- awaitReady: jump-readied players spawn once ≥1 ready; then clock + waves arm. ---
+            // --- awaitReady: all connected duelists must ready; then clock + waves arm. ---
             if (this.stage === 'awaitReady') {
                 this.handleReadyInputs();
-                if (!this.isMinReadyGateMet()) {
+                if (!this.areAllConnectedPlayersReady()) {
                     return;
                 }
                 this.spawnReadyHumansIntoRound();
@@ -361,23 +393,8 @@
                 chara.cleanup = true;
             }
 
-            // --- Full wipe when every spawned duelist has no active character left. ---
-            let anySpawnedAlive = false;
-            for (const id of this.foreverSpawnedIds) {
-                const parent = game.players.find(pl => pl && pl.token && pl.token.id === id);
-                if (!parent || parent.spectator) continue;
-                const chara = this.characters.find(c => c.parent === parent);
-                if (chara && chara.active) {
-                    anySpawnedAlive = true;
-                    break;
-                }
-            }
-            if (this.foreverSpawnedIds.length > 0 && !anySpawnedAlive) {
-                this.finalWaveSummary = this.waves;
-                this.finalElapsedTicks = Math.max(0, this.time.ticks - this.matchStartTick);
-                // Strip remaining enemies + projectiles so the end screen / rematch starts clean.
-                this.clearCombatRoster();
-                this.stage = 'allDead';
+            // --- Full wipe when every spawned duelist is dead, spectator, or disconnected. ---
+            if (this.maybeEndRoundIfNoSurvivors()) {
                 return;
             }
 
@@ -563,7 +580,7 @@
                 ctx.font = '28px Jura';
                 ctx.fillText('Forever — Ready Up', x + panelW / 2, y + 42);
                 ctx.font = '18px Jura';
-                ctx.fillText('Press jump to ready (need ≥1 ready to start)', x + panelW / 2, y + 76);
+                ctx.fillText('Press jump to ready (all duelists must ready to start)', x + panelW / 2, y + 76);
                 ctx.font = '15px Jura';
                 ctx.fillText('1–4 duelists · Drop-in/out · Dead → spectator this match', x + panelW / 2, y + 102);
                 const slots = this.playerLimit.max;

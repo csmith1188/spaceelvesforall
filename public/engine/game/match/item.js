@@ -189,7 +189,7 @@
             this.name = 'Mercurian Rifle';
             this.weapon = 'rifle';
             if (typeof window !== 'undefined') {
-                this.shootSFX = new Audio('sfx/rifle_shoot.wav');
+                this.shootSFX = Sounds.shoot_rifle;
                 this.reload_empty = Sounds.reload_empty;
                 this.reload_done = Sounds.reload_done;
                 this.icon = Utils.getImage('img/sprites/inventory/rifle_active.png');

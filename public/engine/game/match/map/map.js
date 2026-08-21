@@ -737,7 +737,7 @@
     class Tileset {
         constructor(options) {
             this.tileSize = 48;
-            this.grid = [[]];
+            this.grid = [];
             this.generate = false;
             this.size = new Utils.Vect2(100, 100);
             this.chunkTiles = 8;
@@ -757,6 +757,9 @@
         }
 
         randomGrid = (size) => {
+            // Rebuild from scratch — do not keep a leading empty row or map.w becomes 0
+            // (Map reads grid[0].length) and clients only see the green stage background.
+            this.grid = [];
             for (let y = 0; y < size.y; y++) {
                 this.grid.push([]);
                 for (let x = 0; x < size.x; x++) {

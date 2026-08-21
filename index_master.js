@@ -28,7 +28,15 @@ const gameStatusHub = createGameStatusHub({ app, wss });
 app.set('view engine', 'ejs');
 
 // set express to use public for static files
-app.use(express.static(__dirname + '/public'));
+// Avoid Chrome disk-cache 304 failures on WAV/MP3 (ERR_CACHE_READ_FAILURE).
+app.use(express.static(__dirname + '/public', {
+    etag: false,
+    setHeaders(res, filePath) {
+        if (/\.(wav|mp3|ogg)$/i.test(filePath)) {
+            res.setHeader('Cache-Control', 'no-cache');
+        }
+    }
+}));
 
 // read the body of the request
 app.use(express.urlencoded({ extended: true }));

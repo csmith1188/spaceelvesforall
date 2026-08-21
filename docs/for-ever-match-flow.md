@@ -29,8 +29,8 @@ flowchart LR
     end
 
     AP -->|"≥1 connected duelist"| AR
-    AR -->|"≥1 jump-ready and jetbike spawned"| IR
-    IR -->|"all spawned duelists eliminated"| AD
+    AR -->|"all connected duelists jump-ready and jetbikes spawned"| IR
+    IR -->|"all spawned duelists dead or disconnected"| AD
     AD -->|"jump"| AR
 ```
 
@@ -41,14 +41,14 @@ flowchart LR
 ### `awaitReady`
 
 - **Jump** (edge on `controller.buttons.jump`) sets **`playerReady[tokenId]`** and **`player.ready`**.
-- **Minimum one** ready duelist is required before combat starts.
+- **Every** connected non-spectator duelist (up to the player cap) must be ready before combat starts.
 - On the **first** satisfied gate: spawns **Jetbike** characters for every **ready** duelist under the cap who does not already have a character, records their token ids in **`foreverSpawnedIds`**, starts **`matchStartTick`** and **`nextWaveAtTick`**, sets **`waves`** to `0`, then **`stage = inRound`**.
 
 ### `inRound`
 
 - **Drop-in**: additional duelists who press jump while slots remain spawn their Jetbike when ready (same spawn helper as round entry).
 - **Permadeath**: when a human-owned jetbike becomes inactive (`hp` exhaustion path sets `active = false`), the parent **Player** is marked **`spectator = true`** and the entity is marked **`cleanup`** so base compaction removes it on the next tick.
-- **Full wipe**: if **`foreverSpawnedIds`** is non-empty and **no** spawned duelist still has an **`active`** character, the match captures **`finalWaveSummary`** (wave count) and **`finalElapsedTicks`**, clears **`characters`** / **`bots`**, and sets **`stage = allDead`**.
+- **Full wipe**: if **`foreverSpawnedIds`** is non-empty and **no** spawned duelist is still a **connected** non-spectator with an **`active`** character (dead, spectator, or disconnected), the match captures **`finalWaveSummary`** / **`finalElapsedTicks`**, clears combat roster, and sets **`stage = allDead`**.
 - **Waves**: every **`waveTime`** ticks (default `2700`), **`waves`** increments and the server spawns enemy bots, ammo/health pickups, a central weapon pickup, and (on even wave counts) ally bots — ported from the legacy Forever wave logic.
 
 ### `allDead`

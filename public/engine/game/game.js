@@ -320,8 +320,18 @@
 
             if (typeof window !== 'undefined') {
                 this.player = this.players.find(player => player.token.id == token.id);
-                if (this.player)
+                if (!this.player && typeof token !== 'undefined' && token) {
+                    // Fallback: displayName match if ids diverge across reconnect payloads.
+                    this.player = this.players.find(player =>
+                        player && player.token && player.token.displayName === token.displayName
+                    );
+                }
+                if (this.player) {
                     this.player.interface = this.player.interface || new Interfaces.Interface(this.player);
+                    if (!this.player.camera) {
+                        this.player.camera = new Camera({ owner: this.player });
+                    }
+                }
             }
 
             // handle each player's controller
