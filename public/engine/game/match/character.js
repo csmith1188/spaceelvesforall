@@ -117,9 +117,6 @@
                            |_|
             */
             if (typeof window !== 'undefined') {
-                this.img = new Image();
-                this.shadow = new Image();
-                this.shadow.src = 'img/sprites/shadow.png';
                 this.deathSFX = Sounds.death;
             }
             this.gfx = 'img/sprites/lilguy';
@@ -147,7 +144,11 @@
             this.lastHB = this.HB;
             this.leftgfx = this.gfx + '_l'; // Set this after options so you only have to set gfx
             if (typeof window !== 'undefined') {
-                this.img.src = this.gfx + '.png'
+                // Cache left/right once; swap Image references on turn (never reassign .src).
+                this.imgRight = Utils.getImage(this.gfx + '.png');
+                this.imgLeft = Utils.getImage(this.leftgfx + '.png');
+                this.img = this.imgRight;
+                this.shadow = Utils.getImage('img/sprites/shadow.png');
             }
 
             // this.parent = game.players.find(player => player.token.id === this.parent.token.id);
@@ -812,15 +813,11 @@
                  | .__/_\__|_\_\ \__, |_| \__,_| .__/_||_|_\__|
                  |_|             |___/         |_|
                 */
-                // Only change image src when direction changes to avoid redownloading
-                const leftSrc = this.leftgfx + '.png';
-                const rightSrc = this.gfx + '.png';
-                
-                if (this.mom.x < 0 && !this.img.src.endsWith(leftSrc)) {
-                    this.img.src = leftSrc;
-                }
-                if (this.mom.x > 0 && !this.img.src.endsWith(rightSrc)) {
-                    this.img.src = rightSrc;
+                // Swap cached left/right Image refs — never touch .src (avoids reload flicker).
+                if (this.mom.x < 0 && this.imgLeft) {
+                    this.img = this.imgLeft;
+                } else if (this.mom.x > 0 && this.imgRight) {
+                    this.img = this.imgRight;
                 }
 
                 let compareX = game.player.camera.x - this.HB.pos.x;

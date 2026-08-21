@@ -64,14 +64,10 @@
             this.opacity = 1;
             this.color = [100, 100, 100];    // Leave blank to add collision to a background
             this.colorSide = [200, 200, 200]; //The color of the wall of the block
-            // if not in a browser
             if (typeof window !== 'undefined') {
-                this.img = new Image();
-                this.img.src = this.imgFile;
-                this.imgSide = new Image();
-                this.imgSide.src = this.imgFileSide;
-                this.shadow = new Image();
-                this.shadow.src = 'img/sprites/shadow.png';
+                this.img = null;
+                this.imgSide = null;
+                this.shadow = null;
                 this._tilePatternTop = null;
                 this._tilePatternSide = null;
             }
@@ -97,9 +93,10 @@
             this.HB = Utils.generateHB(this);
 
             if (typeof window !== 'undefined') {
-                // Apply final image sources after options are merged.
-                this.img.src = this.imgFile || '';
-                this.imgSide.src = this.imgFileSide || '';
+                // Shared cache — walls/pickups reuse the same Image instances.
+                this.img = Utils.getImage(this.imgFile || '') || this.img;
+                this.imgSide = Utils.getImage(this.imgFileSide || '') || this.imgSide;
+                this.shadow = Utils.getImage('img/sprites/shadow.png');
                 this._tilePatternTop = null;
                 this._tilePatternSide = null;
             }

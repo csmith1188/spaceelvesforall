@@ -87,10 +87,8 @@
                 this.shootSFX = Sounds.shoot_pistol;
                 this.reload_empty = Sounds.reload_empty;
                 this.reload_done = Sounds.reload_done;
-                this.icon = new Image();
-                this.icon.src = 'img/sprites/inventory/pistol_active.png';
-                this.iconInactive = new Image();
-                this.iconInactive.src = 'img/sprites/inventory/pistol_inactive.png';
+                this.icon = Utils.getImage('img/sprites/inventory/pistol_active.png');
+                this.iconInactive = Utils.getImage('img/sprites/inventory/pistol_inactive.png');
             }
             this.projectileSpeed = 20;
             this.range = 400;
@@ -194,10 +192,8 @@
                 this.shootSFX = new Audio('sfx/rifle_shoot.wav');
                 this.reload_empty = Sounds.reload_empty;
                 this.reload_done = Sounds.reload_done;
-                this.icon = new Image();
-                this.icon.src = 'img/sprites/inventory/rifle_active.png';
-                this.iconInactive = new Image();
-                this.iconInactive.src = 'img/sprites/inventory/rifle_inactive.png';
+                this.icon = Utils.getImage('img/sprites/inventory/rifle_active.png');
+                this.iconInactive = Utils.getImage('img/sprites/inventory/rifle_inactive.png');
             }
             this.projectileSpeed = 30;
             this.damage = 40;
@@ -307,10 +303,8 @@
                 this.shootSFX = Sounds.shoot_flamer;
                 this.reload_empty = Sounds.reload_empty;
                 this.reload_done = Sounds.reload_done;
-                this.icon = new Image();
-                this.icon.src = 'img/sprites/inventory/flamer_active.png';
-                this.iconInactive = new Image();
-                this.iconInactive.src = 'img/sprites/inventory/flamer_inactive.png';
+                this.icon = Utils.getImage('img/sprites/inventory/flamer_active.png');
+                this.iconInactive = Utils.getImage('img/sprites/inventory/flamer_inactive.png');
             }
             this.projectileSpeed = 10;
             this.range = 200;
@@ -419,10 +413,8 @@
                 this.shootSFX = Sounds.shoot_lance;
                 this.reload_empty = Sounds.reload_empty;
                 this.reload_done = Sounds.reload_done;
-                this.icon = new Image();
-                this.icon.src = 'img/sprites/inventory/lance_active.png';
-                this.iconInactive = new Image();
-                this.iconInactive.src = 'img/sprites/inventory/lance_inactive.png';
+                this.icon = Utils.getImage('img/sprites/inventory/lance_active.png');
+                this.iconInactive = Utils.getImage('img/sprites/inventory/lance_inactive.png');
             }
             this.boostSpeed = 15;
             this.hopSpeed = 6;
@@ -539,10 +531,8 @@
                 this.shootSFX = Sounds.shoot_sword;
                 this.reload_empty = Sounds.reload_empty;
                 this.reload_done = Sounds.reload_done;
-                this.icon = new Image();
-                this.icon.src = 'img/sprites/inventory/sword_active.png';
-                this.iconInactive = new Image();
-                this.iconInactive.src = 'img/sprites/inventory/sword_inactive.png';
+                this.icon = Utils.getImage('img/sprites/inventory/sword_active.png');
+                this.iconInactive = Utils.getImage('img/sprites/inventory/sword_inactive.png');
             }
             this.ppCost = 40;
             this.range = 150;

@@ -166,8 +166,10 @@
             });
             assignHydratedPickupProps(this, options);
             if (typeof window !== 'undefined') {
-                this.img.src = this.imgFile;
-                this.imgSide.src = this.imgFileSide;
+                this.img = Utils.getImage(this.imgFile);
+                this.imgSide = Utils.getImage(this.imgFileSide);
+                this._tilePatternTop = null;
+                this._tilePatternSide = null;
             }
         }
     }
@@ -210,8 +212,10 @@
             });
             assignHydratedPickupProps(this, options);
             if (typeof window !== 'undefined') {
-                this.img.src = this.imgFile;
-                this.imgSide.src = this.imgFileSide;
+                this.img = Utils.getImage(this.imgFile);
+                this.imgSide = Utils.getImage(this.imgFileSide);
+                this._tilePatternTop = null;
+                this._tilePatternSide = null;
             }
         }
     }
@@ -268,8 +272,10 @@
             });
             assignHydratedPickupProps(this, options);
             if (typeof window !== 'undefined') {
-                this.img.src = this.imgFile;
-                this.imgSide.src = this.imgFileSide;
+                this.img = Utils.getImage(this.imgFile);
+                this.imgSide = Utils.getImage(this.imgFileSide);
+                this._tilePatternTop = null;
+                this._tilePatternSide = null;
             }
         }
     }
@@ -385,8 +391,10 @@
                 // this.imgFileSide = 'img/sprites/pickups/grey_side.png';
             }
             if (typeof window !== 'undefined') {
-                this.img.src = this.imgFile;
-                this.imgSide.src = this.imgFileSide;
+                this.img = Utils.getImage(this.imgFile);
+                this.imgSide = Utils.getImage(this.imgFileSide);
+                this._tilePatternTop = null;
+                this._tilePatternSide = null;
             }
         }
 

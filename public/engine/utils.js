@@ -385,6 +385,20 @@
         return typeof window !== 'undefined';
     }
 
+    /** Shared HTMLImageElement cache — never assign .src on a hot path; swap references instead. */
+    const _imageCache = Object.create(null);
+    function getImage(src) {
+        if (typeof window === 'undefined') return null;
+        if (!src) return null;
+        let img = _imageCache[src];
+        if (!img) {
+            img = new Image();
+            img.src = src;
+            _imageCache[src] = img;
+        }
+        return img;
+    }
+
     /**
      * Prefer the latest active character owned by `owner`. After wipes/respawns the roster may
      * still contain inactive Characters with the same parent; `.find()` by parent alone returns the wrong one.
@@ -399,5 +413,5 @@
         return last;
     }
 
-    return { Vect2, Vect3, Rect, Cube, Cylinder, generateHB, sineAnimate, easeout, easeinout, uuidGen, isClient, ownedActiveCharacter };
+    return { Vect2, Vect3, Rect, Cube, Cylinder, generateHB, sineAnimate, easeout, easeinout, uuidGen, isClient, getImage, ownedActiveCharacter };
 }));

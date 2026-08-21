@@ -68,8 +68,7 @@
     class Interface {
         constructor(player) {
             this.player = player;
-            this.xhair = new Image();
-            this.xhair.src = 'img/sprites/xhair.png';
+            this.xhair = Utils.getImage('img/sprites/xhair.png');
             this.hud = {
                 barW: 48
             }

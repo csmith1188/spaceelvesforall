@@ -34,8 +34,7 @@
             this.collideReflect = 0.2;
 
             if (Utils.isClient()) {
-                this.bgimg = new Image();
-                this.bgimg.src = "img/tiles/tile001.png";
+                this.bgimg = Utils.getImage("img/tiles/tile001.png");
             }
 
             this.blocks = [];
@@ -1116,12 +1115,10 @@
             'E': 'img/tiles/tile005.png'
         }
 
-        //for every tile in the list, replace the value with a new image object whose source is the value
+        //for every tile in the list, replace the value with a cached image
         for (const tile in list) {
             if (typeof window !== 'undefined') {
-                let path = list[tile];
-                list[tile] = new Image();
-                list[tile].src = path;
+                list[tile] = Utils.getImage(list[tile]);
             }
         }
 
