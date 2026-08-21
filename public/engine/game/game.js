@@ -81,6 +81,172 @@
                     this[key] = options[key];
                 }
             }
+
+            /** Fixed internal resolution; outer stage is sized to the fitted display. */
+            this.renderSize = this.renderSize || { w: 1280, h: 720 };
+            this.stageEl = null;
+            this.stageInnerEl = null;
+            this.groundLayer = null;
+            this.groundWorld = null;
+            this.canvas = null;
+            this.ctx = null;
+            this.hudCanvas = null;
+            this.hudCtx = null;
+            this._clientLoop = {
+                running: false,
+                accumulator: 0,
+                lastFrameTime: 0,
+                maxCatchupSteps: 5,
+                onResize: null
+            };
+        }
+
+        /**
+         * Wire DOM stage / canvases for a browser client.
+         * Entity canvas stays alpha:true so CSS ground shows through.
+         */
+        bindClientDisplay(elements) {
+            if (typeof document === 'undefined') return this;
+            const els = elements || {};
+            this.stageEl = els.stageEl || document.getElementById('game-stage');
+            this.stageInnerEl = els.stageInnerEl || document.getElementById('game-stage-inner');
+            this.groundLayer = els.groundLayer || document.getElementById('ground-layer');
+            this.groundWorld = els.groundWorld || document.getElementById('ground-world');
+            this.canvas = els.canvas || document.getElementById('game-canvas');
+            this.hudCanvas = els.hudCanvas || document.getElementById('hud-canvas');
+
+            if (this.canvas) {
+                this.ctx = this.canvas.getContext('2d', { alpha: true }) || this.canvas.getContext('2d');
+            }
+            if (this.hudCanvas) {
+                this.hudCtx = this.hudCanvas.getContext('2d', { alpha: true }) || this.hudCanvas.getContext('2d');
+            }
+
+            // Legacy globals still read by map / match draw paths.
+            if (typeof window !== 'undefined') {
+                window.gameStage = this.stageEl;
+                window.groundLayer = this.groundLayer;
+                window.groundWorld = this.groundWorld;
+                window.canvas = this.canvas;
+                window.ctx = this.ctx;
+                window.hudCanvas = this.hudCanvas;
+                window.hudCtx = this.hudCtx;
+                window.withHudContext = (drawFn) => this.withHudContext(drawFn);
+                window.clearHudCanvas = () => this.clearHudCanvas();
+            }
+
+            this.applyClientResize();
+            if (!this._clientLoop.onResize && typeof window !== 'undefined') {
+                this._clientLoop.onResize = () => this.applyClientResize();
+                window.addEventListener('resize', this._clientLoop.onResize);
+            }
+            return this;
+        }
+
+        applyCanvasBufferSize(target, bufferW, bufferH) {
+            if (!target) return;
+            if (target.width !== bufferW || target.height !== bufferH) {
+                target.width = bufferW;
+                target.height = bufferH;
+            }
+            target.style.width = `${bufferW}px`;
+            target.style.height = `${bufferH}px`;
+        }
+
+        /** Contain-fit the fixed render size into the browser window. */
+        applyClientResize() {
+            if (typeof window === 'undefined') return;
+            const renderW = this.renderSize.w;
+            const renderH = this.renderSize.h;
+            const windowW = window.innerWidth;
+            const windowH = window.innerHeight;
+            const fitScale = Math.min(windowW / renderW, windowH / renderH);
+            const displayW = renderW * fitScale;
+            const displayH = renderH * fitScale;
+
+            // Outer stage matches the visible fitted size so body overflow never clips it.
+            if (this.stageEl) {
+                this.stageEl.style.width = `${displayW}px`;
+                this.stageEl.style.height = `${displayH}px`;
+                this.stageEl.style.transform = 'none';
+            }
+            // Inner layer stays at render resolution and scales up/down to fill the stage.
+            if (this.stageInnerEl) {
+                this.stageInnerEl.style.width = `${renderW}px`;
+                this.stageInnerEl.style.height = `${renderH}px`;
+                this.stageInnerEl.style.transform = `scale(${fitScale})`;
+                this.stageInnerEl.style.transformOrigin = '0 0';
+            }
+            this.applyCanvasBufferSize(this.canvas, renderW, renderH);
+            this.applyCanvasBufferSize(this.hudCanvas, renderW, renderH);
+
+            this.browserWindow.w = windowW;
+            this.browserWindow.h = windowH;
+            this.renderOffset.x = Math.max(0, (windowW - displayW) / 2);
+            this.renderOffset.y = Math.max(0, (windowH - displayH) / 2);
+            this.display.w = displayW;
+            this.display.h = displayH;
+            this.renderScale = fitScale;
+            this.window.w = renderW;
+            this.window.h = renderH;
+            this.gameView.w = renderW;
+            this.gameView.h = renderH;
+            if (this.player && this.player.camera) {
+                this.player.camera.radius = Math.sqrt((renderW / 2) ** 2 + (renderH / 2) ** 2);
+            }
+        }
+
+        /** Run draw code on the HUD canvas context (falls back to world ctx). */
+        withHudContext(drawFn) {
+            if (typeof drawFn !== 'function') return;
+            if (!this.hudCtx) {
+                drawFn();
+                return;
+            }
+            const root = typeof window !== 'undefined' ? window : null;
+            const prev = root ? root.ctx : this.ctx;
+            if (root) root.ctx = this.hudCtx;
+            try {
+                drawFn();
+            } finally {
+                if (root) root.ctx = prev;
+            }
+        }
+
+        clearHudCanvas() {
+            if (!this.hudCtx || !this.hudCanvas) return;
+            this.hudCtx.clearRect(0, 0, this.hudCanvas.width, this.hudCanvas.height);
+        }
+
+        /** Fixed-timestep client loop driven by requestAnimationFrame. */
+        startClientLoop() {
+            if (typeof window === 'undefined' || typeof requestAnimationFrame !== 'function') return this;
+            if (this._clientLoop.running) return this;
+            this._clientLoop.running = true;
+            this._clientLoop.accumulator = 0;
+            this._clientLoop.lastFrameTime = performance.now();
+            const fixedStepMs = this.time.tickRate;
+            const maxCatchupSteps = this._clientLoop.maxCatchupSteps;
+
+            const gameLoop = (now) => {
+                if (!this._clientLoop.running) return;
+                const elapsedMs = now - this._clientLoop.lastFrameTime;
+                this._clientLoop.lastFrameTime = now;
+                this._clientLoop.accumulator += elapsedMs;
+
+                let steps = 0;
+                while (this._clientLoop.accumulator >= fixedStepMs && steps < maxCatchupSteps) {
+                    this.step();
+                    this._clientLoop.accumulator -= fixedStepMs;
+                    steps++;
+                }
+                if (steps === maxCatchupSteps) {
+                    this._clientLoop.accumulator = 0;
+                }
+                requestAnimationFrame(gameLoop);
+            };
+            requestAnimationFrame(gameLoop);
+            return this;
         }
 
         step() {
@@ -200,8 +366,10 @@
                         
                         // Draw sync debug overlay
                         if (typeof syncDebug !== 'undefined' && syncDebug.enabled) {
-                            const syncCtx = (typeof hudCtx !== 'undefined' && hudCtx) ? hudCtx : ctx;
-                            syncDebug.draw(syncCtx, this.player.camera);
+                            const syncCtx = this.hudCtx || (typeof hudCtx !== 'undefined' && hudCtx) || (typeof ctx !== 'undefined' ? ctx : null);
+                            if (syncCtx) {
+                                syncDebug.draw(syncCtx, this.player.camera);
+                            }
                         }
                     }
                 } else {

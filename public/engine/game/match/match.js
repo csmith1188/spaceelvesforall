@@ -175,7 +175,9 @@
                 if (typeof groundLayer !== 'undefined' && groundLayer) {
                     groundLayer.classList.add('is-hidden');
                 }
-                if (typeof clearHudCanvas === 'function') clearHudCanvas();
+                if (game && typeof game.clearHudCanvas === 'function') {
+                    game.clearHudCanvas();
+                }
                 return;
             }
 
@@ -184,10 +186,12 @@
                 this.map.draw();
 
                 // Draw UI on the HUD layer
-                if (typeof clearHudCanvas === 'function') clearHudCanvas();
+                if (game && typeof game.clearHudCanvas === 'function') {
+                    game.clearHudCanvas();
+                }
                 if (game.player.interface) {
-                    if (typeof withHudContext === 'function') {
-                        withHudContext(() => game.player.interface.drawHUD());
+                    if (game && typeof game.withHudContext === 'function') {
+                        game.withHudContext(() => game.player.interface.drawHUD());
                     } else {
                         game.player.interface.drawHUD();
                     }

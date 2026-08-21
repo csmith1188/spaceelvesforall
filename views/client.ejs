@@ -21,11 +21,13 @@
 
 <body>
   <div id="game-stage">
-    <div id="ground-layer">
-      <div id="ground-world"></div>
+    <div id="game-stage-inner">
+      <div id="ground-layer">
+        <div id="ground-world"></div>
+      </div>
+      <canvas width=1280 height=720 id="game-canvas">Your browser needs to be able to render an HTML5 Canvas</canvas>
+      <canvas width=1280 height=720 id="hud-canvas"></canvas>
     </div>
-    <canvas width=900 height=600 id="game-canvas">Your browser needs to be able to render an HTML5 Canvas</canvas>
-    <canvas width=900 height=600 id="hud-canvas"></canvas>
   </div>
   <div id="debugger">
     Enable Debug
@@ -74,119 +76,6 @@
 <script src="engine/game/match/for_ever.js"></script>
 <script src="engine/socket_client.js"></script>
 <script src="engine/game/game.js"></script>
-
-<script>
-  // Entity canvas (transparent over CSS ground) + HUD. Ground tiles are DOM-composited.
-  var gameStage = document.getElementById('game-stage');
-  var groundLayer = document.getElementById('ground-layer');
-  var groundWorld = document.getElementById('ground-world');
-  var canvas = document.getElementById('game-canvas');
-  // Entity overlay must stay alpha:true so the transformed ground shows through.
-  // Avoid desynchronized on the on-screen canvases — it can fail to present over DOM layers.
-  var ctx = canvas.getContext('2d', { alpha: true }) || canvas.getContext('2d');
-  var hudCanvas = document.getElementById('hud-canvas');
-  var hudCtx = hudCanvas.getContext('2d', { alpha: true }) || hudCanvas.getContext('2d');
-
-  var game = new Game({
-    client: true
-  });
-
-  // Fixed internal resolution; CSS-scaled to fit the window (contain).
-  const RENDER_W = 1280;
-  const RENDER_H = 720;
-
-  function applyCanvasSize(target, bufferW, bufferH) {
-    if (target.width !== bufferW || target.height !== bufferH) {
-      target.width = bufferW;
-      target.height = bufferH;
-    }
-    // CSS size matches buffer; stage transform does the window fit-upscale.
-    target.style.width = `${bufferW}px`;
-    target.style.height = `${bufferH}px`;
-  }
-
-  function applyCanvasResize() {
-    const windowW = window.innerWidth;
-    const windowH = window.innerHeight;
-    const fitScale = Math.min(windowW / RENDER_W, windowH / RENDER_H);
-    const displayW = RENDER_W * fitScale;
-    const displayH = RENDER_H * fitScale;
-
-    if (gameStage) {
-      gameStage.style.width = `${RENDER_W}px`;
-      gameStage.style.height = `${RENDER_H}px`;
-      gameStage.style.transform = `scale(${fitScale})`;
-      gameStage.style.transformOrigin = 'center center';
-    }
-    applyCanvasSize(canvas, RENDER_W, RENDER_H);
-    applyCanvasSize(hudCanvas, RENDER_W, RENDER_H);
-
-    game.browserWindow.w = windowW;
-    game.browserWindow.h = windowH;
-    game.renderOffset.x = Math.max(0, (windowW - displayW) / 2);
-    game.renderOffset.y = Math.max(0, (windowH - displayH) / 2);
-    game.display.w = displayW;
-    game.display.h = displayH;
-    game.renderScale = fitScale;
-    game.window.w = RENDER_W;
-    game.window.h = RENDER_H;
-    game.gameView.w = RENDER_W;
-    game.gameView.h = RENDER_H;
-    if (game.player) {
-      game.player.camera.radius = Math.sqrt((RENDER_W / 2) ** 2 + (RENDER_H / 2) ** 2);
-    }
-  }
-
-  applyCanvasResize();
-  window.addEventListener('resize', applyCanvasResize);
-
-  /** Run draw code on the HUD canvas context (falls back to world ctx). */
-  function withHudContext(drawFn) {
-    if (typeof hudCtx === 'undefined' || !hudCtx) {
-      drawFn();
-      return;
-    }
-    const prev = ctx;
-    ctx = hudCtx;
-    try {
-      drawFn();
-    } finally {
-      ctx = prev;
-    }
-  }
-
-  function clearHudCanvas() {
-    if (typeof hudCtx === 'undefined' || !hudCtx) return;
-    hudCtx.clearRect(0, 0, hudCanvas.width, hudCanvas.height);
-  }
-
-  let accumulator = 0;
-  let lastFrameTime = performance.now();
-  const fixedStepMs = game.time.tickRate;
-  const maxCatchupSteps = 5;
-
-  function gameLoop(now) {
-    const elapsedMs = now - lastFrameTime;
-    lastFrameTime = now;
-    accumulator += elapsedMs;
-
-    let steps = 0;
-    while (accumulator >= fixedStepMs && steps < maxCatchupSteps) {
-      game.step();
-      accumulator -= fixedStepMs;
-      steps++;
-    }
-
-    if (steps === maxCatchupSteps) {
-      accumulator = 0;
-    }
-
-    requestAnimationFrame(gameLoop);
-  }
-
-  requestAnimationFrame(gameLoop);
-
-  // networkStats.enabled = true; syncDebug.enabled = true;
-</script>
+<script src="engine/game/client_boot.js"></script>
 
 </html>

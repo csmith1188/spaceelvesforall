@@ -629,7 +629,7 @@
             if (this.stage === 'awaitPlayers') {
                 if (this.map) {
                     this.map.draw();
-                    if (typeof clearHudCanvas === 'function') clearHudCanvas();
+                    if (game && typeof game.clearHudCanvas === 'function') game.clearHudCanvas();
                 } else {
                     super.draw();
                 }
@@ -747,8 +747,8 @@
             }
             };
 
-            if (typeof withHudContext === 'function') {
-                withHudContext(drawOverlays);
+            if (game && typeof game.withHudContext === 'function') {
+                game.withHudContext(drawOverlays);
             } else {
                 drawOverlays();
             }

@@ -34,9 +34,9 @@
 - soccer mode
 
 Match For Honor:
-- Waiting screen
-- Win conditions
-- End Game / Rematch
+- ~~Waiting screen~~
+- ~~Win conditions~~
+- ~~End Game / Rematch~~
 
 # Client
 - ~~Basic WS~~

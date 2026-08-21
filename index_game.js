@@ -13,7 +13,7 @@ const WebSocket = require('ws');
 
 var PORT = 10000;
 var DEBUG = false;
-let MATCH_TYPE = 'ForHonorMP';
+let MATCH_TYPE = 'ForEver';
 
 // Example: Log each argument
 args.forEach((arg, index) => {

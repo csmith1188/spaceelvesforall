@@ -23,11 +23,22 @@
 #game-stage {
     position: relative;
     z-index: 0;
-    border: 1px solid black;
-    line-height: 0;
+    /* Fitted display size is set in JS; must match the scaled visual so flex
+       centering never overflows/clips the sides of the window. */
     overflow: hidden;
     background-color: #333300;
-    /* width/height/transform set in JS: fixed 1280x720, scaled to fit window */
+    box-sizing: border-box;
+    outline: 1px solid black;
+}
+
+#game-stage-inner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    /* Fixed render size; scaled from top-left to fill #game-stage. */
+    overflow: hidden;
+    background-color: #333300;
+    transform-origin: 0 0;
     will-change: transform;
 }
 

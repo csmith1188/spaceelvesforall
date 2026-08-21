@@ -240,12 +240,36 @@
             }
         }
 
+        /** Drop jetbikes, wave bots, and transient projectiles (server wipe / restart). */
+        clearCombatRoster() {
+            this.characters = [];
+            this.bots = [];
+            if (this.map) {
+                this.map.bullets = [];
+                this.map.debris = [];
+            }
+        }
+
         /** Serialize mode fields for snapshots / clients. */
         pack() {
+            const playerStates = [];
+            if (typeof game !== 'undefined' && Array.isArray(game.players)) {
+                for (const player of game.players) {
+                    if (!player || !player.token || !player.token.id) continue;
+                    playerStates.push({
+                        id: player.token.id,
+                        spectator: !!player.spectator,
+                        ready: !!player.ready
+                    });
+                }
+            }
             return {
                 stage: this.stage,
                 playerReady: this.playerReady,
                 foreverSpawnedIds: this.foreverSpawnedIds,
+                // Authoritative roster so clients can drop entities delta sync never removes.
+                characterIds: this.characters.map(c => c.id),
+                playerStates: playerStates,
                 waves: this.waves,
                 waveTime: this.waveTime,
                 nextWaveAtTick: this.nextWaveAtTick,
@@ -299,8 +323,7 @@
                 }
                 if (jumpRestart) {
                     this.map.blocks = this.map.blocks.filter(function (el) { return el.type === 'block'; });
-                    this.characters = [];
-                    this.bots = [];
+                    this.clearCombatRoster();
                     this.foreverSpawnedIds = [];
                     this.waves = 0;
                     this.finalWaveSummary = 0;
@@ -367,8 +390,8 @@
             if (this.foreverSpawnedIds.length > 0 && !anySpawnedAlive) {
                 this.finalWaveSummary = this.waves;
                 this.finalElapsedTicks = Math.max(0, this.time.ticks - this.matchStartTick);
-                this.characters = [];
-                this.bots = [];
+                // Strip remaining enemies + projectiles so the end screen / rematch starts clean.
+                this.clearCombatRoster();
                 this.stage = 'allDead';
                 return;
             }
@@ -530,7 +553,7 @@
             if (this.stage === 'awaitPlayers') {
                 if (this.map) {
                     this.map.draw();
-                    if (typeof clearHudCanvas === 'function') clearHudCanvas();
+                    if (game && typeof game.clearHudCanvas === 'function') game.clearHudCanvas();
                 } else {
                     super.draw();
                 }
@@ -635,8 +658,8 @@
             }
             };
 
-            if (typeof withHudContext === 'function') {
-                withHudContext(drawOverlays);
+            if (game && typeof game.withHudContext === 'function') {
+                game.withHudContext(drawOverlays);
             } else {
                 drawOverlays();
             }

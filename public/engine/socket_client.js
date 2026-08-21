@@ -120,6 +120,21 @@ gameWSS.addEventListener('message', (event) => {
                         !(c.parent && c.parent.token && c.parent.token.id === botTok)
                     );
                 }
+                // Forever (and any mode that packs characterIds): prune jetbikes the server wiped.
+                if (message.match.characterIds !== undefined && Array.isArray(message.match.characterIds) && game.match.characters) {
+                    const aliveIds = new Set(message.match.characterIds);
+                    game.match.characters = game.match.characters.filter(c => aliveIds.has(c.id));
+                }
+                // Sync spectator / ready flags (not in the regular delta path otherwise).
+                if (message.match.playerStates !== undefined && Array.isArray(message.match.playerStates)) {
+                    for (const state of message.match.playerStates) {
+                        if (!state || !state.id) continue;
+                        const existingPlayer = game.players.find(p => p && p.token && p.token.id === state.id);
+                        if (!existingPlayer) continue;
+                        if (state.spectator !== undefined) existingPlayer.spectator = !!state.spectator;
+                        if (state.ready !== undefined) existingPlayer.ready = !!state.ready;
+                    }
+                }
             }
 
             if (message.characters) {
