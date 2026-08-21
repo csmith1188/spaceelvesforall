@@ -111,10 +111,12 @@
     // Collect all input data and send it to the controller for better handling
     function getCanvasRelative(e, center = true) {
         bx = canvas.getBoundingClientRect();
+        const scaleX = bx.width > 0 ? canvas.width / bx.width : 1;
+        const scaleY = bx.height > 0 ? canvas.height / bx.height : 1;
         if (center === true) {
             return {
-                x: e.clientX - (bx.width / 2),
-                y: e.clientY - (bx.height / 2),
+                x: (e.clientX - (bx.left + bx.width / 2)) * scaleX,
+                y: (e.clientY - (bx.top + bx.height / 2)) * scaleY,
                 bx: bx
             };
         } else if (center) {
@@ -129,14 +131,14 @@
                 center.y = game.player.camera.y - center.y;
             }
             return {
-                x: e.clientX + center.x - (bx.width / 2),
-                y: e.clientY + center.y - (bx.height / 2),
+                x: (e.clientX - (bx.left + bx.width / 2)) * scaleX + center.x,
+                y: (e.clientY - (bx.top + bx.height / 2)) * scaleY + center.y,
                 bx: bx
             };
         } else {
             return {
-                x: e.clientX - bx.left,
-                y: e.clientY - bx.top,
+                x: (e.clientX - bx.left) * scaleX,
+                y: (e.clientY - bx.top) * scaleY,
                 bx: bx
             };
         }

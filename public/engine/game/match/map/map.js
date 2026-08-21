@@ -48,8 +48,9 @@
             };
             this.spatialIndex = {
                 cellSize: 192,
-                characters: new globalThis.Map(),
-                blocks: new globalThis.Map()
+                // Plain objects — do not use Map; class Map in this module shadows the builtin.
+                characters: Object.create(null),
+                blocks: Object.create(null)
             };
 
             this.lightValue = [0, 0, 24, 0.15];
@@ -249,14 +250,16 @@
         }
 
         clearSpatialBuckets(bucketMap) {
-            bucketMap.clear();
+            for (const key of Object.keys(bucketMap)) {
+                delete bucketMap[key];
+            }
         }
 
         addToSpatialBucket(bucketMap, key, entity) {
-            let bucket = bucketMap.get(key);
+            let bucket = bucketMap[key];
             if (!bucket) {
                 bucket = [];
-                bucketMap.set(key, bucket);
+                bucketMap[key] = bucket;
             }
             bucket.push(entity);
         }
@@ -333,7 +336,7 @@
             const seen = new Set();
             for (let gx = minCellX; gx <= maxCellX; gx++) {
                 for (let gy = minCellY; gy <= maxCellY; gy++) {
-                    const bucket = bucketMap.get(`${gx},${gy}`);
+                    const bucket = bucketMap[`${gx},${gy}`];
                     if (!bucket) {
                         continue;
                     }
@@ -375,9 +378,17 @@
             \___|_| \___/\_,_|_||_\__,_( ) |___/_\_\\_, ( )  \___/|_||_\__,_\___|_| \__, |_| \___/\_,_|_||_\__,_|
                                      |/           |__/|/                          |___/
         */
-            //Ground
-            ctx.fillStyle = "#333300";
-            ctx.fillRect(0, 0, game.gameView.w, game.gameView.h);
+            const useGroundLayer = !!(game.player && game.player.camera && !game.player.camera._3D
+                && typeof this.tileSet.syncGroundLayer === 'function'
+                && this.tileSet.syncGroundLayer());
+
+            // Entity canvas: transparent clear when ground is DOM-composited; opaque fill otherwise.
+            if (useGroundLayer) {
+                ctx.clearRect(0, 0, game.gameView.w, game.gameView.h);
+            } else {
+                ctx.fillStyle = "#333300";
+                ctx.fillRect(0, 0, game.gameView.w, game.gameView.h);
+            }
 
             //If in 3D mode, draw the sky (This overdraws things past the horizon, even if visible)
             if (game.player.camera._3D) {
@@ -398,12 +409,12 @@
              |_| |_|_\___/__/
              
              */
-            try {
-                this.tileSet.draw();
-
-            } catch (error) {
-                console.error(error);
-
+            if (!useGroundLayer) {
+                try {
+                    this.tileSet.draw();
+                } catch (error) {
+                    console.error(error);
+                }
             }
 
             /*
@@ -730,6 +741,11 @@
             this.grid = [[]];
             this.generate = false;
             this.size = new Utils.Vect2(100, 100);
+            this.chunkTiles = 8;
+            // Plain object cache — class Map in this module shadows the builtin Map.
+            this.chunkCache = Object.create(null);
+            this.chunkCacheOrder = [];
+            this.chunkCacheMax = 48;
             if (typeof options == 'object')
                 for (const setting of Object.keys(options)) {
                     if (this[setting] !== undefined)
@@ -757,51 +773,240 @@
             }
         }
 
+        tilesImagesReady = () => {
+            for (const key of Object.keys(tiles)) {
+                const img = tiles[key];
+                if (!img || !img.complete || img.naturalWidth === 0) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        touchChunkCache = (key) => {
+            const idx = this.chunkCacheOrder.indexOf(key);
+            if (idx !== -1) {
+                this.chunkCacheOrder.splice(idx, 1);
+            }
+            this.chunkCacheOrder.push(key);
+            while (this.chunkCacheOrder.length > this.chunkCacheMax) {
+                const oldest = this.chunkCacheOrder.shift();
+                const evicted = this.chunkCache[oldest];
+                if (evicted && evicted.parentNode) {
+                    evicted.parentNode.removeChild(evicted);
+                }
+                delete this.chunkCache[oldest];
+            }
+        }
+
+        bakeChunk = (cx, cy) => {
+            const key = cx + ',' + cy;
+            if (this.chunkCache[key]) {
+                this.touchChunkCache(key);
+                return this.chunkCache[key];
+            }
+            if (typeof document === 'undefined' || !this.tilesImagesReady()) {
+                return null;
+            }
+
+            const chunkPx = this.chunkTiles * this.tileSize;
+            const off = document.createElement('canvas');
+            off.width = chunkPx;
+            off.height = chunkPx;
+            const offCtx = off.getContext('2d', { alpha: false }) || off.getContext('2d');
+            offCtx.fillStyle = '#333300';
+            offCtx.fillRect(0, 0, chunkPx, chunkPx);
+            const rows = this.grid.length;
+            const colsTotal = this.grid[0] ? this.grid[0].length : 0;
+            const startTileX = cx * this.chunkTiles;
+            const startTileY = cy * this.chunkTiles;
+
+            for (let ty = 0; ty < this.chunkTiles; ty++) {
+                const gy = startTileY + ty;
+                if (gy < 0 || gy >= rows) continue;
+                for (let tx = 0; tx < this.chunkTiles; tx++) {
+                    const gx = startTileX + tx;
+                    if (gx < 0 || gx >= colsTotal) continue;
+                    const tileIMG = this.decodeTile(this.grid[gy][gx]);
+                    offCtx.drawImage(
+                        tileIMG,
+                        tx * this.tileSize,
+                        ty * this.tileSize,
+                        this.tileSize,
+                        this.tileSize
+                    );
+                }
+            }
+
+            this.chunkCache[key] = off;
+            off.dataset.chunkKey = key;
+            off.style.position = 'absolute';
+            off.style.left = (cx * chunkPx) + 'px';
+            off.style.top = (cy * chunkPx) + 'px';
+            this.touchChunkCache(key);
+            return off;
+        }
+
+        getVisibleChunkRange = () => {
+            const rows = this.grid.length;
+            if (!rows) {
+                return null;
+            }
+            const colsTotal = this.grid[0].length || 0;
+            const halfViewW = game.gameView.w / 2;
+            const halfViewH = game.gameView.h / 2;
+            const radiusTilesX = Math.ceil(halfViewW / this.tileSize) + 2;
+            const radiusTilesY = Math.ceil(halfViewH / this.tileSize) + 2;
+            const centerTileX = Math.floor(game.player.camera.x / this.tileSize);
+            const centerTileY = Math.floor(game.player.camera.y / this.tileSize);
+            const startY = Math.max(0, centerTileY - radiusTilesY);
+            const endY = Math.min(rows - 1, centerTileY + radiusTilesY);
+            const startX = Math.max(0, centerTileX - radiusTilesX);
+            const endX = Math.min(colsTotal - 1, centerTileX + radiusTilesX);
+            return {
+                startChunkX: Math.floor(startX / this.chunkTiles),
+                endChunkX: Math.floor(endX / this.chunkTiles),
+                startChunkY: Math.floor(startY / this.chunkTiles),
+                endChunkY: Math.floor(endY / this.chunkTiles),
+                startX, endX, startY, endY
+            };
+        }
+
+        /**
+         * Mount baked chunk canvases into #ground-world and pan with CSS transform.
+         * Avoids full-canvas tile Paint every frame.
+         */
+        syncGroundLayer = () => {
+            const groundWorldEl = (typeof groundWorld !== 'undefined' && groundWorld)
+                ? groundWorld
+                : (typeof document !== 'undefined' ? document.getElementById('ground-world') : null);
+            const groundLayerEl = (typeof groundLayer !== 'undefined' && groundLayer)
+                ? groundLayer
+                : (typeof document !== 'undefined' ? document.getElementById('ground-layer') : null);
+
+            if (!groundWorldEl || !game.player || !game.player.camera) {
+                return false;
+            }
+
+            if (groundLayerEl) {
+                groundLayerEl.classList.toggle('is-hidden', !!game.player.camera._3D);
+            }
+            if (game.player.camera._3D) {
+                return false;
+            }
+
+            if (!this.tilesImagesReady()) {
+                return false;
+            }
+
+            const range = this.getVisibleChunkRange();
+            if (!range) {
+                game.debugPerf.tileDrawCount = 0;
+                return true;
+            }
+
+            const needed = Object.create(null);
+            let count = 0;
+            for (let cy = range.startChunkY; cy <= range.endChunkY; cy++) {
+                for (let cx = range.startChunkX; cx <= range.endChunkX; cx++) {
+                    const key = cx + ',' + cy;
+                    const chunk = this.bakeChunk(cx, cy);
+                    if (!chunk) continue;
+                    needed[key] = true;
+                    count++;
+                    if (chunk.parentNode !== groundWorldEl) {
+                        groundWorldEl.appendChild(chunk);
+                    }
+                }
+            }
+
+            const stale = [];
+            for (let i = 0; i < groundWorldEl.children.length; i++) {
+                const child = groundWorldEl.children[i];
+                const key = child.dataset && child.dataset.chunkKey;
+                if (!key || !needed[key]) {
+                    stale.push(child);
+                }
+            }
+            for (const child of stale) {
+                groundWorldEl.removeChild(child);
+            }
+
+            const tx = game.gameView.w / 2 - game.player.camera.x;
+            const ty = game.gameView.h / 2 - game.player.camera.y;
+            groundWorldEl.style.transform = 'translate3d(' + tx + 'px, ' + ty + 'px, 0)';
+            game.debugPerf.tileDrawCount = count;
+            return true;
+        }
+
         draw = () => {
             if (game.player.camera._3D) {
                 this.draw3D();
             } else {
-                let count = 0;
                 const rows = this.grid.length;
                 if (!rows) {
                     game.debugPerf.tileDrawCount = 0;
                     return;
                 }
-                const colsTotal = this.grid[0].length || 0;
-                const halfViewW = game.gameView.w / 2;
-                const halfViewH = game.gameView.h / 2;
-                const radiusTilesX = Math.ceil(halfViewW / this.tileSize) + 2;
-                const radiusTilesY = Math.ceil(halfViewH / this.tileSize) + 2;
-                const centerTileX = Math.floor(game.player.camera.x / this.tileSize);
-                const centerTileY = Math.floor(game.player.camera.y / this.tileSize);
-                const startY = Math.max(0, centerTileY - radiusTilesY);
-                const endY = Math.min(rows - 1, centerTileY + radiusTilesY);
-                const startX = Math.max(0, centerTileX - radiusTilesX);
-                const endX = Math.min(colsTotal - 1, centerTileX + radiusTilesX);
-                for (let y = startY; y <= endY; y++) {
-                    let compareY = game.player.camera.y - (y * this.tileSize);
-                    for (let x = startX; x <= endX; x++) {
-                        let compareX = game.player.camera.x - (x * this.tileSize);
-                        const drawX = game.gameView.w / 2 - compareX;
-                        const drawY = game.gameView.h / 2 - compareY;
-                        // Rectangle viewport culling so all tiles in render area are drawn.
+                const range = this.getVisibleChunkRange();
+                if (!range) {
+                    game.debugPerf.tileDrawCount = 0;
+                    return;
+                }
+                const { startX, endX, startY, endY } = range;
+
+                // Fallback to per-tile draws until images are ready for baking.
+                if (!this.tilesImagesReady()) {
+                    let count = 0;
+                    for (let y = startY; y <= endY; y++) {
+                        let compareY = game.player.camera.y - (y * this.tileSize);
+                        for (let x = startX; x <= endX; x++) {
+                            let compareX = game.player.camera.x - (x * this.tileSize);
+                            const drawX = game.gameView.w / 2 - compareX;
+                            const drawY = game.gameView.h / 2 - compareY;
+                            if (
+                                drawX + this.tileSize < 0 ||
+                                drawY + this.tileSize < 0 ||
+                                drawX > game.gameView.w ||
+                                drawY > game.gameView.h
+                            ) {
+                                continue;
+                            }
+                            count++;
+                            ctx.drawImage(
+                                this.decodeTile(this.grid[y][x]),
+                                drawX,
+                                drawY,
+                                this.tileSize,
+                                this.tileSize
+                            );
+                        }
+                    }
+                    game.debugPerf.tileDrawCount = count;
+                    return;
+                }
+
+                const chunkPx = this.chunkTiles * this.tileSize;
+                let count = 0;
+
+                for (let cy = range.startChunkY; cy <= range.endChunkY; cy++) {
+                    for (let cx = range.startChunkX; cx <= range.endChunkX; cx++) {
+                        const chunk = this.bakeChunk(cx, cy);
+                        if (!chunk) continue;
+                        const worldX = cx * chunkPx;
+                        const worldY = cy * chunkPx;
+                        const drawX = game.gameView.w / 2 - (game.player.camera.x - worldX);
+                        const drawY = game.gameView.h / 2 - (game.player.camera.y - worldY);
                         if (
-                            drawX + this.tileSize < 0 ||
-                            drawY + this.tileSize < 0 ||
+                            drawX + chunkPx < 0 ||
+                            drawY + chunkPx < 0 ||
                             drawX > game.gameView.w ||
                             drawY > game.gameView.h
                         ) {
                             continue;
                         }
                         count++;
-                        let tileIMG = this.decodeTile(this.grid[y][x]);
-                        ctx.drawImage(
-                            tileIMG,
-                            drawX,
-                            drawY,
-                            this.tileSize,
-                            this.tileSize
-                        );
+                        ctx.drawImage(chunk, drawX, drawY);
                     }
                 }
                 game.debugPerf.tileDrawCount = count;

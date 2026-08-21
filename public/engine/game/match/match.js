@@ -170,9 +170,12 @@
         draw() {
             // During awaitPlayers stage, just draw a simple background
             if (this.stage === 'awaitPlayers') {
-                // Clear the canvas with a dark background
                 ctx.fillStyle = "rgba(0, 0, 0, 1)";
                 ctx.fillRect(0, 0, game.gameView.w, game.gameView.h);
+                if (typeof groundLayer !== 'undefined' && groundLayer) {
+                    groundLayer.classList.add('is-hidden');
+                }
+                if (typeof clearHudCanvas === 'function') clearHudCanvas();
                 return;
             }
 
@@ -180,9 +183,14 @@
 
                 this.map.draw();
 
-                // Draw UI
+                // Draw UI on the HUD layer
+                if (typeof clearHudCanvas === 'function') clearHudCanvas();
                 if (game.player.interface) {
-                    game.player.interface.drawHUD();
+                    if (typeof withHudContext === 'function') {
+                        withHudContext(() => game.player.interface.drawHUD());
+                    } else {
+                        game.player.interface.drawHUD();
+                    }
                 }
 
             }

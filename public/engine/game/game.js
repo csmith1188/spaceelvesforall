@@ -40,6 +40,11 @@
                 x: 0,
                 y: 0
             };
+            this.display = {
+                w: 0,
+                h: 0
+            };
+            this.renderScale = 1;
             this.gameView = {
                 w: 0,
                 h: 0,
@@ -187,14 +192,16 @@
                 this.match.step();
                 if (typeof window !== 'undefined') {
                     if (this.player) {
+                        // Update camera before draw so ground transform + sprites share one pose.
+                        this.player.camera.update(this.player);
                         const drawStart = performance.now();
                         this.match.draw();
                         this.debugPerf.drawMs = performance.now() - drawStart;
-                        this.player.camera.update(this.player); // Update the camera
                         
                         // Draw sync debug overlay
                         if (typeof syncDebug !== 'undefined' && syncDebug.enabled) {
-                            syncDebug.draw(ctx, this.player.camera);
+                            const syncCtx = (typeof hudCtx !== 'undefined' && hudCtx) ? hudCtx : ctx;
+                            syncDebug.draw(syncCtx, this.player.camera);
                         }
                     }
                 } else {

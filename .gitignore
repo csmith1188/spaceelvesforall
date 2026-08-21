@@ -5,3 +5,4 @@ data/database.db
 sessions
 .clinic
 node_trace*.log
+data/sessions.db

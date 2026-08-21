@@ -530,6 +530,7 @@
             if (this.stage === 'awaitPlayers') {
                 if (this.map) {
                     this.map.draw();
+                    if (typeof clearHudCanvas === 'function') clearHudCanvas();
                 } else {
                     super.draw();
                 }
@@ -537,6 +538,7 @@
                 super.draw();
             }
 
+            const drawOverlays = () => {
             // --- Ready panel: waiting for first jump to start or post-restart gate. ---
             if (this.stage === 'awaitPlayers' || this.stage === 'awaitReady') {
                 const panelW = 520;
@@ -630,6 +632,13 @@
             if (this.menu && game.paused) {
                 this.menu.step();
                 this.menu.draw();
+            }
+            };
+
+            if (typeof withHudContext === 'function') {
+                withHudContext(drawOverlays);
+            } else {
+                drawOverlays();
             }
         }
     }

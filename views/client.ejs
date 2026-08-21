@@ -20,7 +20,13 @@
 </head>
 
 <body>
-  <canvas width=900 height=600 id="game-canvas">Your browser needs to be able to render an HTML5 Canvas</canvas>
+  <div id="game-stage">
+    <div id="ground-layer">
+      <div id="ground-world"></div>
+    </div>
+    <canvas width=900 height=600 id="game-canvas">Your browser needs to be able to render an HTML5 Canvas</canvas>
+    <canvas width=900 height=600 id="hud-canvas"></canvas>
+  </div>
   <div id="debugger">
     Enable Debug
     <input type="checkbox" onchange="game.debug = this.checked;">
@@ -70,40 +76,89 @@
 <script src="engine/game/game.js"></script>
 
 <script>
-  // Get canvas and context
+  // Entity canvas (transparent over CSS ground) + HUD. Ground tiles are DOM-composited.
+  var gameStage = document.getElementById('game-stage');
+  var groundLayer = document.getElementById('ground-layer');
+  var groundWorld = document.getElementById('ground-world');
   var canvas = document.getElementById('game-canvas');
-  var ctx = canvas.getContext('2d');
+  // Entity overlay must stay alpha:true so the transformed ground shows through.
+  // Avoid desynchronized on the on-screen canvases — it can fail to present over DOM layers.
+  var ctx = canvas.getContext('2d', { alpha: true }) || canvas.getContext('2d');
+  var hudCanvas = document.getElementById('hud-canvas');
+  var hudCtx = hudCanvas.getContext('2d', { alpha: true }) || hudCanvas.getContext('2d');
 
   var game = new Game({
     client: true
   });
 
+  // Fixed internal resolution; CSS-scaled to fit the window (contain).
+  const RENDER_W = 1280;
+  const RENDER_H = 720;
+
+  function applyCanvasSize(target, bufferW, bufferH) {
+    if (target.width !== bufferW || target.height !== bufferH) {
+      target.width = bufferW;
+      target.height = bufferH;
+    }
+    // CSS size matches buffer; stage transform does the window fit-upscale.
+    target.style.width = `${bufferW}px`;
+    target.style.height = `${bufferH}px`;
+  }
+
   function applyCanvasResize() {
     const windowW = window.innerWidth;
     const windowH = window.innerHeight;
-    const renderW = Math.min(windowW, 1920);
-    const renderH = Math.min(windowH, 1080);
-    if (canvas.width !== renderW || canvas.height !== renderH) {
-      canvas.width = renderW;
-      canvas.height = renderH;
+    const fitScale = Math.min(windowW / RENDER_W, windowH / RENDER_H);
+    const displayW = RENDER_W * fitScale;
+    const displayH = RENDER_H * fitScale;
+
+    if (gameStage) {
+      gameStage.style.width = `${RENDER_W}px`;
+      gameStage.style.height = `${RENDER_H}px`;
+      gameStage.style.transform = `scale(${fitScale})`;
+      gameStage.style.transformOrigin = 'center center';
     }
-    canvas.style.width = `${renderW}px`;
-    canvas.style.height = `${renderH}px`;
+    applyCanvasSize(canvas, RENDER_W, RENDER_H);
+    applyCanvasSize(hudCanvas, RENDER_W, RENDER_H);
+
     game.browserWindow.w = windowW;
     game.browserWindow.h = windowH;
-    game.renderOffset.x = Math.max(0, (windowW - renderW) / 2);
-    game.renderOffset.y = Math.max(0, (windowH - renderH) / 2);
-    game.window.w = renderW;
-    game.window.h = renderH;
-    game.gameView.w = renderW;
-    game.gameView.h = renderH;
+    game.renderOffset.x = Math.max(0, (windowW - displayW) / 2);
+    game.renderOffset.y = Math.max(0, (windowH - displayH) / 2);
+    game.display.w = displayW;
+    game.display.h = displayH;
+    game.renderScale = fitScale;
+    game.window.w = RENDER_W;
+    game.window.h = RENDER_H;
+    game.gameView.w = RENDER_W;
+    game.gameView.h = RENDER_H;
     if (game.player) {
-      game.player.camera.radius = Math.sqrt((renderW / 2) ** 2 + (renderH / 2) ** 2);
+      game.player.camera.radius = Math.sqrt((RENDER_W / 2) ** 2 + (RENDER_H / 2) ** 2);
     }
   }
 
   applyCanvasResize();
   window.addEventListener('resize', applyCanvasResize);
+
+  /** Run draw code on the HUD canvas context (falls back to world ctx). */
+  function withHudContext(drawFn) {
+    if (typeof hudCtx === 'undefined' || !hudCtx) {
+      drawFn();
+      return;
+    }
+    const prev = ctx;
+    ctx = hudCtx;
+    try {
+      drawFn();
+    } finally {
+      ctx = prev;
+    }
+  }
+
+  function clearHudCanvas() {
+    if (typeof hudCtx === 'undefined' || !hudCtx) return;
+    hudCtx.clearRect(0, 0, hudCanvas.width, hudCanvas.height);
+  }
 
   let accumulator = 0;
   let lastFrameTime = performance.now();

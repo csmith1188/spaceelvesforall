@@ -629,6 +629,7 @@
             if (this.stage === 'awaitPlayers') {
                 if (this.map) {
                     this.map.draw();
+                    if (typeof clearHudCanvas === 'function') clearHudCanvas();
                 } else {
                     super.draw();
                 }
@@ -636,6 +637,7 @@
                 super.draw();
             }
 
+            const drawOverlays = () => {
             // While on result stages, if this client has readied, show the ready panel instead of the dimmed banner.
             const localReadyFromResult = (this.stage === 'roundResult' || this.stage === 'matchResult') && (typeof window !== 'undefined' && game.player && game.player.token && game.player.token.id && !!this.playerReady[game.player.token.id]);
 
@@ -742,6 +744,13 @@
             if (this.menu && game.paused) {
                 this.menu.step();
                 this.menu.draw();
+            }
+            };
+
+            if (typeof withHudContext === 'function') {
+                withHudContext(drawOverlays);
+            } else {
+                drawOverlays();
             }
         }
     }
