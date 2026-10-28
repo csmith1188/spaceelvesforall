@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <%- include("pwa-head") %>
+  <title>Space Elves</title>
+  <link rel="stylesheet" href="/css/landing.css?v=<%= assetVersion %>">
+</head>
+<body>
+  <div class="page">
+    <%- include("header") %>
+    <% if (notice) { %>
+      <p class="notice" role="status"><%= notice %></p>
+    <% } %>
+    <section>
+      <ul class="list">
+        <li class="card patch">
+          <h1 id="titleHeader">Space Elves Beta</h1>
+          <figure class="landing-quote">
+            <blockquote>There is nothing in the world more powerful than 100,000 men standing in a line shooting the same target.</blockquote>
+            <figcaption>— The Greatest General in History</figcaption>
+          </figure>
+          <figure class="landing-quote">
+            <blockquote>There is nothing in the world more difficult than getting 100,000 men to stand in a line and shoot the same target.</blockquote>
+            <figcaption>— The Greatest General in History</figcaption>
+          </figure>
+          <h2>Gameplay</h2>
+          <p>Space Elves is a side-view duel. For Honor is a best-of-three fight. For Ever is a co-op run for up to four players.</p>
+          <p><a href="/games">You can play right now.</a> Bot and random matches do not need an account. Ranked search and custom lobbies need a verified login. Finished matches do not spend tickets or change rank yet.</p>
+          <h2>Community</h2>
+          <p>If something breaks or feels confusing, use Suggest. The <a href="/rules">Manual</a> covers login, the games list, For Honor, For Ever, and tickets.</p>
+          <p>Purchased tickets can still fund the War Effort when they are spent on the site. Match play does not spend them.</p>
+          <div id="socials">
+            <a href="https://discord.gg/GWVQDyPyH3"><img class="social_icon" src="/img/socials/discord_white.svg" alt=""></a>
+            <a href="https://www.reddit.com/r/MenOfTheLine/"><img class="social_icon" src="/img/socials/reddit_white.svg" alt=""></a>
+            <a href="https://www.youtube.com/@MenOfTheLine"><img class="social_icon" src="/img/socials/youtube_white.svg" alt=""></a>
+            <a href="https://www.instagram.com/menofthelinegame/"><img class="social_icon" src="/img/socials/instagram_white.svg" alt=""></a>
+            <a href="https://x.com/MenOfTheLine"><img class="social_icon" src="/img/socials/twitter_white.svg" alt=""></a>
+          </div>
+        </li>
+      </ul>
+    </section>
+    <section>
+      <a id="top"></a>
+      <h2>News</h2>
+      <% if (!news.length) { %>
+        <p class="hint">No news yet.</p>
+      <% } else { %>
+        <ul class="list" id="news-list">
+          <% news.forEach(function (item) { %>
+            <li class="card patch news-item">
+              <%- newsWebsiteHtml(item) %>
+            </li>
+          <% }) %>
+        </ul>
+        <% if (news.length > 5) { %>
+          <div class="news-pager" id="news-pager" hidden>
+            <a href="#top" class="news-pager-btn" id="news-prev" aria-label="Newer news">Newer</a>
+            <p class="hint" id="news-page-label" aria-live="polite"></p>
+            <a href="#top" class="news-pager-btn" id="news-next" aria-label="Older news">Older</a>
+          </div>
+        <% } %>
+      <% } %>
+    </section>
+  </div>
+  <%- include("suggestion-modal", { nextPath: "/" }) %>
+  <script>
+    (function () {
+      const PAGE = 5;
+      const items = Array.prototype.slice.call(document.querySelectorAll("#news-list .news-item"));
+      const pager = document.getElementById("news-pager");
+      if (!pager || items.length <= PAGE) return;
+      const prev = document.getElementById("news-prev");
+      const next = document.getElementById("news-next");
+      const label = document.getElementById("news-page-label");
+      const pages = Math.ceil(items.length / PAGE);
+      let page = 0;
+
+      function show() {
+        const start = page * PAGE;
+        const end = start + PAGE;
+        for (let i = 0; i < items.length; i += 1) {
+          items[i].hidden = i < start || i >= end;
+        }
+        label.textContent = (page + 1) + " / " + pages;
+        prev.disabled = page <= 0;
+        next.disabled = page >= pages - 1;
+        pager.hidden = false;
+      }
+
+      prev.addEventListener("click", function () {
+        if (page <= 0) return;
+        page -= 1;
+        show();
+      });
+      next.addEventListener("click", function () {
+        if (page >= pages - 1) return;
+        page += 1;
+        show();
+      });
+      show();
+    })();
+  </script>
+</body>
+</html>

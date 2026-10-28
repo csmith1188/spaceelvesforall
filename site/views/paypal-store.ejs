@@ -1,0 +1,40 @@
+<% const history = typeof paypalPurchases !== "undefined" && paypalPurchases ? paypalPurchases : []; %>
+<% const defaultPack = typeof buyPackages !== "undefined" && buyPackages && buyPackages[0] ? buyPackages[0] : null; %>
+<div
+  id="paypal-store"
+  class="paypal-store"
+  data-client-id="<%= paypalClientId %>"
+  data-mode="<%= paypalMode %>"
+  data-csrf="<%= csrfToken %>"
+  data-default-package="<%= defaultPack ? defaultPack.id : "pack_5" %>"
+>
+  <p class="hint">Pay with PayPal, Pay Later, or a debit/credit card. Tickets are added after payment is confirmed.</p>
+  <div class="paypal-buttons" id="paypal-buttons"></div>
+  <p class="paypal-status hint" id="paypal-status" role="status" aria-live="polite"></p>
+  <% if (history.length) { %>
+    <h3>Purchase history</h3>
+    <table class="paypal-history">
+      <thead>
+        <tr>
+          <th>When</th>
+          <th>Package</th>
+          <th>Amount</th>
+          <th>Tickets</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% history.forEach(function (row) { %>
+          <tr>
+            <td><%= new Date(row.created_at).toLocaleString() %></td>
+            <td><%= row.package_id %></td>
+            <td>$<%= row.amount_value %> <%= row.currency %></td>
+            <td><%= row.tickets %></td>
+            <td><%= row.status %><% if (row.clawback_shortfall) { %> (shortfall <%= row.clawback_shortfall %>)<% } %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+<script type="module" src="/js/paypalBuy.js?v=<%= assetVersion %>"></script>

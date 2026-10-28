@@ -15,6 +15,11 @@
   <link rel="icon" type="image/png" sizes="32x32" href="img/icons//favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="img/icons/favicon-32x32.png">
   <link rel="stylesheet" href="styles/game.css">
+  <style>
+    #site-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px; background: #111; color: #eee; }
+    #site-chat-log { list-style: none; margin: 0; padding: 0; max-height: 6em; overflow: auto; flex: 1 1 100%; }
+    #site-chat-input { min-width: 12em; }
+  </style>
 
 
 </head>
@@ -28,6 +33,16 @@
       <canvas width=1280 height=720 id="game-canvas">Your browser needs to be able to render an HTML5 Canvas</canvas>
       <canvas width=1280 height=720 id="hud-canvas"></canvas>
     </div>
+  </div>
+  <div id="site-bar">
+    <span id="site-status">Connecting…</span>
+    <button type="button" id="site-pause">Pause</button>
+    <button type="button" id="site-concede">Concede</button>
+    <button type="button" id="site-report">Report</button>
+    <form id="site-chat-form">
+      <input id="site-chat-input" maxlength="200" placeholder="Chat" autocomplete="off">
+    </form>
+    <ul id="site-chat-log"></ul>
   </div>
   <div id="debugger">
     Enable Debug
@@ -52,6 +67,8 @@
   var MASTER_PORT = <%- JSON.stringify(MASTER_PORT) %>;
   var masterUrl = <%- JSON.stringify(masterUrl) %>;
   var GAME_WS_PATH = <%- JSON.stringify(typeof gameWsPath !== 'undefined' ? gameWsPath : null) %>;
+  var RETURN_URL = <%- JSON.stringify(typeof returnUrl !== 'undefined' ? returnUrl : null) %>;
+  var SITE_ORIGIN = <%- JSON.stringify(typeof masterUrl !== 'undefined' ? masterUrl : '') %>;
   var client = true;
 </script>
 
@@ -77,5 +94,7 @@
 <script src="engine/socket_client.js"></script>
 <script src="engine/game/game.js"></script>
 <script src="engine/game/client_boot.js"></script>
+<script src="<%= (typeof masterUrl !== 'undefined' ? masterUrl : '') %>/socket.io/socket.io.js"></script>
+<script src="/js/matchBar.js"></script>
 
 </html>

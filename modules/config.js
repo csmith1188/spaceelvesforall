@@ -119,11 +119,49 @@ const AUTH_BASE = formbarHttpBase();
 const AUTH_HOST = normalizeHostname(AUTH_BASE);
 const AUTH_PROTOCOL = extractProtocol(AUTH_BASE);
 
-const SESSION_SECRET = process.env.SESSION_SECRET || process.env.SS_SECRET || 'secret';
+const SESSION_SECRET = process.env.SESSION_SECRET || process.env.SS_SECRET || "";
+const DEV_SESSION_SECRET = "space-elves-local";
+
+function sessionSecret() {
+    if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test" || process.env.NODE_TEST_CONTEXT) {
+        return SESSION_SECRET || DEV_SESSION_SECRET;
+    }
+    return SESSION_SECRET || DEV_SESSION_SECRET;
+}
+
+function sessionCookieSecure() {
+    const raw = String(process.env.THIS_URL || "");
+    return raw.startsWith("https:");
+}
+
+const sessionStore = new SQLiteStore({
+    db: "spaceelves.sqlite",
+    dir: "./data",
+    concurrentDb: true,
+});
+if (sessionStore.db && sessionStore.db.configure) {
+    sessionStore.db.configure("busyTimeout", 5000);
+}
+const sessionMiddleware = session({
+    store: sessionStore,
+    secret: sessionSecret(),
+    resave: false,
+    saveUninitialized: false,
+    rolling: true,
+    name: "elves.sid",
+    cookie: {
+        secure: sessionCookieSecure(),
+        httpOnly: true,
+        sameSite: "lax",
+        maxAge: 14 * 24 * 60 * 60 * 1000,
+    },
+});
 const API_KEY = (process.env.API_KEY || '').trim();
 
 /** Path segment for path-based game URLs (e.g. gs → https://host/gs/<port>/). Empty = use :port in browser. */
-const gamePublicPrefix = (process.env.GAME_PUBLIC_PREFIX || '').trim().replace(/^\/+|\/+$/g, '');
+const gamePublicPrefix = String(process.env.GAME_PUBLIC_PREFIX == null ? "gs" : process.env.GAME_PUBLIC_PREFIX)
+    .trim()
+    .replace(/^\/+|\/+$/g, "");
 
 /**
  * Public HTTP URL for a spawned game process (lobby links and redirects).
@@ -173,17 +211,5 @@ module.exports = {
     EMAIL_HOST: process.env.EMAIL_HOST,
     EMAIL_USER: process.env.EMAIL_USER,
     EMAIL_PASS: process.env.EMAIL_PASS,
-    // create a session middleware with a secret key using in memory store
-    sessionMiddleware: session({
-        store: new SQLiteStore({ db: 'sessions.db', dir: './data' }),
-        secret: SESSION_SECRET,
-        resave: false,
-        saveUninitialized: false,
-        cookie: {
-            secure: process.env.NODE_ENV === 'production',
-            httpOnly: true,
-            sameSite: 'Lax',
-            maxAge: 24 * 60 * 60 * 1000 // 24 hours
-        }
-    })
+    sessionMiddleware,
 };

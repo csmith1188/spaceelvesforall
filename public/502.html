@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#121821">
+  <title>Bad gateway · Space Elves</title>
+  <style>:root {
+  --ink: #121821;
+  --panel: #1d2836;
+  --line: #314257;
+  --text: #e7eef6;
+  --gold: #e8c36a;
+  --font-header: "Palatino Linotype", Palatino, "Times New Roman", serif;
+  --font-text: Georgia, "Times New Roman", serif;
+  --font-ui: "Trebuchet MS", "Lucida Sans Unicode", "Lucida Grande", "Lucida Sans", Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(1200px 500px at 50% -10%, #24344a 0%, transparent 55%),
+    var(--ink);
+  color: var(--text);
+  font-family: var(--font-text);
+}
+
+body {
+  overflow-x: hidden;
+  overflow-y: auto;
+  touch-action: manipulation;
+}
+
+h2,
+.brand {
+  font-family: var(--font-header);
+}
+
+.page {
+  width: min(40rem, 100%);
+  margin: 0 auto;
+  padding:
+    max(16px, env(safe-area-inset-top))
+    max(16px, env(safe-area-inset-right))
+    max(32px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.top {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.brand {
+  color: var(--text);
+  font-weight: bold;
+  font-size: 1.8rem;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  margin: auto;
+  text-align: center;
+}
+
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+}
+
+nav a,
+nav a:visited {
+  font-family: var(--font-ui);
+  color: var(--gold);
+  text-decoration: none;
+}
+
+nav a:hover,
+nav a:visited:hover {
+  color: #b7c3d1;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.site-nav {
+  width: 100%;
+  aspect-ratio: 890 / 134;
+  margin: auto;
+  padding: 0 12%;
+  justify-content: center;
+  align-items: center;
+  align-content: center;
+  background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==") center / 100% 100% no-repeat;
+  border-bottom: none;
+}
+
+.hint {
+  margin: 0;
+  color: #b7c3d1;
+}
+
+.error-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.error-code {
+  margin: 0;
+  font-family: var(--font-header);
+  font-size: 3rem;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: #6b7c90;
+}
+
+.error-panel h2 {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
+}
+
+.action {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 10rem;
+  min-height: 48px;
+  padding: 12px 16px;
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  background: #3a3120;
+  color: var(--gold);
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.action:hover {
+  background: #4a4232;
+}
+</style>
+</head>
+<body>
+  <div class="page">
+    <header class="top">
+      <a class="brand" href="/">Space Elves</a>
+      <nav class="site-nav" aria-label="Site">
+        <a href="/"> [ Home ]</a>
+        <a href="/games"> [ Games ]</a>
+        <a href="/scores"> [ Ranks ]</a>
+        <a href="/rules"> [ Manual ]</a>
+      </nav>
+    </header>
+
+    <section class="error-panel" aria-labelledby="error-title">
+      <p class="error-code" aria-hidden="true">502</p>
+      <h2 id="error-title">Bad gateway</h2>
+      <p class="hint">The game server is temporarily unreachable. Try again in a moment.</p>
+      <p class="error-actions">
+        <button type="button" class="action" id="retry">Try again</button>
+        <a class="action" href="/">Back home</a>
+      </p>
+    </section>
+  </div>
+  <script>document.getElementById("retry")?.addEventListener("click", function () {
+  location.reload();
+});</script>
+</body>
+</html>

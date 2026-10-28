@@ -26,6 +26,13 @@ const gameWsUrl =
         ? `${wsProtocol}//${window.location.host}${GAME_WS_PATH}`
         : `${wsProtocol}//${window.location.hostname}:${PORT}/game`;
 const gameWSS = new WebSocket(gameWsUrl);
+gameWSS.addEventListener('close', () => {
+    if (typeof RETURN_URL === 'string' && RETURN_URL) {
+        window.setTimeout(() => {
+            window.location = RETURN_URL;
+        }, 400);
+    }
+});
 
 /** Early WS payloads (players / newMatch) can arrive before client_boot creates `game`. */
 const pendingGameMessages = [];

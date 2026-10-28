@@ -280,7 +280,7 @@
 
             // Server: eject disconnected players (incl. spectators) before match logic.
             if (typeof window === 'undefined') {
-                this._disconnectPurgeHappened = this.purgeDisconnectedPlayersPastGrace();
+                this._disconnectPurgeHappened = this.purgeDisconnectedPlayersPastGrace(this.disconnectGraceMs || 10000);
             }
 
             // Update network statistics

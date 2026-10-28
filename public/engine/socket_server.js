@@ -13,21 +13,35 @@ function gameHandler(ws, req) {
     console.info(`Game Client connected, ${new Date()}`);
 
     // if the client does not have a token, close the connection
-    if (!req.session.token) {
-        console.error('No token found');
-        ws.send(JSON.stringify({ debug: 'You are not authorized.' }));
-        ws.close();
-        return;
-    }
+        if (!req.session || !req.session.player || !req.session.player.id) {
+            console.error('No player session found');
+            ws.send(JSON.stringify({ debug: 'You are not authorized.' }));
+            ws.close();
+            return;
+        }
 
-    // set the token for the websocket
-    ws.token = req.session.token;
+        ws.token = {
+            id: req.session.player.id,
+            displayName: req.session.player.displayName || 'Player',
+        };
+
+        const matchId = process.env.MATCH_ID || '';
+        const allowed = String(process.env.SEAT_IDS || '')
+            .split(',')
+            .map((id) => id.trim())
+            .filter(Boolean);
+        if (matchId && allowed.length && !allowed.includes(String(ws.token.id))) {
+            console.error('Player is not seated in this match', ws.token.displayName);
+            ws.send(JSON.stringify({ debug: 'You are not authorized.' }));
+            ws.close();
+            return;
+        }
 
     let findPlayer = game.players.find(player => player.token.id === ws.token.id);
     if (!findPlayer) {
         console.info('Player not found. Creating new player', ws.token.displayName);
         let spectator = false;
-        if (game.match) {
+        if (!matchId && game.match) {
             const activePlayers = game.players.filter(player => !player.spectator).length;
             if (activePlayers >= game.match.playerLimit.max) {
                 spectator = true;

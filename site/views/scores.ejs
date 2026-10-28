@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <%- include("pwa-head") %>
+  <title>Ranked Officers · Space Elves</title>
+  <link rel="stylesheet" href="/css/landing.css?v=<%= assetVersion %>">
+</head>
+<body>
+  <div class="page">
+    <%- include("header") %>
+    <% if (notice) { %>
+      <p class="notice" role="status"><%= notice %></p>
+    <% } %>
+
+    <section>
+      <h2>Ranked officers</h2>
+      <% if (!leaders.length) { %>
+        <p class="hint">No eligible ranked officers yet.</p>
+      <% } else { %>
+        <ol class="scores officer-scores">
+          <% leaders.forEach(function (row) { %>
+            <li>
+              <span class="rank-insignia rank-<%= row.officer_rank || 'ensign' %>" aria-hidden="true"></span>
+              <a href="/profile/<%= row.id %>"><%= row.name %></a>
+              <span class="officer-meta"><%= row.officerRankLabel %> · <%= row.mmr %> MMR</span>
+            </li>
+          <% }) %>
+        </ol>
+      <% } %>
+    </section>
+  </div>
+  <%- include("suggestion-modal", { nextPath: "/scores" }) %>
+</body>
+</html>

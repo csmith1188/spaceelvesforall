@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <%- include("../pwa-head") %>
+  <title>Referrals · Admin</title>
+  <link rel="stylesheet" href="/css/landing.css?v=<%= assetVersion %>">
+  <link rel="stylesheet" href="/css/admin.css?v=<%= assetVersion %>">
+</head>
+<body>
+  <div class="page">
+    <%- include("../header") %>
+    <% if (notice) { %><p class="notice" role="status"><%= notice %></p><% } %>
+    <%- include("_nav") %>
+    <section>
+      <h2>Referral Management</h2>
+      <div class="admin-panel">
+        <h3>Dashboard</h3>
+        <ul>
+          <li>Total referrals: <%= stats.relationships %></li>
+          <li>Verified: <%= stats.verified %> (<%= Math.round(stats.verificationRate * 100) %>%)</li>
+          <li>Purchasing: <%= stats.purchased %> (<%= Math.round(stats.purchaseRate * 100) %>%)</li>
+          <li>Pending tickets: <%= stats.pendingTickets %></li>
+          <li>Held (review) tickets: <%= stats.heldTickets %> · <%= stats.reviewCount %> rewards</li>
+          <li>Released tickets: <%= stats.releasedTickets %></li>
+          <li>Attributed PayPal revenue: $<%= (stats.attributedRevenueCents / 100).toFixed(2) %></li>
+        </ul>
+      </div>
+
+      <div class="admin-panel">
+        <h3>Search</h3>
+        <form method="get" action="/admin/referrals">
+          <input type="search" name="q" value="<%= search.q || (typeof q !== 'undefined' ? q : '') %>" placeholder="Name, id, code, order…">
+          <label>
+            <select name="status">
+              <option value="">All</option>
+              <option value="review" <%= (typeof status !== 'undefined' && status === 'review') || (search && search.status === 'review') ? 'selected' : '' %>>Needs review</option>
+            </select>
+          </label>
+          <button type="submit" class="action">Search</button>
+        </form>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Referrer</th>
+                <th>Referee</th>
+                <th>Code</th>
+                <th>Verified</th>
+                <th>Purchased</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% (search.rows || []).forEach(function (row) { %>
+                <tr>
+                  <td><%= row.id %></td>
+                  <td><a href="/admin/users/<%= row.referrer_account_id %>"><%= row.referrer_name || row.referrer_account_id %></a></td>
+                  <td><a href="/admin/users/<%= row.referee_account_id %>"><%= row.referee_name || row.referee_account_id %></a></td>
+                  <td><code><%= row.code %></code></td>
+                  <td><%= row.verified_at ? "yes" : "no" %></td>
+                  <td><%= row.purchased_at ? "yes" : "no" %></td>
+                  <td><a href="/admin/referrals/<%= row.id %>">Open</a></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="admin-panel">
+        <h3>Settings</h3>
+        <form method="post" action="/admin/referrals/config">
+          <%- include("../csrf-field") %>
+          <label><input type="checkbox" name="enabled" value="1" <%= config.enabled ? "checked" : "" %>> Program enabled</label>
+          <label>Verify tickets <input name="verifyTickets" type="number" value="<%= config.verifyTickets %>"></label>
+          <label>Purchase tickets <input name="purchaseTickets" type="number" value="<%= config.purchaseTickets %>"></label>
+          <label>Min purchase cents <input name="minPurchaseCents" type="number" value="<%= config.minPurchaseCents %>"></label>
+          <label>Hold days <input name="holdDays" type="number" value="<%= config.holdDays %>"></label>
+          <label>Elevated hold days <input name="elevatedHoldDays" type="number" value="<%= config.elevatedHoldDays %>"></label>
+          <label>Risk shared browser <input name="riskSharedBrowser" type="number" value="<%= config.riskSharedBrowser %>"></label>
+          <label>Risk rapid signup <input name="riskRapidSignup" type="number" value="<%= config.riskRapidSignup %>"></label>
+          <label>Risk shared payer <input name="riskSharedPayer" type="number" value="<%= config.riskSharedPayer %>"></label>
+          <label>Risk disposable email <input name="riskDisposableEmail" type="number" value="<%= config.riskDisposableEmail %>"></label>
+          <label>Elevated min <input name="riskElevatedMin" type="number" value="<%= config.riskElevatedMin %>"></label>
+          <label>High min <input name="riskHighMin" type="number" value="<%= config.riskHighMin %>"></label>
+          <label>Rapid window ms <input name="rapidWindowMs" type="number" value="<%= config.rapidWindowMs %>"></label>
+          <label>Rapid browser max <input name="rapidBrowserMax" type="number" value="<%= config.rapidBrowserMax %>"></label>
+          <label>Rapid IP max <input name="rapidIpMax" type="number" value="<%= config.rapidIpMax %>"></label>
+          <label>Rapid network max <input name="rapidNetworkMax" type="number" value="<%= config.rapidNetworkMax %>"></label>
+          <label>Signup cooldown ms <input name="signupCooldownMs" type="number" value="<%= config.signupCooldownMs %>"></label>
+          <label>Captcha after <input name="signupCaptchaAfter" type="number" value="<%= config.signupCaptchaAfter %>"></label>
+          <label>Restrict after <input name="signupRestrictAfter" type="number" value="<%= config.signupRestrictAfter %>"></label>
+          <label>Restrict ms <input name="signupRestrictMs" type="number" value="<%= config.signupRestrictMs %>"></label>
+          <label>Extra disposable domains
+            <textarea name="disposableDomains" rows="3"><%= (config.disposableDomains || []).join(", ") %></textarea>
+          </label>
+          <button type="submit" class="action">Save settings</button>
+        </form>
+      </div>
+
+      <div class="admin-panel">
+        <h3>Set vanity code</h3>
+        <form method="post" action="/admin/referrals/vanity">
+          <%- include("../csrf-field") %>
+          <label>Account id <input name="accountId" type="number" required></label>
+          <label>Vanity <input name="vanity" type="text" maxlength="24"></label>
+          <label>Reason <input name="reason" type="text"></label>
+          <label><input type="checkbox" name="confirm" value="1"> Confirm</label>
+          <button type="submit" class="action">Save vanity</button>
+        </form>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

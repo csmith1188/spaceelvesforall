@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <%- include("../pwa-head") %>
+  <title>Security · Admin</title>
+  <link rel="stylesheet" href="/css/landing.css?v=<%= assetVersion %>">
+  <link rel="stylesheet" href="/css/admin.css?v=<%= assetVersion %>">
+</head>
+<body>
+  <div class="page">
+    <%- include("../header") %>
+    <% if (notice) { %><p class="notice" role="status"><%= notice %></p><% } %>
+    <%- include("_nav") %>
+    <section>
+      <h2>Security</h2>
+      <p class="hint">
+        <a href="/admin/security/events">Event explorer</a>
+        · <a href="/admin/security/ip">IP activity</a>
+        · <a href="/admin/security/errors">Application errors</a>
+      </p>
+
+      <% const c = overview.counts; %>
+      <div class="admin-panel">
+        <h3>Last 24 hours</h3>
+        <dl class="stats">
+          <div><dt>Events</dt><dd><%= c.h24.total %></dd></div>
+          <div><dt>Scanner</dt><dd><%= c.h24.scanner %></dd></div>
+          <div><dt>Auth fails</dt><dd><%= c.h24.authFails %> <span class="admin-muted">(login table <%= c.h24.loginFails %>)</span></dd></div>
+          <div><dt>CSRF fails</dt><dd><%= c.h24.csrfFails %></dd></div>
+          <div><dt>Rate limited</dt><dd><%= c.h24.rateLimited %></dd></div>
+          <div><dt>Unauthorized</dt><dd><%= c.h24.unauthorized %></dd></div>
+        </dl>
+      </div>
+
+      <div class="admin-panel">
+        <h3>7 days / 30 days</h3>
+        <dl class="stats">
+          <div><dt>7d events</dt><dd><%= c.d7.total %></dd></div>
+          <div><dt>7d scanner</dt><dd><%= c.d7.scanner %></dd></div>
+          <div><dt>7d auth fails</dt><dd><%= c.d7.authFails %></dd></div>
+          <div><dt>30d events</dt><dd><%= c.d30.total %></dd></div>
+          <div><dt>30d scanner</dt><dd><%= c.d30.scanner %></dd></div>
+          <div><dt>30d auth fails</dt><dd><%= c.d30.authFails %></dd></div>
+        </dl>
+      </div>
+
+      <% if (overview.hourly && overview.hourly.length) { %>
+        <div class="admin-panel">
+          <h3>Hourly trend (30d aggregates)</h3>
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Hour (UTC)</th>
+                <th>Auth</th>
+                <th>CSRF</th>
+                <th>Rate</th>
+                <th>Scanner</th>
+                <th>Unauth</th>
+                <th>Other</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% overview.hourly.slice(-48).forEach(function (row) { %>
+                <tr>
+                  <td class="admin-mono"><%= new Date(row.hour_ts).toISOString().slice(0, 13) %>Z</td>
+                  <td><%= row.auth_fail || 0 %></td>
+                  <td><%= row.csrf_fail || 0 %></td>
+                  <td><%= row.rate_limited || 0 %></td>
+                  <td><%= row.scanner || 0 %></td>
+                  <td><%= row.unauthorized || 0 %></td>
+                  <td><%= row.other || 0 %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <p class="hint">No hourly security aggregates yet.</p>
+      <% } %>
+
+      <% if (simulateEnabled) { %>
+        <form method="post" action="/admin/security/simulate" class="admin-panel">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <h3>Dev simulation</h3>
+          <p class="hint">SECURITY_SIMULATE is on (non-production). Posts synthetic probe/auth events.</p>
+          <button type="submit">Simulate suspicious traffic</button>
+        </form>
+      <% } %>
+    </section>
+  </div>
+</body>
+</html>

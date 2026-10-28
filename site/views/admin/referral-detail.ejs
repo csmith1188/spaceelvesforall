@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <%- include("../pwa-head") %>
+  <title>Referral #<%= relationship.id %> · Admin</title>
+  <link rel="stylesheet" href="/css/landing.css?v=<%= assetVersion %>">
+  <link rel="stylesheet" href="/css/admin.css?v=<%= assetVersion %>">
+</head>
+<body>
+  <div class="page">
+    <%- include("../header") %>
+    <% if (notice) { %><p class="notice" role="status"><%= notice %></p><% } %>
+    <%- include("_nav") %>
+    <section>
+      <h2>Referral #<%= relationship.id %></h2>
+      <p>
+        Referrer:
+        <a href="/admin/users/<%= relationship.referrer_account_id %>">
+          <%= referrer ? referrer.name : relationship.referrer_account_id %>
+        </a>
+        · Referee:
+        <a href="/admin/users/<%= relationship.referee_account_id %>">
+          <%= referee ? referee.name : relationship.referee_account_id %>
+        </a>
+        · Code <code><%= relationship.code %></code>
+      </p>
+      <ul>
+        <li>Created: <%= new Date(relationship.created_at).toISOString() %></li>
+        <li>Verified: <%= relationship.verified_at ? new Date(relationship.verified_at).toISOString() : "—" %></li>
+        <li>Purchased: <%= relationship.purchased_at ? new Date(relationship.purchased_at).toISOString() : "—" %></li>
+        <li>Qualifying purchase id: <%= relationship.qualifying_purchase_id || "—" %></li>
+      </ul>
+
+      <% if (signup) { %>
+        <h3>Signup signals</h3>
+        <ul>
+          <li>Browser id present: <%= signup.browser_id ? "yes" : "no" %></li>
+          <li>Network: <%= signup.network || "—" %></li>
+          <li>IP retained: <%= signup.ip ? "yes" : "no" %></li>
+        </ul>
+      <% } %>
+
+      <h3>Evidence</h3>
+      <% if (!evidence || !evidence.length) { %>
+        <p class="hint">No stored risk signals.</p>
+      <% } else { %>
+        <ul>
+          <% evidence.forEach(function (e) { %>
+            <li><code><%= e.signal %></code> · <%= e.score %> pts · related <%= e.related_account_ids %></li>
+          <% }) %>
+        </ul>
+      <% } %>
+
+      <form method="post" action="/admin/referrals/<%= relationship.id %>/recalculate">
+        <%- include("../csrf-field") %>
+        <button type="submit" class="action">Recalculate risk</button>
+      </form>
+
+      <h3>Rewards</h3>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Role</th>
+              <th>Milestone</th>
+              <th>Tickets</th>
+              <th>Status</th>
+              <th>Risk</th>
+              <th>Release</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% (rewards || []).forEach(function (r) { %>
+              <tr>
+                <td><%= r.id %></td>
+                <td><%= r.role %></td>
+                <td><%= r.milestone %></td>
+                <td><%= r.tickets %></td>
+                <td><%= r.status %></td>
+                <td><%= r.risk_score %> / <%= r.risk_class %></td>
+                <td><%= r.release_at ? new Date(r.release_at).toISOString().slice(0, 10) : "—" %></td>
+                <td>
+                  <% if (r.status === 'pending' || r.status === 'extended' || r.status === 'review') { %>
+                    <form method="post" action="/admin/referrals/rewards/<%= r.id %>/approve" style="display:inline">
+                      <%- include("../csrf-field") %>
+                      <input type="hidden" name="confirm" value="1">
+                      <input type="hidden" name="next" value="/admin/referrals/<%= relationship.id %>">
+                      <input type="text" name="reason" placeholder="reason" required>
+                      <button type="submit">Approve</button>
+                    </form>
+                    <form method="post" action="/admin/referrals/rewards/<%= r.id %>/reject" style="display:inline">
+                      <%- include("../csrf-field") %>
+                      <input type="hidden" name="confirm" value="1">
+                      <input type="hidden" name="next" value="/admin/referrals/<%= relationship.id %>">
+                      <input type="text" name="reason" placeholder="reason" required>
+                      <button type="submit">Reject</button>
+                    </form>
+                    <form method="post" action="/admin/referrals/rewards/<%= r.id %>/extend" style="display:inline">
+                      <%- include("../csrf-field") %>
+                      <input type="hidden" name="confirm" value="1">
+                      <input type="hidden" name="next" value="/admin/referrals/<%= relationship.id %>">
+                      <input type="number" name="days" value="7" min="1" style="width:4rem">
+                      <button type="submit">Extend</button>
+                    </form>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Correct attribution</h3>
+      <form method="post" action="/admin/referrals/<%= relationship.id %>/correct">
+        <%- include("../csrf-field") %>
+        <label>New referrer account id <input name="referrerAccountId" type="number" required></label>
+        <label>Reason <input name="reason" type="text" required></label>
+        <label><input type="checkbox" name="confirm" value="1"> Confirm</label>
+        <button type="submit" class="action">Correct</button>
+      </form>
+
+      <p><a href="/admin/referrals">Back to referrals</a></p>
+    </section>
+  </div>
+</body>
+</html>

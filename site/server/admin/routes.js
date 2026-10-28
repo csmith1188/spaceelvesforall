@@ -1,0 +1,2090 @@
+import { Router } from "express";
+import {
+  archiveSuggestion,
+  claimSuggestionReward,
+  claimWikiReward,
+  completeSuggestionReward,
+  completeWikiReward,
+  confirmWikiRevision,
+  countOpenPlayerReports,
+  exportAccountsRows,
+  exportGamesRows,
+  exportLedgerRows,
+  exportPaypalPurchaseRows,
+  getSuggestion,
+  getWikiRevision,
+  listOpenWikiRevisions,
+  listPlayerReports,
+  listSuggestions,
+  releaseSuggestionReward,
+  releaseWikiReward,
+  resolvePlayerReport,
+  resolvePlayerReportsForUser,
+  systemStats,
+  undoWikiRevision,
+  wikiRewardAmount,
+} from "../db.js";
+import { rateLimit, validateDisplayName } from "../auth.js";
+import { requestClientIp } from "../hardening.js";
+import { logger } from "../logger.js";
+import { report as metricsReport, ensureMetrics, metricsEnabled } from "../metrics.js";
+import { wikiLineDiff } from "../wiki-diff.js";
+import { requireAdmin, requireStaff } from "./auth.js";
+import { auditAdmin } from "./audit.js";
+import { communityFundingEnabled } from "../auth.js";
+import {
+  ANALYTICS_CATEGORIES,
+  buildAnalytics,
+  barRows,
+  formatRate,
+  formatUsd,
+  parseAnalyticsCategories,
+} from "./analytics.js";
+import { eventsToCsv, listAdminEvents, retainAdminEvents } from "./events.js";
+import {
+  securityErrorsPage,
+  securityEventDetail,
+  securityEventsPage,
+  securityIpPage,
+  securityOverview,
+  simulateSecurityTraffic,
+} from "./security.js";
+import { securityLimits } from "../security/limits.js";
+import {
+  enrichActiveList,
+  historicalGame,
+  listRecentGames,
+  liveGameChat,
+  queueSnapshot,
+  terminateMatch,
+} from "./matches.js";
+import {
+  accountsToCsv,
+  configHealth,
+  gamesToCsv,
+  ledgerToCsv,
+  paypalPurchasesToCsv,
+  readNews,
+  setMaintenance,
+} from "./ops.js";
+import {
+  cancelNewsletterCampaign,
+  deleteNewsEntry,
+  newsAdminEditData,
+  newsAdminIndexData,
+  parseNewsFormBody,
+  pauseNewsletterCampaign,
+  previewNewsEntry,
+  resumeNewsletterCampaign,
+  saveNewsFromForm,
+  saveNewsFromRawJson,
+  sendNewsTestEmail,
+  startNewsCampaign,
+} from "./news.js";
+import {
+  closeDevRound,
+  communityAdminIndexData,
+  fulfillFundingGoal,
+  saveDevSlots,
+  saveFundingSlots,
+} from "./community.js";
+import {
+  adminAdjustTickets,
+  adminBan,
+  adminForceLogout,
+  adminRename,
+  adminSetRole,
+  adminUnban,
+  adminUpdateNotes,
+  adminVerifyEmail,
+  findPaypalPurchaseByOrderOrCapture,
+  getUserDetail,
+  searchAccounts,
+} from "./users.js";
+import { reconcileStalePaypalPurchases } from "../paypal.js";
+import {
+  adminApproveReferralReward,
+  adminCorrectReferralAttribution,
+  adminExtendReferralReward,
+  adminRecalculateReferralRisk,
+  adminRejectReferralReward,
+  adminSetReferralConfig,
+  referralsAdminDetail,
+  referralsAdminIndex,
+  setReferralVanityCode,
+} from "./referrals.js";
+
+function routeId(value) {
+  const id = Number(value);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+function takeNotice(req) {
+  const notice = req.session && req.session.notice;
+  if (req.session) req.session.notice = null;
+  return notice || null;
+}
+
+function adminLimited(req) {
+  const accountId = req.session && req.session.accountId;
+  const key = accountId ? `admin:${accountId}` : `admin-ip:${requestClientIp(req)}`;
+  const max = Number(process.env.RATE_ADMIN_MAX);
+  const ok = rateLimit(key, {
+    max: Number.isInteger(max) && max > 0 ? max : 60,
+    windowMs: 60 * 1000,
+  });
+  if (!ok) {
+    logger.warn({
+      event: "admin_rate_limited",
+      accountId: accountId || undefined,
+      ip: requestClientIp(req),
+      path: req.path,
+    }, "admin rate limited");
+  }
+  return ok;
+}
+
+function confirmed(body) {
+  return body && (body.confirm === "1" || body.confirm === "on" || body.confirm === true);
+}
+
+/** Only allow redirects back into /admin. */
+function safeAdminNext(value, fallback = "/admin/reports") {
+  const raw = String(value || "").trim();
+  if (!raw.startsWith("/admin")) return fallback;
+  if (raw.startsWith("//") || raw.includes("://")) return fallback;
+  return raw.slice(0, 200) || fallback;
+}
+
+function reportsListQuery({ status = "open", reported = "" } = {}) {
+  const params = new URLSearchParams();
+  params.set("status", status || "open");
+  if (reported) params.set("reported", String(reported));
+  const q = params.toString();
+  return q ? `/admin/reports?${q}` : "/admin/reports";
+}
+
+function parseDurationMs(body) {
+  const unit = String(body.durationUnit || "").toLowerCase();
+  const n = Number(body.durationValue);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  if (unit === "hours") return Math.round(n * 60 * 60 * 1000);
+  if (unit === "days") return Math.round(n * 24 * 60 * 60 * 1000);
+  if (unit === "permanent" || unit === "") return null;
+  return null;
+}
+
+/**
+ * @param {object} deps
+ * @param {import('../matchmaking.js').Matchmaker} deps.matchmaker
+ * @param {function} deps.pageViewer
+ * @param {object} deps.formbarSocket
+ * @param {function} deps.rewardFromPool
+ * @param {function} [deps.issueVerifyEmail]
+ * @param {function} [deps.ioStats]
+ * @param {string} deps.ambiguousTransfer
+ */
+export function createAdminRouter(deps) {
+  const router = Router();
+  const {
+    matchmaker,
+    pageViewer,
+    formbarSocket,
+    rewardFromPool,
+    issueVerifyEmail,
+    ioStats,
+    ambiguousTransfer,
+  } = deps;
+
+  async function baseLocals(req, extra = {}) {
+    const viewer = await pageViewer(req);
+    const { getStaffContext } = await import("./auth.js");
+    const staff = await getStaffContext(req.session);
+    const openReportCount = await countOpenPlayerReports();
+    return {
+      nav: "admin",
+      viewer,
+      notice: takeNotice(req),
+      staffRole: staff.role,
+      isAdmin: staff.role === "admin",
+      isModerator: staff.role === "moderator" || staff.role === "admin",
+      openReportCount,
+      communityFundingEnabled: communityFundingEnabled(),
+      ...extra,
+    };
+  }
+
+  function requireCommunityFunding(req, res) {
+    if (communityFundingEnabled()) return true;
+    req.session.notice = "Community funding is disabled when Formbar is the only login option.";
+    req.session.save(() => res.redirect("/admin"));
+    return false;
+  }
+
+  // ----- Overview -----
+  router.get("/", async (req, res, next) => {
+    try {
+      if (!(await requireStaff(req, res))) return;
+      const stats = await systemStats();
+      const games = enrichActiveList(matchmaker);
+      const queues = queueSnapshot(matchmaker);
+      const health = await configHealth();
+      const data = await baseLocals(req, {
+        admin: { games, stats: { ...stats, active: games.length }, queues, health },
+        adminSection: "overview",
+      });
+      req.session.save(() => res.render("admin/index", data));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ----- Users -----
+  router.get("/users", async (req, res, next) => {
+    try {
+      if (!(await requireStaff(req, res))) return;
+      const result = await searchAccounts({
+        q: req.query.q,
+        filter: req.query.filter,
+        sort: req.query.sort,
+        page: req.query.page,
+      });
+      const data = await baseLocals(req, {
+        users: result,
+        query: {
+          q: req.query.q || "",
+          filter: req.query.filter || "",
+          sort: req.query.sort || "created_desc",
+        },
+        adminSection: "users",
+      });
+      req.session.save(() => res.render("admin/users", data));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get("/users/:id", async (req, res, next) => {
+    try {
+      if (!(await requireStaff(req, res))) return;
+      const id = routeId(req.params.id);
+      const detail = id ? await getUserDetail(id) : null;
+      if (!detail) {
+        req.session.notice = "Account not found.";
+        req.session.save(() => res.redirect("/admin/users"));
+        return;
+      }
+      const data = await baseLocals(req, {
+        detail,
+        adminSection: "users",
+      });
+      req.session.save(() => res.render("admin/user", data));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  async function userMutation(req, res, next, handler) {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      if (!adminLimited(req)) {
+        req.session.notice = "Too many admin actions. Try again in a minute.";
+        req.session.save(() => res.redirect(req.get("referer") || "/admin/users"));
+        return;
+      }
+      const id = routeId(req.params.id);
+      if (!id) {
+        req.session.notice = "Account not found.";
+        req.session.save(() => res.redirect("/admin/users"));
+        return;
+      }
+      await handler(id);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  router.post("/users/:id/role", (req, res, next) => userMutation(req, res, next, async (id) => {
+    if (!confirmed(req.body)) {
+      req.session.notice = "Confirmation required.";
+      req.session.save(() => res.redirect(`/admin/users/${id}`));
+      return;
+    }
+    const before = (await getUserDetail(id))?.account;
+    const result = await adminSetRole(req.adminAccount.id, id, req.body.role, req.body.reason);
+    if (!result.ok) {
+      req.session.notice = result.error === "last_admin"
+        ? "Cannot demote the last admin."
+        : result.error === "self_target"
+          ? "Cannot change your own role."
+          : "Could not change role.";
+      req.session.save(() => res.redirect(`/admin/users/${id}`));
+      return;
+    }
+    await auditAdmin(req, {
+      action: "role_change",
+      targetType: "account",
+      targetId: id,
+      reason: req.body.reason,
+      before: { role: result.before },
+      after: { role: result.after },
+    });
+    req.session.notice = `Role set to ${result.after}.`;
+    req.session.save(() => res.redirect(`/admin/users/${id}`));
+  }));
+
+  router.post("/users/:id/ban", (req, res, next) => userMutation(req, res, next, async (id) => {
+    if (!confirmed(req.body)) {
+      req.session.notice = "Confirmation required.";
+      req.session.save(() => res.redirect(`/admin/users/${id}`));
+      return;
+    }
+    const result = await adminBan(req.adminAccount.id, id, {
+      reason: req.body.reason,
+      durationMs: parseDurationMs(req.body),
+    });
+    if (!result.ok) {
+      req.session.notice = result.error === "last_admin"
+        ? "Cannot ban the last admin."
+        : result.error === "self_target"
+          ? "Cannot ban your own account."
+          : "Could not ban account.";
+      req.session.save(() => res.redirect(`/admin/users/${id}`));
+      return;
+    }
+    await auditAdmin(req, {
+      action: "ban",
+      targetType: "account",
+      targetId: id,
+      reason: req.body.reason,
+      after: {
+        banned_at: result.account.banned_at,
+        ban_expires_at: result.account.ban_expires_at,
+      },
+    });
+    if (typeof deps.disconnectBannedAccount === "function") {
+      await deps.disconnectBannedAccount(id);
+    }
+    req.session.notice = "Account banned.";
+    req.session.save(() => res.redirect(`/admin/users/${id}`));
+  }));
+
+  router.post("/users/:id/unban", (req, res, next) => userMutation(req, res, next, async (id) => {
+    const result = await adminUnban(req.adminAccount.id, id, req.body.reason);
+    if (!result.ok) {
+      req.session.notice = "Could not unban account.";
+      req.session.save(() => res.redirect(`/admin/users/${id}`));
+      return;
+    }
+    await auditAdmin(req, {
+      action: "unban",
+      targetType: "account",
+      targetId: id,
+      reason: req.body.reason,
+    });
+    req.session.notice = "Account unbanned.";
+    req.session.save(() => res.redirect(`/admin/users/${id}`));
+  }));
+
+  router.post("/users/:id/tickets", (req, res, next) => userMutation(req, res, next, async (id) => {
+    if (!confirmed(req.body)) {
+      req.session.notice = "Confirmation required.";
+      req.session.save(() => res.redirect(`/admin/users/${id}`));
+      return;
+    }
+    const delta = Number(req.body.delta);
+    const result = await adminAdjustTickets(
+      req.adminAccount.id,
+      id,
+      delta,
+      req.body.reason,
+    );
+    if (!result.ok) {
+      req.session.notice = result.error === "below_held"
+        ? `Cannot reduce below held tickets (${result.held}).`
+        : "Could not adjust tickets.";
+      req.session.save(() => res.redirect(`/admin/users/${id}`));
+      return;
+    }
+    await auditAdmin(req, {
+      action: "ticket_adjust",
+      targetType: "account",
+      targetId: id,
+      reason: req.body.reason,
+      before: { tickets: result.before },
+      after: { tickets: result.after },
+    });
+    req.session.notice = `Tickets adjusted by ${delta}.`;
+    req.session.save(() => res.redirect(`/admin/users/${id}`));
+  }));
+
+  router.post("/users/:id/verify", (req, res, next) => userMutation(req, res, next, async (id) => {
+    const result = await adminVerifyEmail(req.adminAccount.id, id, req.body.reason);
+    if (!result.ok) {
+      req.session.notice = result.error === "no_email"
+        ? "Account has no local email."
+        : "Could not verify email.";
+      req.session.save(() => res.redirect(`/admin/users/${id}`));
+      return;
+    }
+    await auditAdmin(req, {
+      action: "email_verify_manual",
+      targetType: "account",
+      targetId: id,
+      reason: req.body.reason,
+      after: { email_verified_at: result.account.email_verified_at },
+    });
+    req.session.notice = "Email marked verified.";
+    req.session.save(() => res.redirect(`/admin/users/${id}`));
+  }));
+
+  router.post("/users/:id/resend-verify", (req, res, next) => userMutation(req, res, next, async (id) => {
+    const detail = await getUserDetail(id);
+    if (!detail?.account?.email) {
+      req.session.notice = "Account has no local email.";
+      req.session.save(() => res.redirect(`/admin/users/${id}`));
+      return;
+    }
+    if (!issueVerifyEmail) {
+      req.session.notice = "Verify email helper unavailable.";
+      req.session.save(() => res.redirect(`/admin/users/${id}`));
+      return;
+    }
+    try {
+      await issueVerifyEmail(detail.account);
+      await auditAdmin(req, {
+        action: "email_verify_resend",
+        targetType: "account",
+        targetId: id,
+        reason: req.body.reason || "admin resend",
+      });
+      req.session.notice = "Verification email sent.";
+    } catch {
+      req.session.notice = "Failed to send verification email.";
+    }
+    req.session.save(() => res.redirect(`/admin/users/${id}`));
+  }));
+
+  router.post("/users/:id/logout", (req, res, next) => userMutation(req, res, next, async (id) => {
+    const result = await adminForceLogout(req.adminAccount.id, id);
+    if (!result.ok) {
+      req.session.notice = result.error === "self_target"
+        ? "Cannot force-logout your own session this way."
+        : "Could not revoke sessions.";
+      req.session.save(() => res.redirect(`/admin/users/${id}`));
+      return;
+    }
+    await auditAdmin(req, {
+      action: "force_logout",
+      targetType: "account",
+      targetId: id,
+      reason: req.body.reason || "admin force logout",
+    });
+    req.session.notice = "Sessions revoked.";
+    req.session.save(() => res.redirect(`/admin/users/${id}`));
+  }));
+
+  router.post("/users/:id/name", (req, res, next) => userMutation(req, res, next, async (id) => {
+    const check = validateDisplayName(req.body.name);
+    if (!check.ok) {
+      req.session.notice = check.error;
+      req.session.save(() => res.redirect(`/admin/users/${id}`));
+      return;
+    }
+    const before = (await getUserDetail(id))?.account?.name;
+    const result = await adminRename(req.adminAccount.id, id, check.name, req.body.reason);
+    if (!result.ok) {
+      req.session.notice = result.error === "taken" ? "Name taken." : "Could not rename.";
+      req.session.save(() => res.redirect(`/admin/users/${id}`));
+      return;
+    }
+    await auditAdmin(req, {
+      action: "rename",
+      targetType: "account",
+      targetId: id,
+      reason: req.body.reason,
+      before: { name: before },
+      after: { name: check.name },
+    });
+    req.session.notice = "Display name updated.";
+    req.session.save(() => res.redirect(`/admin/users/${id}`));
+  }));
+
+  router.post("/users/:id/notes", (req, res, next) => userMutation(req, res, next, async (id) => {
+    await adminUpdateNotes(id, req.body.notes);
+    await auditAdmin(req, {
+      action: "notes_update",
+      targetType: "account",
+      targetId: id,
+      after: { notes: String(req.body.notes || "").slice(0, 200) },
+    });
+    req.session.notice = "Notes saved.";
+    req.session.save(() => res.redirect(`/admin/users/${id}`));
+  }));
+
+  // ----- Analytics -----
+  router.get("/analytics", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      const range = String(req.query.range || "30d");
+      const categoryFilter = parseAnalyticsCategories(req.query.cat);
+      const analytics = await buildAnalytics(range, req.query.cat);
+      const dailyGames = (analytics.engagement?.daily || analytics.games.daily || []).map((d) => ({
+        day: d.day,
+        n: d.games,
+      }));
+      const dailyPlayers = (analytics.engagement?.daily || analytics.games.daily || []).map((d) => ({
+        day: d.day,
+        n: d.uniquePlayers,
+      }));
+      const data = await baseLocals(req, {
+        analytics,
+        range,
+        categoryIds: new Set(categoryFilter.ids),
+        analyticsCategories: ANALYTICS_CATEGORIES,
+        formatRate,
+        formatUsd,
+        charts: {
+          gamesByMode: barRows(analytics.games.byMode, "n", "mode"),
+          registrations: barRows(analytics.registrations, "n", "day"),
+          gamesPerDay: barRows(dailyGames, "n", "day"),
+          uniquePlayersPerDay: barRows(dailyPlayers, "n", "day"),
+          matchesPerPlayer: barRows(analytics.engagement?.matchesPerActive?.buckets || [], "n", "label"),
+          ticketSpend: barRows(analytics.economy?.spendByDay || [], "spent", "day"),
+          mmr: barRows(analytics.mmrBuckets, "n", "bucket"),
+          platforms: barRows(analytics.platform?.actives || [], "n", "platform"),
+        },
+        adminSection: "analytics",
+      });
+      req.session.save(() => res.render("admin/analytics", data));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ----- Audit (ops events + live metrics; formerly /admin/logs) -----
+  router.get("/logs", (req, res) => {
+    const qs = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
+    res.redirect(301, `/admin/audit${qs}`);
+  });
+  router.get("/logs/download", (req, res) => {
+    const qs = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
+    res.redirect(301, `/admin/audit/download${qs}`);
+  });
+
+  router.get("/audit", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      await retainAdminEvents().catch(() => {});
+      const events = await listAdminEvents({
+        page: req.query.page,
+        level: req.query.level || null,
+        event: req.query.event || null,
+        module: req.query.module || null,
+        accountId: req.query.accountId || null,
+        matchId: req.query.matchId || null,
+      });
+      let metrics = null;
+      if (metricsEnabled() && ioStats) {
+        ensureMetrics();
+        metrics = metricsReport(ioStats());
+      }
+      const data = await baseLocals(req, {
+        events,
+        metrics,
+        metricsEnabled: metricsEnabled(),
+        filters: {
+          level: req.query.level || "",
+          event: req.query.event || "",
+          module: req.query.module || "",
+          accountId: req.query.accountId || "",
+          matchId: req.query.matchId || "",
+        },
+        adminSection: "audit",
+      });
+      req.session.save(() => res.render("admin/audit", data));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get("/audit/download", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      const events = await listAdminEvents({
+        page: 1,
+        pageSize: 10000,
+        level: req.query.level || null,
+        event: req.query.event || null,
+        module: req.query.module || null,
+        accountId: req.query.accountId || null,
+        matchId: req.query.matchId || null,
+      });
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", "attachment; filename=\"admin-events.csv\"");
+      res.send(eventsToCsv(events.rows));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ----- Security -----
+  router.get("/security", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      const overview = await securityOverview();
+      const data = await baseLocals(req, {
+        overview,
+        simulateEnabled: securityLimits().simulateEnabled,
+        adminSection: "security",
+      });
+      req.session.save(() => res.render("admin/security", data));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get("/security/events", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      const events = await securityEventsPage(req.query);
+      let detail = null;
+      if (req.query.id) {
+        detail = await securityEventDetail(req.query.id);
+        if (detail && detail.meta_json) {
+          try {
+            detail.meta = JSON.parse(detail.meta_json);
+          } catch {
+            detail.meta = null;
+          }
+        }
+      }
+      const data = await baseLocals(req, {
+        events,
+        detail,
+        filters: {
+          event: req.query.event || "",
+          class: req.query.class || "",
+          ip: req.query.ip || "",
+          path: req.query.path || "",
+          status: req.query.status || "",
+          accountId: req.query.accountId || "",
+          q: req.query.q || "",
+        },
+        adminSection: "security",
+      });
+      req.session.save(() => res.render("admin/security-events", data));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get("/security/ip", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      const ipView = await securityIpPage(req.query.ip || "", req.query);
+      const data = await baseLocals(req, {
+        ipView,
+        adminSection: "security",
+      });
+      req.session.save(() => res.render("admin/security-ip", data));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get("/security/errors", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      const events = await securityErrorsPage(req.query);
+      const data = await baseLocals(req, {
+        events,
+        filters: {
+          ip: req.query.ip || "",
+          path: req.query.path || "",
+          q: req.query.q || "",
+        },
+        adminSection: "security",
+      });
+      req.session.save(() => res.render("admin/security-errors", data));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/security/simulate", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      if (!securityLimits().simulateEnabled) {
+        req.session.notice = "Security simulation is disabled.";
+        req.session.save(() => res.redirect("/admin/security"));
+        return;
+      }
+      if (!adminLimited(req)) {
+        req.session.notice = "Too many admin actions. Try again in a minute.";
+        req.session.save(() => res.redirect("/admin/security"));
+        return;
+      }
+      const result = await simulateSecurityTraffic(req);
+      await auditAdmin(req, {
+        action: "security_simulate",
+        targetType: "security",
+        targetId: null,
+        after: result,
+      });
+      req.session.notice = `Simulated ${result.probes} probe hits and one auth failure.`;
+      req.session.save(() => res.redirect("/admin/security"));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ----- Games -----
+  router.get("/games", async (req, res, next) => {
+    try {
+      if (!(await requireStaff(req, res))) return;
+      const live = enrichActiveList(matchmaker);
+      const recent = await listRecentGames({ mode: req.query.mode || null, limit: 40 });
+      const queues = queueSnapshot(matchmaker);
+      const data = await baseLocals(req, {
+        live,
+        recent,
+        queues,
+        adminSection: "games",
+      });
+      req.session.save(() => res.render("admin/games", data));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get("/games/:id", async (req, res, next) => {
+    try {
+      if (!(await requireStaff(req, res))) return;
+      const live = enrichActiveList(matchmaker).find((g) => g.id === req.params.id);
+      const hist = await historicalGame(req.params.id);
+      if (!live && !hist) {
+        req.session.notice = "Game not found.";
+        req.session.save(() => res.redirect("/admin/games"));
+        return;
+      }
+      const liveChat = live ? liveGameChat(matchmaker, req.params.id) : null;
+      const chat = (liveChat && liveChat.length)
+        ? liveChat
+        : (hist && hist.chat) || [];
+      const data = await baseLocals(req, {
+        live,
+        hist,
+        chat,
+        hasTelemetry: false,
+        adminSection: "games",
+      });
+      req.session.save(() => res.render("admin/game", data));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/games/:id/terminate", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      if (!adminLimited(req)) {
+        req.session.notice = "Too many admin actions.";
+        req.session.save(() => res.redirect("/admin/games"));
+        return;
+      }
+      if (!confirmed(req.body)) {
+        req.session.notice = "Confirmation required.";
+        req.session.save(() => res.redirect(`/admin/games/${req.params.id}`));
+        return;
+      }
+      const result = await terminateMatch(matchmaker, req.params.id, {
+        reason: req.body.reason,
+        adminAccountId: req.adminAccount.id,
+      });
+      if (!result.ok) {
+        req.session.notice = result.error === "reason_required"
+          ? "Reason required."
+          : "Match not found or already ended.";
+        req.session.save(() => res.redirect("/admin/games"));
+        return;
+      }
+      await auditAdmin(req, {
+        action: "match_terminate",
+        targetType: "match",
+        targetId: req.params.id,
+        reason: req.body.reason,
+        after: result,
+      });
+      req.session.notice = "Match terminated.";
+      req.session.save(() => res.redirect("/admin/games"));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ----- Ops -----
+  router.get("/ops", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      const health = await configHealth();
+      const news = readNews();
+      const paypalLookup = req.session && req.session.paypalLookup
+        ? req.session.paypalLookup
+        : null;
+      if (req.session) req.session.paypalLookup = null;
+      const data = await baseLocals(req, {
+        health,
+        news,
+        paypalLookup,
+        adminSection: "ops",
+      });
+      req.session.save(() => res.render("admin/ops", data));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/ops/paypal-lookup", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      const q = String(req.body && req.body.query || "").trim();
+      const row = q ? await findPaypalPurchaseByOrderOrCapture(q) : null;
+      req.session.paypalLookup = row
+        ? { ok: true, purchase: row }
+        : { ok: false, query: q, error: "not_found" };
+      req.session.save(() => res.redirect("/admin/ops"));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/ops/paypal-reconcile", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      const result = await reconcileStalePaypalPurchases({
+        olderThanMs: 60_000,
+        limit: 50,
+      });
+      req.session.notice = `PayPal reconcile: processed ${result.processed} of ${result.considered} stale rows.`;
+      await auditAdmin(req, {
+        action: "paypal_reconcile",
+        targetType: "site",
+        targetId: "paypal",
+        after: result,
+      });
+      req.session.save(() => res.redirect("/admin/ops"));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/ops/maintenance", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      if (!adminLimited(req)) {
+        req.session.notice = "Too many admin actions.";
+        req.session.save(() => res.redirect("/admin/ops"));
+        return;
+      }
+      const paused = req.body.paused === "1" || req.body.paused === "on";
+      const message = String(req.body.message || "").trim();
+      await setMaintenance({
+        message,
+        paused,
+        updatedBy: req.adminAccount.id,
+      });
+      let alerted = 0;
+      if (message || paused) {
+        const notice = message
+          || "Matchmaking is temporarily paused. Active matches continue.";
+        alerted = matchmaker.announceMaintenance(notice) || 0;
+      }
+      await auditAdmin(req, {
+        action: "maintenance_update",
+        targetType: "site",
+        targetId: "maintenance",
+        reason: req.body.reason || null,
+        after: { paused, message, alerted },
+      });
+      if (paused && alerted) {
+        req.session.notice = `Matchmaking paused; alerted ${alerted} active match${alerted === 1 ? "" : "es"}.`;
+      } else if (paused) {
+        req.session.notice = "Matchmaking paused for new joins.";
+      } else if (alerted) {
+        req.session.notice = `Maintenance notice sent to ${alerted} active match${alerted === 1 ? "" : "es"}.`;
+      } else {
+        req.session.notice = "Maintenance settings updated.";
+      }
+      req.session.save(() => res.redirect("/admin/ops"));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ----- Community Funding / Development -----
+  router.get("/community", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      if (!requireCommunityFunding(req, res)) return;
+      const bundle = await communityAdminIndexData();
+      const data = await baseLocals(req, { ...bundle, adminSection: "community" });
+      req.session.save(() => res.render("admin/community", data));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/community/funding/save", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      if (!requireCommunityFunding(req, res)) return;
+      if (!adminLimited(req)) {
+        req.session.notice = "Too many admin actions. Try again shortly.";
+        req.session.save(() => res.redirect("/admin/community"));
+        return;
+      }
+      const slots = [0, 1, 2].map((slot) => ({
+        title: req.body[`title${slot}`],
+        description: req.body[`description${slot}`],
+        targetTickets: Number(req.body[`target${slot}`]),
+        keepOverflow: req.body[`keepOverflow${slot}`] === "1"
+          || req.body[`keepOverflow${slot}`] === "on",
+      }));
+      const result = await saveFundingSlots({
+        slots,
+        defaultSlot: Number(req.body.defaultSlot),
+        actorAccountId: req.session.accountId,
+      });
+      if (!result.ok) {
+        req.session.notice = `Save funding failed: ${result.error}`
+          + (result.slot != null ? ` (slot ${result.slot})` : "");
+      } else {
+        await auditAdmin(req, {
+          action: "community_funding_save",
+          targetType: "funding_goals",
+          targetId: result.goalIds.join(","),
+          after: result,
+        });
+        req.session.notice = "Funding slots saved.";
+      }
+      req.session.save(() => res.redirect("/admin/community"));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/community/funding/:id/fulfill", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      if (!requireCommunityFunding(req, res)) return;
+      if (!adminLimited(req)) {
+        req.session.notice = "Too many admin actions. Try again shortly.";
+        req.session.save(() => res.redirect("/admin/community"));
+        return;
+      }
+      if (!confirmed(req.body)) {
+        req.session.notice = "Confirmation required.";
+        req.session.save(() => res.redirect("/admin/community"));
+        return;
+      }
+      const id = routeId(req.params.id);
+      const result = await fulfillFundingGoal(id, {
+        notes: req.body.notes,
+        links: req.body.links,
+      });
+      if (!result.ok) {
+        req.session.notice = `Fulfill failed: ${result.error}`;
+      } else {
+        await auditAdmin(req, {
+          action: "community_funding_fulfill",
+          targetType: "funding_goal",
+          targetId: String(id),
+          before: result.before,
+          after: result.goal,
+        });
+        req.session.notice = `Marked funding goal #${id} fulfilled and archived.`;
+      }
+      req.session.save(() => res.redirect("/admin/community"));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/community/dev/save", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      if (!requireCommunityFunding(req, res)) return;
+      if (!adminLimited(req)) {
+        req.session.notice = "Too many admin actions. Try again shortly.";
+        req.session.save(() => res.redirect("/admin/community"));
+        return;
+      }
+      const slots = [0, 1, 2].map((slot) => ({
+        title: req.body[`title${slot}`],
+        description: req.body[`description${slot}`],
+      }));
+      const result = await saveDevSlots({
+        slots,
+        defaultSlot: Number(req.body.defaultSlot),
+        actorAccountId: req.session.accountId,
+      });
+      if (!result.ok) {
+        req.session.notice = `Save development failed: ${result.error}`
+          + (result.slot != null ? ` (slot ${result.slot})` : "");
+      } else {
+        await auditAdmin(req, {
+          action: "community_dev_save",
+          targetType: "dev_round",
+          targetId: String(result.roundId),
+          after: result,
+        });
+        req.session.notice = "Development slots saved.";
+      }
+      req.session.save(() => res.redirect("/admin/community"));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/community/dev/close", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      if (!requireCommunityFunding(req, res)) return;
+      if (!adminLimited(req)) {
+        req.session.notice = "Too many admin actions. Try again shortly.";
+        req.session.save(() => res.redirect("/admin/community"));
+        return;
+      }
+      if (!confirmed(req.body)) {
+        req.session.notice = "Confirmation required.";
+        req.session.save(() => res.redirect("/admin/community"));
+        return;
+      }
+      const result = await closeDevRound({
+        winnerPriorityId: Number(req.body.winnerPriorityId),
+        tieBreakNotes: req.body.tieBreakNotes || "",
+        actorAccountId: req.session.accountId,
+      });
+      if (!result.ok) {
+        req.session.notice = `Close round failed: ${result.error}`;
+      } else {
+        await auditAdmin(req, {
+          action: "community_dev_close",
+          targetType: "dev_round",
+          targetId: String(result.roundId),
+          after: result,
+        });
+        req.session.notice = `Closed round #${result.roundId}; winner #${result.winnerPriorityId}.`;
+      }
+      req.session.save(() => res.redirect("/admin/community"));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ----- News / Mailer -----
+  router.get("/news", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      const index = await newsAdminIndexData();
+      const data = await baseLocals(req, { ...index, adminSection: "news" });
+      req.session.save(() => res.render("admin/news", data));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get("/news/new", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      const edit = await newsAdminEditData(null);
+      const data = await baseLocals(req, { ...edit, adminSection: "news", isNew: true });
+      req.session.save(() => res.render("admin/news-edit", data));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get("/news/:id", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      const edit = await newsAdminEditData(req.params.id);
+      if (!edit.entry) {
+        req.session.notice = "News entry not found.";
+        req.session.save(() => res.redirect("/admin/news"));
+        return;
+      }
+      const data = await baseLocals(req, { ...edit, adminSection: "news", isNew: false });
+      req.session.save(() => res.render("admin/news-edit", data));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/news/save", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      if (!adminLimited(req)) {
+        req.session.notice = "Too many admin actions.";
+        req.session.save(() => res.redirect("/admin/news"));
+        return;
+      }
+      try {
+        const entry = saveNewsFromForm(req.body, req.adminAccount.id);
+        await auditAdmin(req, {
+          action: "news_upsert",
+          targetType: "news",
+          targetId: entry.id,
+          after: { title: entry.title, date: entry.date },
+        });
+        req.session.notice = "News entry saved.";
+        req.session.save(() => res.redirect(`/admin/news/${encodeURIComponent(entry.id)}`));
+      } catch (err) {
+        if (err && err.code === "NEWS_INVALID") {
+          req.session.notice = err.message;
+          const id = String(req.body.id || "").trim();
+          req.session.save(() => res.redirect(id ? `/admin/news/${encodeURIComponent(id)}` : "/admin/news/new"));
+          return;
+        }
+        throw err;
+      }
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/news/raw", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      if (!adminLimited(req)) {
+        req.session.notice = "Too many admin actions.";
+        req.session.save(() => res.redirect("/admin/news"));
+        return;
+      }
+      try {
+        const items = saveNewsFromRawJson(req.body.newsJson, req.adminAccount.id);
+        await auditAdmin(req, {
+          action: "news_raw_update",
+          targetType: "site",
+          targetId: "news",
+          after: { count: items.length },
+        });
+        req.session.notice = `News JSON saved (${items.length} entries).`;
+        req.session.save(() => res.redirect("/admin/news"));
+      } catch (err) {
+        if (err && err.code === "NEWS_INVALID") {
+          req.session.notice = err.message;
+          req.session.save(() => res.redirect("/admin/news"));
+          return;
+        }
+        throw err;
+      }
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/news/preview", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      const parsed = parseNewsFormBody(req.body);
+      const preview = previewNewsEntry(parsed);
+      if (!preview.ok) {
+        res.status(400).json({ ok: false, error: preview.error });
+        return;
+      }
+      res.json({
+        ok: true,
+        subject: preview.subject,
+        websiteHtml: preview.websiteHtml,
+        emailHtml: preview.emailHtml,
+        plainText: preview.plainText,
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/news/:id/delete", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      if (!adminLimited(req)) {
+        req.session.notice = "Too many admin actions.";
+        req.session.save(() => res.redirect("/admin/news"));
+        return;
+      }
+      if (!confirmed(req.body)) {
+        req.session.notice = "Confirm delete.";
+        req.session.save(() => res.redirect(`/admin/news/${encodeURIComponent(req.params.id)}`));
+        return;
+      }
+      try {
+        const removed = deleteNewsEntry(req.params.id, req.adminAccount.id);
+        await auditAdmin(req, {
+          action: "news_delete",
+          targetType: "news",
+          targetId: removed.id,
+          after: { title: removed.title },
+        });
+        req.session.notice = "News entry deleted.";
+      } catch (err) {
+        if (err && err.code === "NEWS_NOT_FOUND") {
+          req.session.notice = "News entry not found.";
+        } else {
+          throw err;
+        }
+      }
+      req.session.save(() => res.redirect("/admin/news"));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/news/:id/test-send", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      if (!adminLimited(req)) {
+        req.session.notice = "Too many admin actions.";
+        req.session.save(() => res.redirect(`/admin/news/${encodeURIComponent(req.params.id)}`));
+        return;
+      }
+      const result = await sendNewsTestEmail({
+        newsId: req.params.id,
+        account: req.adminAccount,
+      });
+      if (!result.ok) {
+        const messages = {
+          news_not_found: "News entry not found.",
+          no_email: "Your admin account has no email.",
+          unverified: "Verify your admin email before sending a test.",
+          mail_not_ready: "SMTP is not ready.",
+        };
+        req.session.notice = messages[result.error] || `Test send failed: ${result.error}`;
+      } else {
+        await auditAdmin(req, {
+          action: "news_test_send",
+          targetType: "news",
+          targetId: req.params.id,
+        });
+        req.session.notice = "Test email sent to your address.";
+      }
+      req.session.save(() => res.redirect(`/admin/news/${encodeURIComponent(req.params.id)}`));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/news/:id/send", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      if (!adminLimited(req)) {
+        req.session.notice = "Too many admin actions.";
+        req.session.save(() => res.redirect(`/admin/news/${encodeURIComponent(req.params.id)}`));
+        return;
+      }
+      if (!confirmed(req.body)) {
+        req.session.notice = "Confirm bulk send.";
+        req.session.save(() => res.redirect(`/admin/news/${encodeURIComponent(req.params.id)}`));
+        return;
+      }
+      const phrase = String(req.body.confirmPhrase || "").trim().toLowerCase();
+      if (phrase !== "send") {
+        req.session.notice = 'Type "send" to confirm the campaign.';
+        req.session.save(() => res.redirect(`/admin/news/${encodeURIComponent(req.params.id)}`));
+        return;
+      }
+      const result = await startNewsCampaign({
+        newsId: req.params.id,
+        createdBy: req.adminAccount.id,
+      });
+      if (!result.ok) {
+        const messages = {
+          news_not_found: "News entry not found.",
+          mail_not_ready: "SMTP is not ready.",
+          campaign_active: "A campaign is already active for this entry.",
+          no_recipients: "No eligible subscribers.",
+        };
+        req.session.notice = messages[result.error] || `Send failed: ${result.error}`;
+      } else {
+        await auditAdmin(req, {
+          action: "news_campaign_start",
+          targetType: "news",
+          targetId: req.params.id,
+          after: { campaignId: result.campaignId, total: result.total },
+        });
+        req.session.notice = `Campaign queued for ${result.total} recipients.`;
+      }
+      req.session.save(() => res.redirect(`/admin/news/${encodeURIComponent(req.params.id)}`));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/news/campaigns/:campaignId/pause", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      const campaign = await pauseNewsletterCampaign(Number(req.params.campaignId));
+      void campaign;
+      await auditAdmin(req, {
+        action: "news_campaign_pause",
+        targetType: "newsletter_campaign",
+        targetId: String(req.params.campaignId),
+      });
+      req.session.notice = "Campaign paused.";
+      const nextUrl = String(req.body.newsId || "")
+        ? `/admin/news/${encodeURIComponent(req.body.newsId)}`
+        : "/admin/news";
+      req.session.save(() => res.redirect(nextUrl));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/news/campaigns/:campaignId/resume", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      await resumeNewsletterCampaign(Number(req.params.campaignId));
+      await auditAdmin(req, {
+        action: "news_campaign_resume",
+        targetType: "newsletter_campaign",
+        targetId: String(req.params.campaignId),
+      });
+      req.session.notice = "Campaign resumed.";
+      const nextUrl = String(req.body.newsId || "")
+        ? `/admin/news/${encodeURIComponent(req.body.newsId)}`
+        : "/admin/news";
+      req.session.save(() => res.redirect(nextUrl));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/news/campaigns/:campaignId/cancel", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      if (!confirmed(req.body)) {
+        req.session.notice = "Confirm cancel.";
+        req.session.save(() => res.redirect("/admin/news"));
+        return;
+      }
+      await cancelNewsletterCampaign(Number(req.params.campaignId));
+      await auditAdmin(req, {
+        action: "news_campaign_cancel",
+        targetType: "newsletter_campaign",
+        targetId: String(req.params.campaignId),
+      });
+      req.session.notice = "Campaign cancelled.";
+      const nextUrl = String(req.body.newsId || "")
+        ? `/admin/news/${encodeURIComponent(req.body.newsId)}`
+        : "/admin/news";
+      req.session.save(() => res.redirect(nextUrl));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get("/export/:kind.csv", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      const kind = String(req.params.kind || "");
+      if (kind === "accounts") {
+        const rows = await exportAccountsRows();
+        res.setHeader("Content-Type", "text/csv; charset=utf-8");
+        res.setHeader("Content-Disposition", "attachment; filename=\"accounts.csv\"");
+        res.send(accountsToCsv(rows));
+        return;
+      }
+      if (kind === "games") {
+        const rows = await exportGamesRows();
+        res.setHeader("Content-Type", "text/csv; charset=utf-8");
+        res.setHeader("Content-Disposition", "attachment; filename=\"games.csv\"");
+        res.send(gamesToCsv(rows));
+        return;
+      }
+      if (kind === "tickets" || kind === "ticket_ledger") {
+        const rows = await exportLedgerRows();
+        res.setHeader("Content-Type", "text/csv; charset=utf-8");
+        res.setHeader("Content-Disposition", "attachment; filename=\"ticket_ledger.csv\"");
+        res.send(ledgerToCsv(rows));
+        return;
+      }
+      if (kind === "paypal" || kind === "paypal_purchases") {
+        const rows = await exportPaypalPurchaseRows();
+        res.setHeader("Content-Type", "text/csv; charset=utf-8");
+        res.setHeader("Content-Disposition", "attachment; filename=\"paypal_purchases.csv\"");
+        res.send(paypalPurchasesToCsv(rows));
+        return;
+      }
+      res.status(404).send("Unknown export");
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ----- Player reports (staff) -----
+  router.get("/reports", async (req, res, next) => {
+    try {
+      if (!(await requireStaff(req, res))) return;
+      const statusRaw = String(req.query.status || "open").toLowerCase();
+      const status = ["open", "resolved", "dismissed", "all"].includes(statusRaw)
+        ? statusRaw
+        : "open";
+      const reportedFilter = routeId(req.query.reported) || "";
+      const reports = await listPlayerReports({
+        status,
+        reportedAccountId: reportedFilter || null,
+        limit: 200,
+      });
+      const listQuery = reportsListQuery({ status, reported: reportedFilter });
+      const data = await baseLocals(req, {
+        reports,
+        status,
+        reportedFilter,
+        listQuery,
+        adminSection: "reports",
+      });
+      req.session.save(() => res.render("admin/reports", data));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/reports/:id/resolve", async (req, res, next) => {
+    try {
+      if (!(await requireStaff(req, res))) return;
+      const back = safeAdminNext(req.body && req.body.next);
+      if (!adminLimited(req)) {
+        req.session.notice = "Too many admin actions. Try again in a minute.";
+        req.session.save(() => res.redirect(back));
+        return;
+      }
+      const reportId = routeId(req.params.id);
+      if (!reportId) {
+        req.session.notice = "Report not found.";
+        req.session.save(() => res.redirect(back));
+        return;
+      }
+      const status = String(req.body.status || "resolved") === "dismissed"
+        ? "dismissed"
+        : "resolved";
+      const ok = await resolvePlayerReport(reportId, {
+        status,
+        resolvedBy: req.adminAccount.id,
+        note: req.body.note,
+      });
+      if (!ok) {
+        req.session.notice = "Report already closed or not found.";
+        req.session.save(() => res.redirect(back));
+        return;
+      }
+      await auditAdmin(req, {
+        action: status === "dismissed" ? "report_dismiss" : "report_resolve",
+        targetType: "player_report",
+        targetId: reportId,
+        reason: req.body.note || null,
+      });
+      req.session.notice = status === "dismissed" ? "Report dismissed." : "Report resolved.";
+      req.session.save(() => res.redirect(back));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/reports/user/:id/resolve-all", async (req, res, next) => {
+    try {
+      if (!(await requireStaff(req, res))) return;
+      const back = safeAdminNext(req.body && req.body.next);
+      if (!adminLimited(req)) {
+        req.session.notice = "Too many admin actions. Try again in a minute.";
+        req.session.save(() => res.redirect(back));
+        return;
+      }
+      const accountId = routeId(req.params.id);
+      if (!accountId) {
+        req.session.notice = "Account not found.";
+        req.session.save(() => res.redirect(back));
+        return;
+      }
+      const status = String(req.body.status || "resolved") === "dismissed"
+        ? "dismissed"
+        : "resolved";
+      const n = await resolvePlayerReportsForUser(accountId, {
+        status,
+        resolvedBy: req.adminAccount.id,
+        note: req.body.note,
+      });
+      await auditAdmin(req, {
+        action: status === "dismissed" ? "report_dismiss_all" : "report_resolve_all",
+        targetType: "account",
+        targetId: accountId,
+        reason: req.body.note || null,
+        after: { count: n },
+      });
+      req.session.notice = n
+        ? `${n} report${n === 1 ? "" : "s"} ${status}.`
+        : "No open reports for that user.";
+      req.session.save(() => res.redirect(back));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/reports/user/:id/ban", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      const back = safeAdminNext(req.body && req.body.next);
+      if (!adminLimited(req)) {
+        req.session.notice = "Too many admin actions. Try again in a minute.";
+        req.session.save(() => res.redirect(back));
+        return;
+      }
+      const accountId = routeId(req.params.id);
+      if (!accountId) {
+        req.session.notice = "Account not found.";
+        req.session.save(() => res.redirect(back));
+        return;
+      }
+      if (!confirmed(req.body)) {
+        req.session.notice = "Confirmation required.";
+        req.session.save(() => res.redirect(back));
+        return;
+      }
+      const result = await adminBan(req.adminAccount.id, accountId, {
+        reason: req.body.reason,
+        durationMs: parseDurationMs(req.body),
+      });
+      if (!result.ok) {
+        req.session.notice = result.error === "last_admin"
+          ? "Cannot ban the last admin."
+          : result.error === "self_target"
+            ? "Cannot ban your own account."
+            : "Could not ban account.";
+        req.session.save(() => res.redirect(back));
+        return;
+      }
+      await auditAdmin(req, {
+        action: "ban",
+        targetType: "account",
+        targetId: accountId,
+        reason: req.body.reason,
+        after: {
+          banned_at: result.account.banned_at,
+          ban_expires_at: result.account.ban_expires_at,
+          from_report: routeId(req.body.reportId) || null,
+        },
+      });
+      if (typeof deps.disconnectBannedAccount === "function") {
+        await deps.disconnectBannedAccount(accountId);
+      }
+      let notice = "Account banned.";
+      if (req.body.resolveAll === "1" || req.body.resolveAll === "on") {
+        const n = await resolvePlayerReportsForUser(accountId, {
+          status: "resolved",
+          resolvedBy: req.adminAccount.id,
+          note: req.body.reason || "Banned from report tools",
+        });
+        if (n) {
+          await auditAdmin(req, {
+            action: "report_resolve_all",
+            targetType: "account",
+            targetId: accountId,
+            reason: req.body.reason || null,
+            after: { count: n, with_ban: true },
+          });
+          notice = `Account banned; ${n} open report${n === 1 ? "" : "s"} resolved.`;
+        }
+      }
+      req.session.notice = notice;
+      req.session.save(() => res.redirect(back));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ----- Suggestions (staff) -----
+  router.get("/suggestions", async (req, res, next) => {
+    try {
+      if (!(await requireStaff(req, res))) return;
+      const suggestions = await listSuggestions({ archived: false });
+      const data = await baseLocals(req, {
+        suggestions,
+        rewardAmount: wikiRewardAmount(),
+        adminSection: "suggestions",
+      });
+      req.session.save(() => res.render("admin/suggestions", data));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/suggestions/:id/archive", async (req, res, next) => {
+    try {
+      if (!(await requireStaff(req, res))) return;
+      if (!adminLimited(req)) {
+        req.session.notice = "Too many admin actions. Try again in a minute.";
+        req.session.save(() => res.redirect("/admin/suggestions"));
+        return;
+      }
+      const suggestionId = routeId(req.params.id);
+      if (!suggestionId) {
+        req.session.notice = "Suggestion not found.";
+        req.session.save(() => res.redirect("/admin/suggestions"));
+        return;
+      }
+      await archiveSuggestion(suggestionId);
+      await auditAdmin(req, {
+        action: "suggestion_archive",
+        targetType: "suggestion",
+        targetId: suggestionId,
+      });
+      req.session.notice = "Suggestion archived.";
+      req.session.save(() => res.redirect("/admin/suggestions"));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/suggestions/:id/archive-reward", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      if (!adminLimited(req)) {
+        req.session.notice = "Too many admin actions. Try again in a minute.";
+        req.session.save(() => res.redirect("/admin/suggestions"));
+        return;
+      }
+      const suggestionId = routeId(req.params.id);
+      const suggestion = suggestionId ? await getSuggestion(suggestionId) : null;
+      if (!suggestion || suggestion.archived_at || suggestion.rewarded_at || suggestion.reward_status === "pending") {
+        req.session.notice = suggestion && suggestion.reward_status === "pending"
+          ? ambiguousTransfer
+          : "Suggestion not found.";
+        req.session.save(() => res.redirect("/admin/suggestions"));
+        return;
+      }
+      if (suggestion.formbar_id <= 0) {
+        req.session.notice = "This suggestion cannot be rewarded.";
+        req.session.save(() => res.redirect("/admin/suggestions"));
+        return;
+      }
+      const claimed = await claimSuggestionReward(suggestion.id);
+      if (!claimed) {
+        req.session.notice = "Suggestion not found.";
+        req.session.save(() => res.redirect("/admin/suggestions"));
+        return;
+      }
+      const amount = wikiRewardAmount();
+      const transfer = await rewardFromPool(formbarSocket, {
+        userId: suggestion.formbar_id,
+        amount,
+        reason: "MOTL Suggestion Reward",
+      });
+      if (transfer.ambiguous) {
+        req.session.notice = ambiguousTransfer;
+        req.session.save(() => res.redirect("/admin/suggestions"));
+        return;
+      }
+      if (!transfer.success) {
+        await releaseSuggestionReward(suggestion.id);
+        req.session.notice = transfer.message || "Reward transfer failed.";
+        req.session.save(() => res.redirect("/admin/suggestions"));
+        return;
+      }
+      await completeSuggestionReward(suggestion.id);
+      await auditAdmin(req, {
+        action: "suggestion_reward",
+        targetType: "suggestion",
+        targetId: suggestion.id,
+        after: { amount, formbarId: suggestion.formbar_id },
+      });
+      req.session.notice = `Archived and sent ${amount} digipogs to ${suggestion.name}.`;
+      req.session.save(() => res.redirect("/admin/suggestions"));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ----- Wiki (staff) -----
+  router.get("/wiki", async (req, res, next) => {
+    try {
+      if (!(await requireStaff(req, res))) return;
+      const revisions = (await listOpenWikiRevisions()).map((item) => ({
+        ...item,
+        isCreate: item.previous_body == null,
+        diff: wikiLineDiff(item.previous_body, item.body),
+      }));
+      const data = await baseLocals(req, {
+        revisions,
+        rewardAmount: wikiRewardAmount(),
+        adminSection: "wiki",
+      });
+      req.session.save(() => res.render("admin/wiki", data));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/wiki/:id/confirm", async (req, res, next) => {
+    try {
+      if (!(await requireStaff(req, res))) return;
+      if (!adminLimited(req)) {
+        req.session.notice = "Too many admin actions.";
+        req.session.save(() => res.redirect("/admin/wiki"));
+        return;
+      }
+      const revisionId = routeId(req.params.id);
+      const ok = await confirmWikiRevision(revisionId);
+      if (ok) {
+        await auditAdmin(req, {
+          action: "wiki_confirm",
+          targetType: "wiki_revision",
+          targetId: revisionId,
+        });
+      }
+      req.session.notice = ok ? "Revision confirmed." : "Revision not found.";
+      req.session.save(() => res.redirect("/admin/wiki"));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/wiki/:id/undo", async (req, res, next) => {
+    try {
+      if (!(await requireStaff(req, res))) return;
+      if (!adminLimited(req)) {
+        req.session.notice = "Too many admin actions.";
+        req.session.save(() => res.redirect("/admin/wiki"));
+        return;
+      }
+      const revisionId = routeId(req.params.id);
+      const result = await undoWikiRevision(revisionId);
+      if (!result.ok) {
+        req.session.notice = result.error || "Could not undo.";
+      } else if (result.deleted) {
+        await auditAdmin(req, {
+          action: "wiki_undo_delete",
+          targetType: "wiki_revision",
+          targetId: revisionId,
+        });
+        req.session.notice = "Page deleted.";
+      } else {
+        await auditAdmin(req, {
+          action: "wiki_undo",
+          targetType: "wiki_revision",
+          targetId: revisionId,
+        });
+        req.session.notice = "Revision undone.";
+      }
+      req.session.save(() => res.redirect("/admin/wiki"));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/wiki/:id/reward", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      if (!adminLimited(req)) {
+        req.session.notice = "Too many admin actions. Try again in a minute.";
+        req.session.save(() => res.redirect("/admin/wiki"));
+        return;
+      }
+      const revisionId = routeId(req.params.id);
+      const revision = revisionId ? await getWikiRevision(revisionId) : null;
+      if (!revision || revision.undone_at) {
+        req.session.notice = "Revision not found.";
+        req.session.save(() => res.redirect("/admin/wiki"));
+        return;
+      }
+      if (revision.rewarded_at || revision.reward_status === "completed") {
+        req.session.notice = "Already rewarded.";
+        req.session.save(() => res.redirect("/admin/wiki"));
+        return;
+      }
+      if (revision.reward_status === "pending") {
+        req.session.notice = ambiguousTransfer;
+        req.session.save(() => res.redirect("/admin/wiki"));
+        return;
+      }
+      if (revision.formbar_id <= 0) {
+        req.session.notice = "System revisions cannot be rewarded.";
+        req.session.save(() => res.redirect("/admin/wiki"));
+        return;
+      }
+      const claimed = await claimWikiReward(revision.id);
+      if (!claimed) {
+        req.session.notice = "Already rewarded.";
+        req.session.save(() => res.redirect("/admin/wiki"));
+        return;
+      }
+      const amount = wikiRewardAmount();
+      const transfer = await rewardFromPool(formbarSocket, {
+        userId: revision.formbar_id,
+        amount,
+        reason: `MOTL Wiki Reward: ${revision.title}`,
+      });
+      if (transfer.ambiguous) {
+        req.session.notice = ambiguousTransfer;
+        req.session.save(() => res.redirect("/admin/wiki"));
+        return;
+      }
+      if (!transfer.success) {
+        await releaseWikiReward(revision.id);
+        req.session.notice = transfer.message || "Reward transfer failed.";
+        req.session.save(() => res.redirect("/admin/wiki"));
+        return;
+      }
+      await completeWikiReward(revision.id);
+      await auditAdmin(req, {
+        action: "wiki_reward",
+        targetType: "wiki_revision",
+        targetId: revision.id,
+        after: { amount, formbarId: revision.formbar_id },
+      });
+      req.session.notice = `Sent ${amount} digipogs to ${revision.name}.`;
+      req.session.save(() => res.redirect("/admin/wiki"));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ----- Referrals -----
+  router.get("/referrals", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      const bundle = await referralsAdminIndex({
+        q: req.query.q || "",
+        status: req.query.status || "",
+        page: Number(req.query.page) || 1,
+      });
+      const data = await baseLocals(req, { ...bundle, adminSection: "referrals" });
+      req.session.save(() => res.render("admin/referrals", data));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get("/referrals/:id", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      const id = routeId(req.params.id);
+      const detail = id ? await referralsAdminDetail(id) : null;
+      if (!detail) {
+        req.session.notice = "Referral not found.";
+        req.session.save(() => res.redirect("/admin/referrals"));
+        return;
+      }
+      const data = await baseLocals(req, { ...detail, adminSection: "referrals" });
+      req.session.save(() => res.render("admin/referral-detail", data));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/referrals/config", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      if (!adminLimited(req)) {
+        req.session.notice = "Too many admin actions. Try again shortly.";
+        req.session.save(() => res.redirect("/admin/referrals"));
+        return;
+      }
+      const result = await adminSetReferralConfig({
+        enabled: req.body.enabled === "1" || req.body.enabled === "on" ? "1" : "0",
+        verifyTickets: req.body.verifyTickets,
+        purchaseTickets: req.body.purchaseTickets,
+        minPurchaseCents: req.body.minPurchaseCents,
+        holdDays: req.body.holdDays,
+        elevatedHoldDays: req.body.elevatedHoldDays,
+        riskSharedBrowser: req.body.riskSharedBrowser,
+        riskRapidSignup: req.body.riskRapidSignup,
+        riskSharedPayer: req.body.riskSharedPayer,
+        riskDisposableEmail: req.body.riskDisposableEmail,
+        riskElevatedMin: req.body.riskElevatedMin,
+        riskHighMin: req.body.riskHighMin,
+        rapidWindowMs: req.body.rapidWindowMs,
+        rapidBrowserMax: req.body.rapidBrowserMax,
+        rapidIpMax: req.body.rapidIpMax,
+        rapidNetworkMax: req.body.rapidNetworkMax,
+        signupCooldownMs: req.body.signupCooldownMs,
+        signupCaptchaAfter: req.body.signupCaptchaAfter,
+        signupRestrictAfter: req.body.signupRestrictAfter,
+        signupRestrictMs: req.body.signupRestrictMs,
+        disposableDomains: req.body.disposableDomains,
+      }, req.adminAccount.id);
+      await auditAdmin(req, {
+        action: "referral_config_update",
+        targetType: "referral_config",
+        targetId: "site",
+        before: {
+          enabled: result.before.enabled,
+          verifyTickets: result.before.verifyTickets,
+          purchaseTickets: result.before.purchaseTickets,
+        },
+        after: {
+          enabled: result.after.enabled,
+          verifyTickets: result.after.verifyTickets,
+          purchaseTickets: result.after.purchaseTickets,
+        },
+      });
+      req.session.notice = "Referral settings saved.";
+      req.session.save(() => res.redirect("/admin/referrals"));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/referrals/rewards/:id/approve", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      if (!adminLimited(req) || !confirmed(req.body)) {
+        req.session.notice = !confirmed(req.body) ? "Confirmation required." : "Too many admin actions.";
+        req.session.save(() => res.redirect(req.body.next || "/admin/referrals"));
+        return;
+      }
+      const id = routeId(req.params.id);
+      const result = id ? await adminApproveReferralReward(id) : { ok: false };
+      await auditAdmin(req, {
+        action: "referral_reward_approve",
+        targetType: "referral_reward",
+        targetId: id,
+        reason: req.body.reason,
+        after: result,
+      });
+      req.session.notice = result.ok ? "Reward approved and released." : `Approve failed: ${result.error}`;
+      req.session.save(() => res.redirect(safeAdminNext(req.body.next, "/admin/referrals")));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/referrals/rewards/:id/reject", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      if (!adminLimited(req) || !confirmed(req.body) || !String(req.body.reason || "").trim()) {
+        req.session.notice = "Confirmation and reason required.";
+        req.session.save(() => res.redirect(safeAdminNext(req.body.next, "/admin/referrals")));
+        return;
+      }
+      const id = routeId(req.params.id);
+      const result = id ? await adminRejectReferralReward(id, req.body.reason) : { ok: false };
+      await auditAdmin(req, {
+        action: "referral_reward_reject",
+        targetType: "referral_reward",
+        targetId: id,
+        reason: req.body.reason,
+        after: result,
+      });
+      req.session.notice = result.ok ? "Reward rejected." : `Reject failed: ${result.error}`;
+      req.session.save(() => res.redirect(safeAdminNext(req.body.next, "/admin/referrals")));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/referrals/rewards/:id/extend", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      if (!adminLimited(req) || !confirmed(req.body)) {
+        req.session.notice = "Confirmation required.";
+        req.session.save(() => res.redirect(safeAdminNext(req.body.next, "/admin/referrals")));
+        return;
+      }
+      const id = routeId(req.params.id);
+      const days = Math.max(1, Number(req.body.days) || 7);
+      const releaseAt = Date.now() + days * 24 * 60 * 60 * 1000;
+      const result = id ? await adminExtendReferralReward(id, releaseAt) : { ok: false };
+      await auditAdmin(req, {
+        action: "referral_reward_extend",
+        targetType: "referral_reward",
+        targetId: id,
+        reason: req.body.reason,
+        after: { releaseAt, days },
+      });
+      req.session.notice = result.ok ? `Hold extended by ${days} day(s).` : `Extend failed: ${result.error}`;
+      req.session.save(() => res.redirect(safeAdminNext(req.body.next, "/admin/referrals")));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/referrals/:id/recalculate", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      if (!adminLimited(req)) {
+        req.session.notice = "Too many admin actions.";
+        req.session.save(() => res.redirect("/admin/referrals"));
+        return;
+      }
+      const id = routeId(req.params.id);
+      const result = id ? await adminRecalculateReferralRisk(id) : { ok: false };
+      await auditAdmin(req, {
+        action: "referral_risk_recalc",
+        targetType: "referral_relationship",
+        targetId: id,
+        after: result.risk || null,
+      });
+      req.session.notice = result.ok
+        ? `Risk recalculated: ${result.risk.score} (${result.risk.class}).`
+        : "Recalculate failed.";
+      req.session.save(() => res.redirect(`/admin/referrals/${id}`));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/referrals/:id/correct", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      if (!adminLimited(req) || !confirmed(req.body) || !String(req.body.reason || "").trim()) {
+        req.session.notice = "Confirmation and reason required.";
+        req.session.save(() => res.redirect(safeAdminNext(req.body.next, "/admin/referrals")));
+        return;
+      }
+      const id = routeId(req.params.id);
+      const newReferrer = routeId(req.body.referrerAccountId);
+      const result = id && newReferrer
+        ? await adminCorrectReferralAttribution(id, newReferrer, req.body.reason)
+        : { ok: false, error: "invalid" };
+      await auditAdmin(req, {
+        action: "referral_attribution_correct",
+        targetType: "referral_relationship",
+        targetId: id,
+        reason: req.body.reason,
+        after: result,
+      });
+      req.session.notice = result.ok ? "Attribution corrected." : `Correction failed: ${result.error}`;
+      req.session.save(() => res.redirect(`/admin/referrals/${id}`));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/referrals/vanity", async (req, res, next) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      if (!adminLimited(req) || !confirmed(req.body)) {
+        req.session.notice = "Confirmation required.";
+        req.session.save(() => res.redirect("/admin/referrals"));
+        return;
+      }
+      const accountId = routeId(req.body.accountId);
+      const result = accountId
+        ? await setReferralVanityCode(accountId, req.body.vanity || "")
+        : { ok: false, error: "invalid" };
+      await auditAdmin(req, {
+        action: "referral_vanity_set",
+        targetType: "account",
+        targetId: accountId,
+        reason: req.body.reason,
+        after: result,
+      });
+      req.session.notice = result.ok ? "Vanity code updated." : `Vanity failed: ${result.error}`;
+      req.session.save(() => res.redirect("/admin/referrals"));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  return router;
+}

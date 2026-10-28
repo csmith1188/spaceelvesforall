@@ -1,0 +1,1 @@
+For Honor is a best-of-three duel. The game adds a CPU opponent for bot matches. Two humans play random, training-random, ranked, and custom For Honor. Ranked still pairs by rating, then leaves that rating unchanged.

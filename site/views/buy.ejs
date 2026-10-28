@@ -1,0 +1,9 @@
+<form id="digipog-buy" class="buy buy--pay" method="post" action="/tickets">
+  <%- include("csrf-field") %>
+  <input type="hidden" name="next" value="<%= nextPath %>">
+  <label for="pin">Digipogs</label>
+  <div class="buy-fields">
+    <input id="pin" name="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="Digipog PIN" required>
+    <button type="submit" id="digipog-buy-submit">Buy with Digipogs</button>
+  </div>
+</form>

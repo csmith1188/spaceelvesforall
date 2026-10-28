@@ -1,0 +1,26 @@
+{
+  "name": "spaceelves-site",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "dependencies": {
+    "connect-sqlite3": "^0.9.15",
+    "cookie": "^1.0.2",
+    "diff": "^9.0.0",
+    "discord.js": "^14.27.0",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "glin-profanity": "^3.3.0",
+    "http-proxy": "^1.18.1",
+    "jsonwebtoken": "^9.0.3",
+    "marked": "^18.0.14",
+    "nodemailer": "^10.0.15",
+    "pino": "^10.4.0",
+    "pino-pretty": "^13.2.0",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.3",
+    "sqlite3": "^6.0.1",
+    "ws": "^8.18.0"
+  }
+}

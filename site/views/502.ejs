@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#121821">
+  <title><%= title %> · Space Elves</title>
+  <style><%- css %></style>
+</head>
+<body>
+  <div class="page">
+    <header class="top">
+      <a class="brand" href="/">Space Elves</a>
+      <nav class="site-nav" aria-label="Site">
+        <a href="/"> [ Home ]</a>
+        <a href="/games"> [ Games ]</a>
+        <a href="/scores"> [ Ranks ]</a>
+        <a href="/rules"> [ Manual ]</a>
+      </nav>
+    </header>
+
+    <section class="error-panel" aria-labelledby="error-title">
+      <p class="error-code" aria-hidden="true"><%= status %></p>
+      <h2 id="error-title"><%= title %></h2>
+      <p class="hint"><%= message %></p>
+      <p class="error-actions">
+        <button type="button" class="action" id="retry">Try again</button>
+        <a class="action" href="/">Back home</a>
+      </p>
+    </section>
+  </div>
+  <script><%- js %></script>
+</body>
+</html>

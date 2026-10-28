@@ -103,12 +103,20 @@ function getConnectedUsernames() {
 
 function getMatchStatusPayload(messageType = 'game.heartbeat') {
     const usernames = getConnectedUsernames();
+    const connectedIds = [];
+    for (const player of game.players) {
+        if (player.connected === true && player.token && player.token.id) {
+            connectedIds.push(String(player.token.id));
+        }
+    }
     const maxPlayers = game.match && game.match.playerLimit ? game.match.playerLimit.max : 0;
     const matchStatus = usernames.length > 0 ? 'in_progress' : 'waiting';
+    const stage = game.match && game.match.stage ? game.match.stage : null;
     return {
         type: messageType,
         secret: masterSecret,
         gameId,
+        matchId: process.env.MATCH_ID || gameId,
         port: PORT,
         status: 'online',
         startedAt: gameStartedAt,
@@ -116,11 +124,13 @@ function getMatchStatusPayload(messageType = 'game.heartbeat') {
         players: {
             current: usernames.length,
             max: maxPlayers,
-            usernames
+            usernames,
+            ids: connectedIds
         },
         match: {
             type: game.match && game.match.matchType ? game.match.matchType : MATCH_TYPE,
             status: matchStatus,
+            stage,
             score: { teamA: 0, teamB: 0 }
         },
         timestamp: Date.now()
@@ -162,6 +172,23 @@ function connectToMasterStatus() {
         reconnectDelayMs = Math.min(reconnectDelayMs * 2, 5000);
     });
 
+    statusWs.on('message', (buf) => {
+        let msg;
+        try {
+            msg = JSON.parse(buf.toString());
+        } catch {
+            return;
+        }
+        if (!msg || typeof msg !== 'object') return;
+        if (msg.type === 'match.shutdown') {
+            requestShutdown(msg.reason || 'site_shutdown');
+            return;
+        }
+        if (msg.type === 'match.pause') {
+            global.gamePaused = Boolean(msg.paused);
+        }
+    });
+
     statusWs.on('error', () => {
         if (statusWs && statusWs.readyState === WebSocket.OPEN) {
             statusWs.close();
@@ -200,17 +227,22 @@ connectToMasterStatus();
 // Define a route handler for the default home page
 app.get('/', (req, res) => {
     const masterUrl = pathConfig.buildThisOrigin();
-    if (req.session.token) {
+    const player = req.session && req.session.player;
+    if (player && player.id) {
         const gameWsPath = pathConfig.gamePublicPrefix
             ? `/${pathConfig.gamePublicPrefix}/${PORT}/game`
             : null;
         res.render('client', {
-            token: req.session.token,
+            token: {
+                id: player.id,
+                displayName: player.displayName || 'Player',
+            },
             PORT: PORT,
             THIS_URL: process.env.THIS_URL || 'localhost',
             MASTER_PORT: pathConfig.getPublicBrowserPort(),
             masterUrl,
-            gameWsPath: gameWsPath
+            gameWsPath: gameWsPath,
+            returnUrl: `${masterUrl}/games`,
         });
     } else {
         res.redirect(masterUrl || '/');
@@ -230,7 +262,14 @@ app.listen(PORT, '0.0.0.0', () => {
 const tickInterval = global.game.time.tickRate; // ~16ms for 60Hz
 let lastTick = Date.now();
 let running = true;
-const emptyServerTimeoutMs = 10000;
+const matchmade = Boolean(process.env.MATCH_ID);
+const emptyServerTimeoutMs = matchmade
+    ? (Number(process.env.RECONNECT_WAIT_MS) || 60000) + 20000
+    : 10000;
+if (matchmade) {
+    global.game.disconnectGraceMs = (Number(process.env.DISCONNECT_GRACE_MS) || 5000)
+        + (Number(process.env.RECONNECT_WAIT_MS) || 60000);
+}
 let emptySince = Date.now();
 
 function gameLoop() {
@@ -252,7 +291,7 @@ function gameLoop() {
         emptySince = null;
     }
 
-    if (delta >= tickInterval) {
+    if (delta >= tickInterval && !global.gamePaused) {
         lastTick = now - (delta % tickInterval); // Adjust for drift
         global.game.step(); // Your game logic
     }

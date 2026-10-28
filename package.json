@@ -1,7 +1,12 @@
 {
+  "name": "spaceelves",
+  "private": true,
   "engines": {
     "node": ">=20.17.0"
   },
+  "workspaces": [
+    "site"
+  ],
   "dependencies": {
     "connect": "^3.7.0",
     "connect-sqlite3": "^0.9.15",
@@ -16,13 +21,20 @@
     "sqlite3": "^6.0.1",
     "ws": "^8.18.0"
   },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  },
   "overrides": {
     "sqlite3": "^6.0.1"
   },
   "scripts": {
-    "master": "node index_master.js",
+    "start": "node site/app.js",
+    "dev": "nodemon site/app.js",
     "game": "node index_game.js",
-    "master-dev": "nodemon index_master.js -dev",
-    "game-dev": "nodemon index_game.js -dev"
+    "test": "node --test site/test/*.test.js",
+    "discord-bot": "node site/scripts/discord-bot.js",
+    "seed-wiki": "node site/scripts/seed-wiki.js",
+    "mail-test": "node site/scripts/send-test-email.js",
+    "prerender-502": "node site/scripts/prerender-502.js"
   }
 }

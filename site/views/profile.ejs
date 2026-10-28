@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <%- include("pwa-head") %>
+  <title><%= account ? account.name : "Player" %> · Space Elves</title>
+  <link rel="stylesheet" href="/css/landing.css?v=<%= assetVersion %>">
+</head>
+<body>
+  <div class="page">
+    <%- include("header") %>
+    <% if (notice) { %>
+      <p class="notice" role="status"><%= notice %></p>
+    <% } %>
+    <% if (!account) { %>
+      <section>
+        <h2>Player not found</h2>
+        <p class="hint">No account uses that id.</p>
+        <a class="action" href="/">Back</a>
+      </section>
+    <% } else { %>
+      <section class="officer-dossier" aria-label="Officer dossier">
+        <h2><%= account.name %></h2>
+        <% if (typeof deleted !== "undefined" && deleted) { %>
+          <p class="hint">This account has been deleted.</p>
+        <% } %>
+        <% if (typeof dossier !== "undefined" && dossier) { %>
+          <div class="dossier-rank">
+            <span class="rank-insignia rank-<%= dossier.officerRank %>" aria-hidden="true"></span>
+            <div>
+              <p class="dossier-rank-title"><%= dossier.officerRankLabel %></p>
+              <% if (dossier.mmrHidden) { %>
+                <p class="hint"><%= dossier.placementProgress.label %></p>
+              <% } else { %>
+                <p class="hint">
+                  <%= dossier.mmr %> MMR
+                  <% if (dossier.rankPercentile != null) { %>
+                    · <%= dossier.rankPercentile %>th percentile among active officers
+                  <% } %>
+                </p>
+              <% } %>
+            </div>
+          </div>
+        <% } %>
+        <dl class="stats">
+          <% if (typeof dossier !== "undefined" && dossier && !dossier.mmrHidden) { %>
+            <div><dt>Ranked MMR</dt><dd><%= dossier.mmr %></dd></div>
+          <% } else { %>
+            <div><dt>Ranked MMR</dt><dd>Hidden</dd></div>
+          <% } %>
+          <div><dt>Ranked wins</dt><dd><%= account.wins %></dd></div>
+          <div><dt>Ranked losses</dt><dd><%= account.losses %></dd></div>
+          <div><dt>Ranked matches</dt><dd><%= typeof dossier !== "undefined" && dossier ? dossier.rankedGames : (account.wins + account.losses) %></dd></div>
+          <% if (typeof dossier !== "undefined" && dossier && dossier.winRate != null) { %>
+            <div><dt>Ranked win rate</dt><dd><%= dossier.winRate %>%</dd></div>
+          <% } %>
+          <% if (typeof dossier !== "undefined" && dossier) { %>
+            <div><dt>Highest rank</dt><dd><%= dossier.highestRankLabel %></dd></div>
+          <% } %>
+          <% if (typeof casualStats !== "undefined" && casualStats) { %>
+            <div><dt>Casual W–L</dt><dd><%= casualStats.wins %>–<%= casualStats.losses %></dd></div>
+          <% } %>
+          <div><dt>Time played</dt><dd><%= formatPlayDuration(playStats.totalMs) %></dd></div>
+          <% if (isOwner) { %>
+            <div><dt>Tickets</dt><dd><%= account.tickets %></dd></div>
+          <% } %>
+        </dl>
+      </section>
+      <% if (isOwner && typeof recruitment !== "undefined" && recruitment) { %>
+        <section id="recruitment">
+          <h2>Recruitment Office</h2>
+          <% if (!recruitment.eligible) { %>
+            <p>Referral recruiting is not available for this account. Formbar-linked accounts use Digipog tickets and are outside the referral program.</p>
+          <% } else if (!recruitment.enabled) { %>
+            <p>The referral program is currently disabled.</p>
+          <% } else { %>
+            <p><%= recruitment.referralCopy %></p>
+            <p>
+              <label for="ref-link">Your referral link</label>
+              <input id="ref-link" type="text" readonly value="<%= recruitment.referralUrl %>" style="width:100%;max-width:36rem">
+              <button type="button" class="action" id="ref-copy">Copy</button>
+            </p>
+            <p class="hint">Code: <code><%= recruitment.codeDisplay %></code></p>
+            <ul>
+              <li>Referred accounts: <%= recruitment.summary.referred %></li>
+              <li>Verified recruits: <%= recruitment.summary.verified %></li>
+              <li>Purchasing recruits: <%= recruitment.summary.purchased %></li>
+              <li>Tickets released (spendable from referrals): <%= recruitment.summary.ticketsReleased %></li>
+              <li>Tickets pending: <%= recruitment.summary.ticketsPending %></li>
+            </ul>
+            <% if (recruitment.summary.pendingRewards && recruitment.summary.pendingRewards.length) { %>
+              <h3>Pending rewards</h3>
+              <ul>
+                <% recruitment.summary.pendingRewards.forEach(function (r) { %>
+                  <li>
+                    <%= r.tickets %> tickets · <%= r.milestone %> · <%= r.status %>
+                    <% if (r.release_at) { %>
+                      · expected <%= new Date(r.release_at).toISOString().slice(0, 10) %>
+                    <% } else if (r.status === 'review') { %>
+                      · held for review
+                    <% } %>
+                  </li>
+                <% }) %>
+              </ul>
+            <% } %>
+            <h3>Recent recruits</h3>
+            <% if (!recruitment.summary.recent || !recruitment.summary.recent.length) { %>
+              <p class="hint">No recruits yet. Share your link.</p>
+            <% } else { %>
+              <ul>
+                <% recruitment.summary.recent.forEach(function (row) { %>
+                  <li>
+                    <%= row.referee_name %>
+                    · joined <%= new Date(row.created_at).toISOString().slice(0, 10) %>
+                    · <%= row.verified_at ? "verified" : "unverified" %>
+                    · <%= row.purchased_at ? "purchased" : "no purchase" %>
+                  </li>
+                <% }) %>
+              </ul>
+            <% } %>
+          <% } %>
+        </section>
+      <% } %>
+      <section>
+        <h2>Ranked history</h2>
+        <% if (!mmrHistory.total) { %>
+          <p class="hint">No ranked games recorded yet.</p>
+        <% } else { %>
+          <div class="mmr-history-wrap">
+            <table class="mmr-history">
+              <thead>
+                <tr>
+                  <th>When</th>
+                  <th>Opponent</th>
+                  <th>Result</th>
+                  <th>Δ MMR</th>
+                  <th>MMR after</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% mmrHistory.rows.forEach(function (row) { %>
+                  <tr>
+                    <td><%= new Date(row.endedAt).toLocaleString() %></td>
+                    <td>
+                      <% if (row.opponentAccountId) { %>
+                        <a href="/profile/<%= row.opponentAccountId %>"><%= row.opponentName || "Unknown" %></a>
+                      <% } else { %>
+                        <%= row.opponentName || "Unknown" %>
+                      <% } %>
+                    </td>
+                    <td><%= row.won ? "Win" : "Loss" %></td>
+                    <td class="<%= row.delta > 0 ? 'mmr-up' : (row.delta < 0 ? 'mmr-down' : '') %>">
+                      <% if (typeof dossier !== "undefined" && dossier && dossier.mmrHidden) { %>
+                        —
+                      <% } else { %>
+                        <%= row.delta > 0 ? ("+" + row.delta) : String(row.delta) %>
+                      <% } %>
+                    </td>
+                    <td>
+                      <% if (typeof dossier !== "undefined" && dossier && dossier.mmrHidden) { %>
+                        —
+                      <% } else { %>
+                        <%= row.mmrAfter %>
+                      <% } %>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+          <% if (mmrHistory.total > mmrHistory.pageSize) { %>
+            <div class="news-pager">
+              <% if (mmrHistory.page > 1) { %>
+                <a class="action news-pager-btn" href="/profile/<%= account.id %>?mmrpage=<%= mmrHistory.page - 1 %>">Prev</a>
+              <% } else { %>
+                <span class="news-pager-btn" aria-hidden="true"></span>
+              <% } %>
+              <p class="hint">Page <%= mmrHistory.page %> of <%= Math.ceil(mmrHistory.total / mmrHistory.pageSize) %></p>
+              <% if (mmrHistory.page * mmrHistory.pageSize < mmrHistory.total) { %>
+                <a class="action news-pager-btn" href="/profile/<%= account.id %>?mmrpage=<%= mmrHistory.page + 1 %>">Next</a>
+              <% } else { %>
+                <span class="news-pager-btn" aria-hidden="true"></span>
+              <% } %>
+            </div>
+          <% } %>
+        <% } %>
+      </section>
+      <% if (isOwner && !accountEmailVerified(account)) { %>
+        <section>
+          <h2>Verify email</h2>
+          <p class="hint">Verify your email to unlock account features. Until then you can play like a guest.</p>
+          <ul class="list">
+            <li class="hint">Email: <%= account.email || "not linked" %> (unverified)</li>
+          </ul>
+          <% if (authEmailEnabled && account.email) { %>
+            <form method="post" action="/verify/resend">
+<%- include("csrf-field") %>
+              <input type="hidden" name="email" value="<%= account.email %>">
+              <button type="submit" class="action">Resend verification</button>
+            </form>
+          <% } %>
+        </section>
+      <% } else if (isOwner) { %>
+        <section>
+          <h2>Display name</h2>
+          <form method="post" action="/profile/name">
+<%- include("csrf-field") %>
+            <label for="display-name">Name</label>
+            <input id="display-name" name="name" type="text" autocomplete="nickname" required minlength="2" maxlength="32" value="<%= account.name %>">
+            <button type="submit" class="action">Save display name (1 ticket)</button>
+          </form>
+        </section>
+        <section>
+          <h2>Email preferences</h2>
+          <% if (!account.email || !accountEmailVerified(account)) { %>
+            <p class="hint">Verify your email to opt in to news emails.</p>
+          <% } else { %>
+            <form method="post" action="/profile/news-email">
+<%- include("csrf-field") %>
+              <label class="check-row">
+                <input type="checkbox" name="newsEmail" value="1" <%= account.news_email_opt_in ? "checked" : "" %>>
+                Send news to my email
+              </label>
+              <button type="submit" class="action">Save email preference</button>
+            </form>
+          <% } %>
+        </section>
+        <% if (localAccountsEnabled || formbarLoginEnabled || discordLoginEnabled) { %>
+        <section>
+          <h2>Linked Accounts</h2>
+          <ul class="list">
+            <% if (localAccountsEnabled) { %>
+              <li class="hint">Email: <%= account.email || "not linked" %><% if (account.email && !accountEmailVerified(account) && authEmailEnabled) { %> (unverified)<% } %></li>
+            <% } %>
+            <% if (formbarLoginEnabled) { %>
+              <li class="hint">Formbar: <%= account.formbar_id ? ("#" + account.formbar_id) : "not linked" %></li>
+            <% } %>
+            <% if (discordLoginEnabled) { %>
+              <li class="hint">Discord: <%= account.discord_id ? ("#" + account.discord_id) : "not linked" %></li>
+            <% } %>
+          </ul>
+          <% if (canLinkFormbar) { %>
+            <form method="post" action="/profile/link/formbar">
+<%- include("csrf-field") %>
+              <button type="submit" class="action">Link Formbar account</button>
+            </form>
+          <% } %>
+          <% if (canLinkDiscord) { %>
+            <form method="post" action="/profile/link/discord">
+              <button type="submit" class="action">Link Discord account</button>
+            </form>
+          <% } %>
+          <% if (canAddLocal) { %>
+            <form method="post" action="/profile/link/local">
+<%- include("csrf-field") %>
+              <label for="link-email">Email</label>
+              <input id="link-email" name="email" type="email" autocomplete="email" required>
+              <label for="link-password">Password</label>
+              <input id="link-password" name="password" type="password" autocomplete="new-password" minlength="8" required>
+              <p class="hint">New email creates credentials here. Password of an existing account merges it here.</p>
+              <button type="submit" class="action">Add email &amp; password</button>
+            </form>
+          <% } %>
+        </section>
+        <% } %>
+        <section>
+          <h2>Suggestions</h2>
+          <% if (!mySuggestions || !mySuggestions.length) { %>
+            <p class="hint">No open suggestions.</p>
+          <% } else { %>
+            <ul class="list">
+              <% mySuggestions.forEach(function (item) { %>
+                <li class="card">
+                  <div class="suggest-meta">
+                    <span class="hint"><%= new Date(item.created_at).toLocaleString() %></span>
+                  </div>
+                  <p class="suggest-body"><%= item.body %></p>
+                  <div class="wiki-admin-actions">
+                    <form method="post" action="/profile/suggestions/<%= item.id %>/delete">
+                      <%- include("csrf-field") %>
+                      <button type="submit">Delete</button>
+                    </form>
+                  </div>
+                </li>
+              <% }) %>
+            </ul>
+          <% } %>
+        </section>
+        <section>
+          <h2>Bug reports</h2>
+          <% if (!myBugs || !myBugs.length) { %>
+            <p class="hint">No open bug reports.</p>
+          <% } else { %>
+            <ul class="list">
+              <% myBugs.forEach(function (item) { %>
+                <li class="card">
+                  <div class="suggest-meta">
+                    <span class="bug-tag">Bug</span>
+                    <span class="hint"><%= new Date(item.created_at).toLocaleString() %></span>
+                  </div>
+                  <p class="suggest-body"><%= item.body %></p>
+                  <% if (item.repro) { %>
+                    <p class="hint">How did you create the bug?</p>
+                    <p class="suggest-repro"><%= item.repro %></p>
+                  <% } %>
+                  <div class="wiki-admin-actions">
+                    <form method="post" action="/profile/bugs/<%= item.id %>/delete">
+                      <%- include("csrf-field") %>
+                      <button type="submit">Delete</button>
+                    </form>
+                  </div>
+                </li>
+              <% }) %>
+            </ul>
+          <% } %>
+        </section>
+        <section>
+          <h2>Delete account</h2>
+          <p class="hint">Permanently remove your login and personal data. Match history stays as Fallen Soldier.</p>
+          <p><a class="action" href="/account/delete">Delete account</a></p>
+        </section>
+      <% } %>
+    <% } %>
+  </div>
+  <script>
+    (function () {
+      var btn = document.getElementById("ref-copy");
+      var input = document.getElementById("ref-link");
+      if (!btn || !input) return;
+      btn.addEventListener("click", function () {
+        input.select();
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(input.value).catch(function () {});
+        } else {
+          document.execCommand("copy");
+        }
+      });
+    })();
+  </script>
+  <%- include("suggestion-modal", { nextPath: account ? "/profile/" + account.id : "/" }) %>
+</body>
+</html>
